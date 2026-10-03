@@ -100,17 +100,62 @@
     </section>
 
     <section class="evolution section-pad" id="evolve">
-      <div class="container">
-        <div class="center-heading reveal">
+      <div class="container evolution-layout">
+        <div class="evolution-copy reveal">
           <p class="eyebrow">YOUR HEROES GROW WITH YOUR JOURNEY</p>
-          <h2>THREE STAGES. <span>ONE LEGEND.</span></h2>
-          <p>Collect runes, evolve your heroes and watch their identity transform. The full outer card frame is now showcased clearly.</p>
+          <h2>EVOLVE YOUR <span>LEGEND.</span></h2>
+          <p>Collect character runes and unlock stronger forms. Each evolution changes the hero’s appearance, identity and power while keeping the same character at the heart of the card.</p>
+
+          <div class="evolution-stage-nav" role="tablist" aria-label="Sam evolution stages">
+            <button class="evolution-stage-button active" type="button" data-evolution-stage="0" aria-selected="true">
+              <span>01</span>
+              <strong>YOUNG SAM</strong>
+              <small>Stage 1</small>
+            </button>
+            <button class="evolution-stage-button" type="button" data-evolution-stage="1" aria-selected="false">
+              <span>02</span>
+              <strong>SAM OF ASTER</strong>
+              <small>Stage 2</small>
+            </button>
+            <button class="evolution-stage-button" type="button" data-evolution-stage="2" aria-selected="false">
+              <span>03</span>
+              <strong>LAST GUARDIAN</strong>
+              <small>Legendary</small>
+            </button>
+          </div>
+
+          <div class="evolution-info" aria-live="polite">
+            <span class="evolution-info-stage">STAGE 1</span>
+            <h3 class="evolution-info-name">YOUNG SAM</h3>
+            <p class="evolution-info-text">The beginning of the journey — before the road to Aster changes everything.</p>
+          </div>
+
+          <button class="button button-gold evolution-trigger" type="button">
+            EVOLVE HERO
+            <span aria-hidden="true">✦</span>
+          </button>
         </div>
 
-        <div class="evolution-grid framed-grid">
-          <article class="evo-frame-card tilt reveal"><img src="assets/young_framed.png" alt="Young Sam framed card" /></article>
-          <article class="evo-frame-card tilt reveal featured"><img src="assets/stage2_framed.png" alt="Sam of Aster framed card" /></article>
-          <article class="evo-frame-card tilt reveal"><img src="assets/stage3_framed.png" alt="Last Guardian framed card" /></article>
+        <div class="evolution-showcase reveal-right">
+          <div class="evolution-aura" aria-hidden="true"></div>
+          <div class="evolution-stack" data-active-stage="0">
+            <article class="evolution-card-layer stage-1 active" data-stage="0">
+              <img src="assets/young_framed.png" alt="Young Sam Stage 1 card" />
+            </article>
+            <article class="evolution-card-layer stage-2" data-stage="1">
+              <img src="assets/stage2_framed.png" alt="Sam of Aster Stage 2 card" />
+            </article>
+            <article class="evolution-card-layer stage-3" data-stage="2">
+              <img src="assets/stage3_framed.png" alt="Last Guardian Stage 3 Legendary card" />
+            </article>
+          </div>
+
+          <div class="evolution-progress" aria-hidden="true">
+            <span class="active"></span>
+            <span></span>
+            <span></span>
+          </div>
+          <p class="evolution-hint">Click <strong>EVOLVE HERO</strong> to reveal the next form.</p>
         </div>
       </div>
     </section>
