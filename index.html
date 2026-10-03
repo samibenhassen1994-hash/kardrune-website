@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#071124" />
+  <meta name="description" content="KardRune V2: evolving heroes, D20 battles, story chapters and Conquest multiplayer." />
+  <meta property="og:title" content="KardRune — Collect. Roll. Evolve. Conquer." />
+  <meta property="og:description" content="A premium fantasy landing page for KardRune V2: evolving heroes, D20 battles, story chapters and Conquest multiplayer." />
+  <meta property="og:image" content="assets/conquest_clash_v2.png" />
+  <title>KardRune — Website V2</title>
+  <link rel="icon" href="assets/app_icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+</head>
+<body class="page-home" data-page="home">
+  <div class="page-noise" aria-hidden="true"></div>
+
+  <header class="site-header" id="top">
+    <a class="brand" href="index.html" aria-label="KardRune home">
+      <img src="assets/app_icon.png" alt="" />
+      <span>KARDRUNE</span>
+    </a>
+
+    <button class="menu-button" aria-label="Open menu" aria-expanded="false">☰</button>
+
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="index.html#gameplay">Gameplay</a>
+      <a href="index.html#evolve">Evolution</a>
+      <a href="conquest.html">Conquest</a>
+      <a href="story.html">Story</a>
+      <a href="index.html#heroes">Heroes</a>
+      <a href="index.html#summon">Summon</a>
+    </nav>
+
+    <a class="nav-cta" href="conquest.html">SCOPRI IL MULTIPLAYER</a>
+  </header>
+
+  <main>
+    <section class="hero hero-home" aria-labelledby="hero-title">
+      <div class="hero-bg" aria-hidden="true"></div>
+      <div class="hero-rays" aria-hidden="true"></div>
+
+      <div class="hero-shell container hero-shell-v2">
+        <div class="hero-content reveal">
+          <span class="v2-tag">WEBSITE V2</span>
+          <p class="eyebrow">GACHA · DICE-ROLL RPG · REAL-TIME PVP</p>
+          <h1 id="hero-title">COLLECT. ROLL.<br><span>EVOLVE. CONQUER.</span></h1>
+          <p class="hero-copy">The second version of the site pushes KardRune toward a more epic fantasy presentation: stronger visual identity, clearer Conquest positioning, a dedicated story page and a separate multiplayer page structured around the mode rules.</p>
+
+          <div class="hero-actions">
+            <a class="button button-gold" href="#gameplay">DISCOVER KARDRUNE</a>
+            <a class="button button-ghost" href="conquest.html">SCOPRI IL MULTIPLAYER</a>
+          </div>
+
+          <div class="hero-badges" aria-label="Game features">
+            <span>GACHA HEROES</span><i></i><span>D20 BATTLES</span><i></i><span>3-STAGE EVOLUTION</span><i></i><span>CONQUEST PVP</span>
+          </div>
+        </div>
+
+        <div class="hero-side-panel reveal-right">
+          <div class="hero-info-card ornate-frame">
+            <img src="assets/conquest_siege_v2.png" alt="KardRune Conquest siege scene" />
+          </div>
+          <div class="hero-mini-grid">
+            <article>
+              <strong>NEW V2</strong>
+              <span>Separate Conquest page with structure from the PDF.</span>
+            </article>
+            <article>
+              <strong>NEW STORY</strong>
+              <span>Act I page with Sam, Lira, Rhea and the road to Aster.</span>
+            </article>
+          </div>
+        </div>
+      </div>
+
+      <div class="scroll-cue"><span>SCROLL TO ENTER</span><b>↓</b></div>
+    </section>
+
+    <section class="feature-strip container overlap-strip" id="gameplay">
+      <article class="feature-card reveal"><span class="feature-index">01</span><h3>SUMMON</h3><p>Pull heroes, tickets and rune resources from standard and limited banners.</p></article>
+      <article class="feature-card reveal"><span class="feature-index">02</span><h3>ROLL</h3><p>The D20 sits at the center of battle, influenced by effects, items and timing.</p></article>
+      <article class="feature-card reveal"><span class="feature-index">03</span><h3>EVOLVE</h3><p>Heroes transform through three stages with stronger identities and visuals.</p></article>
+      <article class="feature-card reveal"><span class="feature-index">04</span><h3>CONQUER</h3><p>Compete for Guard, Vassal and King roles inside the Conquest hierarchy.</p></article>
+    </section>
+
+    <section class="section-pad dice-section container section-split">
+      <div class="section-copy reveal">
+        <p class="eyebrow">THE HEART OF EVERY BATTLE</p>
+        <h2>ROLL THE <span>D20</span></h2>
+        <p>KardRune turns the classic D20 into the engine of battle. Your heroes, items and modifiers shape the odds — but the final roll still decides the outcome.</p>
+        <div class="micro-pills"><span>BUFFS &amp; DEBUFFS</span><span>ITEM MODIFIERS</span><span>BOSS BATTLES</span></div>
+      </div>
+
+      <div class="dice-showcase reveal-right">
+        <div class="dice-aura"></div>
+        <model-viewer class="d20-model" src="assets/d20.glb" poster="assets/double_dice.webp" camera-controls auto-rotate rotation-per-second="18deg" shadow-intensity="1" alt="Interactive KardRune D20 model">
+          <img src="assets/double_dice.webp" alt="KardRune D20 dice" />
+        </model-viewer>
+        <img class="dice-badge" src="assets/crowned_d20.webp" alt="Crowned D20 emblem" />
+        <img class="double-dice" src="assets/double_dice.webp" alt="Two enchanted D20 dice" />
+      </div>
+    </section>
+
+    <section class="evolution section-pad" id="evolve">
+      <div class="container">
+        <div class="center-heading reveal">
+          <p class="eyebrow">YOUR HEROES GROW WITH YOUR JOURNEY</p>
+          <h2>THREE STAGES. <span>ONE LEGEND.</span></h2>
+          <p>Collect runes, evolve your heroes and watch their identity transform. The full outer card frame is now showcased clearly.</p>
+        </div>
+
+        <div class="evolution-grid framed-grid">
+          <article class="evo-frame-card tilt reveal"><img src="assets/young_framed.png" alt="Young Sam framed card" /></article>
+          <article class="evo-frame-card tilt reveal featured"><img src="assets/stage2_framed.png" alt="Sam of Aster framed card" /></article>
+          <article class="evo-frame-card tilt reveal"><img src="assets/stage3_framed.png" alt="Last Guardian framed card" /></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad conquest-showcase" id="conquest">
+      <div class="container">
+        <div class="center-heading reveal">
+          <p class="eyebrow red">MULTIPLAYER SPOTLIGHT</p>
+          <h2>CONQUEST <span>V2 PREVIEW</span></h2>
+          <p>Conquest now has its own dedicated page. The visual direction uses the new battle art, a strategic world map and clearer explanation of the Guard → Vassal → King progression.</p>
+        </div>
+
+        <div class="showcase-grid">
+          <article class="showcase-large reveal ornate-frame">
+            <img src="assets/conquest_siege_v2.png" alt="Conquest siege artwork" />
+          </article>
+
+          <div class="showcase-stack">
+            <article class="showcase-small reveal ornate-frame">
+              <img src="assets/conquest_map_v2.png" alt="Conquest strategic map" />
+            </article>
+
+            <article class="showcase-note reveal">
+              <h3>WHAT CHANGES IN V2</h3>
+              <ul>
+                <li>Dedicated <strong>Conquest page</strong> with structure taken from the PDF.</li>
+                <li>Main CTA: <strong>“Scopri il multiplayer”</strong> now highlighted in header and sections.</li>
+                <li>Separate blocks for <strong>daily phases</strong>, <strong>role hierarchy</strong> and <strong>season rewards</strong>.</li>
+                <li>New visuals for <strong>siege battles</strong> and <strong>territory map</strong>.</li>
+              </ul>
+              <div class="hero-actions left-actions compact-actions">
+                <a class="button button-gold" href="conquest.html">OPEN CONQUEST PAGE</a>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="heroes section-pad" id="heroes">
+      <div class="container">
+        <div class="section-copy reveal">
+          <p class="eyebrow">BUILD YOUR TEAM</p>
+          <h2>MEET THE <span>HEROES</span></h2>
+          <p>Every hero brings a different identity to your squad. Mix fighters, magic, support and utility — then evolve them into stronger forms.</p>
+        </div>
+
+        <div class="hero-roster" aria-label="KardRune hero roster">
+          <article class="roster-card tilt"><img src="assets/sam_act_2.webp" alt="Sam" /><div><strong>SAM</strong><span>Guardian</span></div></article>
+          <article class="roster-card tilt"><img src="assets/rhea_act_2.webp" alt="Rhea" /><div><strong>RHEA</strong><span>Archer</span></div></article>
+          <article class="roster-card tilt"><img src="assets/aria_act_2.webp" alt="Aria" /><div><strong>ARIA</strong><span>Arcanist</span></div></article>
+          <article class="roster-card tilt"><img src="assets/tor_act_2(1).webp" alt="Tor" /><div><strong>TOR</strong><span>Vanguard</span></div></article>
+          <article class="roster-card tilt"><img src="assets/lira_act_2.webp" alt="Lira" /><div><strong>LIRA</strong><span>Runekeeper</span></div></article>
+          <article class="roster-card tilt"><img src="assets/dren_act_2.webp" alt="Dren" /><div><strong>DREN</strong><span>Shadowblade</span></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="summon section-pad" id="summon">
+      <div class="container">
+        <div class="center-heading reveal">
+          <p class="eyebrow">GACHA SUMMONING</p>
+          <h2>SUMMON. COLLECT. <span>EVOLVE.</span></h2>
+          <p>Use tickets to summon heroes and runes. Standard and limited banners give you new ways to strengthen your collection.</p>
+        </div>
+
+        <div class="banner-grid">
+          <article class="banner-card tilt reveal"><img src="assets/standard_banner.webp" alt="Rune for Evolve standard banner" /><div class="banner-tag">STANDARD BANNER</div></article>
+          <article class="banner-card tilt reveal"><img src="assets/event_banner.webp" alt="The Broken City event banner" /><div class="banner-tag event">LIMITED EVENT</div></article>
+        </div>
+
+        <div class="loot-row reveal">
+          <div><img src="assets/silver_ticket.webp" alt="Silver summon ticket" /><span>SUMMON TICKET</span></div>
+          <div><img src="assets/gold_ticket.webp" alt="Gold summon ticket" /><span>PREMIUM TICKET</span></div>
+          <div><img src="assets/hero_chest_key.webp" alt="Hero chest key" /><span>HERO KEY</span></div>
+          <div><img src="assets/gold_coin.webp" alt="KardRune gold coin" /><span>GOLD</span></div>
+          <div><img src="assets/energy_kardrune.webp" alt="KardRune energy" /><span>ENERGY</span></div>
+          <div><img src="assets/gold_chest.webp" alt="Golden hero chest" /><span>HERO CHEST</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="story-teaser section-pad">
+      <div class="container split-story">
+        <div class="story-teaser-media reveal ornate-frame">
+          <img src="assets/letter_from_astard.webp" alt="Letter from Aster" />
+        </div>
+        <div class="section-copy reveal-right">
+          <p class="eyebrow">ACT I — TOWARD ASTER</p>
+          <h2>DISCOVER THE <span>STORY</span></h2>
+          <p>Sam leaves his village after a sealed letter announces the death of his father, Captain of the Guardians of Aster. Along the road he meets Lira, later joins forces with Rhea and finally reaches the Northern Gate.</p>
+          <ul class="chapter-points">
+            <li><b>Chapter 1:</b> The letter arrives and the journey begins.</li>
+            <li><b>Chapter 2–3:</b> Lira joins and the Stone Warden awakens.</li>
+            <li><b>Chapter 4–6:</b> Refugees flee Aster, Rhea reveals new doubts and the party reaches the city gates.</li>
+          </ul>
+          <div class="hero-actions left-actions">
+            <a class="button button-gold" href="story.html">OPEN STORY PAGE</a>
+            <a class="button button-ghost" href="story.html#chapters">VIEW CHAPTERS</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="download section-pad" id="download">
+      <div class="download-glow"></div>
+      <div class="container download-box reveal">
+        <img src="assets/app_icon.png" alt="KardRune" class="download-logo" />
+        <p class="eyebrow">KARDRUNE WEBSITE V2</p>
+        <h2>YOUR LEGEND STARTS<br><span>WITH A ROLL.</span></h2>
+        <p>KardRune — gacha dice-roll RPG with evolving heroes, story chapters and Conquest multiplayer.</p>
+        <div class="hero-actions center-actions">
+          <a class="button button-gold" href="conquest.html">SCOPRI IL MULTIPLAYER</a>
+          <a class="button button-ghost" href="story.html">EXPLORE STORY</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <a class="brand footer-brand" href="index.html"><img src="assets/app_icon.png" alt="" /><span>KARDRUNE</span></a>
+    <p>Collect. Roll. Evolve. Conquer.</p>
+    <nav>
+      <a href="index.html#gameplay">Gameplay</a>
+      <a href="conquest.html">Conquest</a>
+      <a href="story.html">Story</a>
+      <a href="index.html#summon">Summon</a>
+    </nav>
+    <small>© 2026 KardRune. All rights reserved.</small>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

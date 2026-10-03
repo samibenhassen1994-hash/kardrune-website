@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#071124" />
+  <meta name="description" content="Discover KardRune Conquest V2: shared map, daily phases, role hierarchy, server-authoritative PvP and 14-day seasons." />
+  <meta property="og:title" content="KardRune — Conquest Multiplayer" />
+  <meta property="og:description" content="Explore the Conquest mode structure: Castle, Fiefs, Guard/Vassal/King roles, cycle phases and season rewards." />
+  <meta property="og:image" content="assets/conquest_siege_v2.png" />
+  <title>KardRune — Conquest V2</title>
+  <link rel="icon" href="assets/app_icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="page-sub page-conquest" data-page="conquest">
+  <div class="page-noise" aria-hidden="true"></div>
+
+  <header class="site-header" id="top">
+    <a class="brand" href="index.html" aria-label="KardRune home">
+      <img src="assets/app_icon.png" alt="" />
+      <span>KARDRUNE</span>
+    </a>
+
+    <button class="menu-button" aria-label="Open menu" aria-expanded="false">☰</button>
+
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="index.html#gameplay">Gameplay</a>
+      <a href="index.html#evolve">Evolution</a>
+      <a href="conquest.html">Conquest</a>
+      <a href="story.html">Story</a>
+      <a href="index.html#heroes">Heroes</a>
+      <a href="index.html#summon">Summon</a>
+    </nav>
+
+    <a class="nav-cta" href="#overview">SCOPRI IL MULTIPLAYER</a>
+  </header>
+
+  <main>
+    <section class="page-hero conquest-hero" aria-labelledby="conquest-title">
+      <div class="page-hero-bg" style="background-image:url('assets/conquest_clash_v2.png')"></div>
+      <div class="container page-hero-grid">
+        <div class="page-hero-copy reveal">
+          <span class="v2-tag">CONQUEST PAGE V2</span>
+          <p class="eyebrow red">KARDRUNE MULTIPLAYER MODE</p>
+          <h1 id="conquest-title">SCOPRI IL <span>MULTIPLAYER</span></h1>
+          <p>Conquest is the competitive pillar of KardRune: a shared map, one central Castle, four Fiefs, asynchronous dice-driven battles, ranked territorial roles and 14-day Seasons.</p>
+          <div class="hero-actions left-actions">
+            <a class="button button-gold" href="#overview">HOW IT WORKS</a>
+            <a class="button button-ghost" href="#rewards">SEASON REWARDS</a>
+          </div>
+        </div>
+        <div class="page-hero-side reveal-right">
+          <div class="mini-stat-grid">
+            <div><strong>1</strong><span>Central Castle</span></div>
+            <div><strong>4</strong><span>Directional Fiefs</span></div>
+            <div><strong>25</strong><span>Titled Players Max</span></div>
+            <div><strong>14D</strong><span>Season Length</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad" id="overview">
+      <div class="container">
+        <div class="center-heading reveal">
+          <p class="eyebrow">CORE IDEA</p>
+          <h2>ONE MAP. <span>ONE HIERARCHY.</span></h2>
+          <p>V1 stays focused: no clans, no chat, no extra currencies and no AI defenders. The Worker validates the truth, D1 stores the official state and Flutter only presents the action.</p>
+        </div>
+        <div class="info-card-grid four-grid">
+          <article class="info-card reveal"><h3>UNLOCK</h3><p>Conquest unlocks at <strong>Account Level 5</strong>. Your allowed die scales with your level, from D8 up to D20 at level 20.</p></article>
+          <article class="info-card reveal"><h3>ROLES</h3><p>Players climb from <strong>Guard</strong> to <strong>Vassal</strong> and finally <strong>King</strong>, with one role maximum per player.</p></article>
+          <article class="info-card reveal"><h3>AUTHORITY</h3><p>The phone animates the dice. <strong>The server determines the dice</strong>, validates battles and settles titles and Coins.</p></article>
+          <article class="info-card reveal"><h3>SEASONS</h3><p>Each Season lasts exactly <strong>14 days</strong>, begins with vacant roles and starts every participating player at 100 Coins.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad territory-section">
+      <div class="container section-split align-center">
+        <div class="promo-card reveal ornate-frame large-frame">
+          <img src="assets/conquest_map_v2.png" alt="Illustrated Conquest map with Castle and four Fiefs" />
+        </div>
+        <div class="section-copy reveal-right">
+          <p class="eyebrow">TERRITORIAL HIERARCHY</p>
+          <h2>CASTLE &amp; <span>FOUR FIEFS</span></h2>
+          <p>Conquest uses one compact shared grid map. The central Castle is ruled by the King, while the North, West, East and South Fiefs are each led by one Vassal and protected by five Guards.</p>
+          <div class="hierarchy-list">
+            <div><strong>King</strong><span>1 total · rules the Castle · may hold 4 Vassals beneath.</span></div>
+            <div><strong>Vassals</strong><span>4 total · one per Fief · each commands 5 Guards.</span></div>
+            <div><strong>Guards</strong><span>20 total · five per Fief · first competitive title tier.</span></div>
+            <div><strong>Players</strong><span>Unlimited map presence · can contest roles during valid daily phases.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad conquest-gallery">
+      <div class="container">
+        <div class="center-heading reveal">
+          <p class="eyebrow red">VISUAL DIRECTION</p>
+          <h2>WAR. POWER. <span>TERRITORY.</span></h2>
+          <p>The V2 page uses two major conquest visuals: one for the epic siege fantasy and one for the strategic shared world map.</p>
+        </div>
+        <div class="gallery-split">
+          <article class="showcase-large reveal ornate-frame">
+            <img src="assets/conquest_siege_v2.png" alt="Epic siege of the citadel" />
+          </article>
+          <article class="showcase-large reveal ornate-frame">
+            <img src="assets/conquest_clash_v2.png" alt="Conquest rival factions facing the capital" />
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad cycle-section" id="cycle">
+      <div class="container">
+        <div class="center-heading reveal">
+          <p class="eyebrow red">GLOBAL 24-HOUR CYCLE</p>
+          <h2>DAILY <span>PHASES</span></h2>
+          <p>The entire world follows one fixed UTC schedule. Every player gets exactly one offensive Conquest action per cycle.</p>
+        </div>
+
+        <div class="timeline-grid">
+          <article class="timeline-card reveal"><span class="timeline-time">00:00–06:00 UTC</span><h3>PEACE</h3><p>Open-map Player vs Player battles outside structures. A win transfers up to 50 Coins from loser to winner.</p></article>
+          <article class="timeline-card reveal"><span class="timeline-time">06:00–12:00 UTC</span><h3>GUARD PHASE</h3><p>Normal Players claim vacant Guard slots or challenge current Guards inside a Fief. Guard-entry battles do not transfer Coins.</p></article>
+          <article class="timeline-card reveal"><span class="timeline-time">12:00–18:00 UTC</span><h3>VASSAL PHASE</h3><p>Guards may challenge the Vassal of their own Fief or claim the role if it is vacant. Internal stake: up to 100 Coins.</p></article>
+          <article class="timeline-card reveal"><span class="timeline-time">18:00–00:00 UTC</span><h3>KING PHASE</h3><p>Vassals challenge the King or claim the Castle if the throne is vacant. Internal stake: up to 150 Coins.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad">
+      <div class="container section-split reverse-mobile align-center">
+        <div class="section-copy reveal">
+          <p class="eyebrow">BATTLES &amp; SERVER TRUTH</p>
+          <h2>THE PHONE ANIMATES.<br><span>THE SERVER DECIDES.</span></h2>
+          <p>At battle authorization the Worker consumes the daily offensive action, creates immutable team snapshots and issues a battle ticket. Tickets can become issued, in progress, completed, expired or abandoned. Duplicate or stale tickets are rejected.</p>
+          <div class="bullet-panel">
+            <div><strong>Attack &amp; Defense Teams</strong><span>Players choose both teams when entering Conquest. Team versions are locked per battle.</span></div>
+            <div><strong>Randomness</strong><span>The Worker derives the allowed die from server-known level and reveals only the current roll result.</span></div>
+            <div><strong>Crash behavior</strong><span>If a battle is abandoned, the result is null: no winner, no role change, no Coin transfer.</span></div>
+          </div>
+        </div>
+        <div class="promo-card reveal-right ornate-frame large-frame">
+          <img src="assets/conquest_siege_v2.png" alt="Conquest battle illustration" />
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad economy-section">
+      <div class="container split-economy">
+        <div class="reveal">
+          <p class="eyebrow">COIN ECONOMY</p>
+          <h2>ONE CURRENCY. <span>ZERO-SUM BATTLES.</span></h2>
+          <p>Coins are both the competitive currency and the leaderboard score. Coin balance never goes negative.</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Role</th><th>Daily payout</th><th>Battle stake</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Player</td><td>0</td><td>Peace PvP: 50</td></tr>
+                <tr><td>Guard</td><td>+100</td><td>Vs Vassal: 100</td></tr>
+                <tr><td>Vassal</td><td>+150</td><td>Vs King: 150</td></tr>
+                <tr><td>King</td><td>+200</td><td>Defends King battles: 150</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="reveal-right">
+          <p class="eyebrow red">LEADERBOARD</p>
+          <h2>RANK BY <span>COINS</span></h2>
+          <p>The leaderboard sorts by Coins descending, then by the moment a player reached that exact Coin value. Earlier score achievement wins the tie-break.</p>
+          <div class="bullet-panel compact-panel">
+            <div><strong>Season start</strong><span>Every joining player begins at 100 Coins.</span></div>
+            <div><strong>Daily boundary</strong><span>00:00 UTC triggers role payouts and handles final Season rollover logic.</span></div>
+            <div><strong>Integrity</strong><span>Battle Coins move from loser to winner only. Conquest does not mint extra battle Coins.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad" id="rewards">
+      <div class="container">
+        <div class="center-heading reveal">
+          <p class="eyebrow">SEASON REWARDS</p>
+          <h2>EARN <span>THE SPOILS</span></h2>
+          <p>At the end of each 14-day Season the leaderboard is frozen, rewards are generated server-side and players can claim their tier.</p>
+        </div>
+        <div class="table-wrap reveal">
+          <table>
+            <thead>
+              <tr><th>Rank</th><th>Summon Tickets</th><th>Gold</th><th>Hero Keys</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1</td><td>30</td><td>5,000</td><td>10</td></tr>
+              <tr><td>2</td><td>20</td><td>4,000</td><td>8</td></tr>
+              <tr><td>3</td><td>15</td><td>3,000</td><td>6</td></tr>
+              <tr><td>4–10</td><td>10</td><td>2,500</td><td>5</td></tr>
+              <tr><td>11–25</td><td>5</td><td>1,500</td><td>3</td></tr>
+              <tr><td>26–50</td><td>2</td><td>750</td><td>1</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="download section-pad">
+      <div class="download-glow"></div>
+      <div class="container download-box reveal">
+        <img src="assets/app_icon.png" alt="KardRune" class="download-logo" />
+        <p class="eyebrow">KARDRUNE CONQUEST V2</p>
+        <h2>CLIMB FROM GUARD<br><span>TO KING.</span></h2>
+        <p>Shared map. Daily phases. Dice-driven battles. One throne.</p>
+        <div class="hero-actions center-actions">
+          <a class="button button-gold" href="index.html">BACK TO HOME</a>
+          <a class="button button-ghost" href="story.html">EXPLORE STORY</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <a class="brand footer-brand" href="index.html"><img src="assets/app_icon.png" alt="" /><span>KARDRUNE</span></a>
+    <p>Collect. Roll. Evolve. Conquer.</p>
+    <nav>
+      <a href="index.html#gameplay">Gameplay</a>
+      <a href="conquest.html">Conquest</a>
+      <a href="story.html">Story</a>
+      <a href="index.html#summon">Summon</a>
+    </nav>
+    <small>© 2026 KardRune. All rights reserved.</small>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
