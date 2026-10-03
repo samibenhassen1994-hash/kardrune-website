@@ -52,3 +52,80 @@ document.querySelectorAll('.nav-links a').forEach(link => {
     link.classList.add('active');
   }
 });
+
+
+const evolutionStack = document.querySelector('.evolution-stack');
+const evolutionButtons = [...document.querySelectorAll('.evolution-stage-button')];
+const evolutionLayers = [...document.querySelectorAll('.evolution-card-layer')];
+const evolutionDots = [...document.querySelectorAll('.evolution-progress span')];
+const evolutionTrigger = document.querySelector('.evolution-trigger');
+const evolutionStageLabel = document.querySelector('.evolution-info-stage');
+const evolutionName = document.querySelector('.evolution-info-name');
+const evolutionText = document.querySelector('.evolution-info-text');
+
+const evolutionStages = [
+  {
+    stage: 'STAGE 1',
+    name: 'YOUNG SAM',
+    text: 'The beginning of the journey — before the road to Aster changes everything.'
+  },
+  {
+    stage: 'STAGE 2',
+    name: 'SAM OF ASTER',
+    text: 'Forged by loss and battle, Sam returns stronger and carries the weight of Aster with him.'
+  },
+  {
+    stage: 'STAGE 3 · LEGENDARY',
+    name: 'LAST GUARDIAN',
+    text: 'The final evolution — a legendary form shaped by the legacy of the Guardians of Aster.'
+  }
+];
+
+let activeEvolutionStage = 0;
+
+function setEvolutionStage(index) {
+  if (!evolutionStack || !evolutionStages[index]) return;
+
+  activeEvolutionStage = index;
+  evolutionStack.dataset.activeStage = String(index);
+
+  evolutionLayers.forEach((layer, layerIndex) => {
+    layer.classList.toggle('active', layerIndex === index);
+    layer.classList.toggle('past', layerIndex < index);
+    layer.classList.toggle('future', layerIndex > index);
+  });
+
+  evolutionButtons.forEach((button, buttonIndex) => {
+    const active = buttonIndex === index;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', String(active));
+  });
+
+  evolutionDots.forEach((dot, dotIndex) => {
+    dot.classList.toggle('active', dotIndex <= index);
+  });
+
+  const data = evolutionStages[index];
+  if (evolutionStageLabel) evolutionStageLabel.textContent = data.stage;
+  if (evolutionName) evolutionName.textContent = data.name;
+  if (evolutionText) evolutionText.textContent = data.text;
+
+  if (evolutionTrigger) {
+    evolutionTrigger.firstChild.textContent = index === evolutionStages.length - 1
+      ? 'VIEW FROM START '
+      : 'EVOLVE HERO ';
+  }
+}
+
+evolutionButtons.forEach((button, index) => {
+  button.addEventListener('click', () => setEvolutionStage(index));
+});
+
+evolutionTrigger?.addEventListener('click', () => {
+  const next = activeEvolutionStage === evolutionStages.length - 1
+    ? 0
+    : activeEvolutionStage + 1;
+  setEvolutionStage(next);
+});
+
+setEvolutionStage(0);
