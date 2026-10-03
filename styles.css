@@ -2286,3 +2286,638 @@ footer small {
     max-height: 385px;
   }
 }
+
+
+/* Desktop alignment fixes */
+.page-home .conquest-showcase .showcase-grid {
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  align-items: stretch;
+}
+
+.page-home .conquest-showcase .showcase-large {
+  height: 100%;
+  min-height: 100%;
+}
+
+.page-home .conquest-showcase .showcase-large img {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  aspect-ratio: auto;
+  object-fit: cover;
+}
+
+.page-home .conquest-showcase .showcase-stack {
+  height: 100%;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.page-home .conquest-showcase .showcase-small {
+  height: 100%;
+}
+
+.page-home .conquest-showcase .showcase-small img {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  object-fit: cover;
+}
+
+.page-home .conquest-showcase .showcase-note {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.story-video-card {
+  background: #02050b;
+}
+
+.story-video-card video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: auto;
+  object-fit: contain;
+  object-position: center;
+  background: #000;
+}
+
+/* Dedicated mobile presentation */
+@media (max-width: 767px) {
+  :root {
+    --header-h: 64px;
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 50% 0%, rgba(37, 105, 174, 0.14), transparent 28%),
+      linear-gradient(180deg, #061020 0%, #040812 46%, #03060d 100%);
+  }
+
+  .site-header {
+    height: var(--header-h);
+    padding: 0 12px;
+    background: rgba(3, 8, 18, 0.92);
+    border-bottom-color: rgba(111, 212, 255, 0.12);
+  }
+
+  .brand {
+    gap: 8px;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+  }
+
+  .brand img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .menu-button {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+
+  .site-header.open .nav-links {
+    top: calc(100% + 8px);
+    left: 10px;
+    right: 10px;
+    gap: 0;
+    padding: 10px;
+    border-radius: 18px;
+  }
+
+  .site-header.open .nav-links a {
+    width: 100%;
+    padding: 13px 12px;
+    border-radius: 12px;
+  }
+
+  .site-header.open .nav-links a:active {
+    background: rgba(111, 212, 255, 0.08);
+  }
+
+  .container {
+    width: calc(100% - 28px);
+  }
+
+  .section-pad {
+    padding: 68px 0;
+  }
+
+  /* Home mobile hero: intentionally different from desktop */
+  .hero-home {
+    padding: 20px 0 42px;
+    min-height: auto;
+  }
+
+  .hero-home .hero-bg {
+    background-position: 63% center;
+    filter: saturate(1.03) brightness(0.72);
+  }
+
+  .hero-home::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+      linear-gradient(180deg, rgba(3, 8, 20, 0.14) 0%, rgba(3, 8, 20, 0.42) 42%, rgba(3, 8, 20, 0.94) 100%),
+      linear-gradient(90deg, rgba(3, 8, 20, 0.38), transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-shell-main {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .hero-shell-main .hero-content {
+    order: 1;
+    text-align: left;
+  }
+
+  .hero-shell-main .eyebrow {
+    margin-bottom: 10px;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+  }
+
+  .hero-shell-main .hero-content h1 {
+    max-width: 360px;
+    font-size: clamp(38px, 11.7vw, 52px);
+    line-height: 0.96;
+  }
+
+  .hero-shell-main .hero-copy {
+    margin: 16px 0 0;
+    font-size: 14px;
+    line-height: 1.58;
+    text-align: left;
+  }
+
+  .hero-shell-main .hero-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 9px;
+    margin-top: 20px;
+  }
+
+  .hero-shell-main .button {
+    width: 100%;
+    min-height: 50px;
+    padding-inline: 16px;
+    border-radius: 14px;
+    font-size: 10px;
+  }
+
+  .hero-shell-main .hero-badges {
+    display: none;
+  }
+
+  .hero-visual {
+    order: 2;
+    width: 100%;
+    padding-bottom: 30px;
+  }
+
+  .hero-art-frame {
+    padding: 5px;
+    border-radius: 18px;
+  }
+
+  .hero-art-frame img {
+    aspect-ratio: 16 / 10;
+    border-radius: 13px;
+  }
+
+  .hero-d20-float {
+    right: -4px;
+    bottom: -6px;
+    width: 88px;
+  }
+
+  .hero-visual-caption {
+    left: 8px;
+    bottom: 0;
+    max-width: calc(100% - 80px);
+    padding: 9px 11px;
+    border-radius: 12px;
+  }
+
+  .hero-visual-caption span {
+    font-size: 8px;
+  }
+
+  .hero-visual-caption strong {
+    font-size: 13px;
+  }
+
+  /* Swipeable gameplay cards instead of desktop strip */
+  .hero-feature-strip {
+    width: 100%;
+    margin-top: 0;
+    padding: 0 14px 6px;
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    scrollbar-width: none;
+  }
+
+  .hero-feature-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hero-feature-strip .feature-card {
+    flex: 0 0 82vw;
+    min-height: 150px;
+    padding: 22px 20px;
+    border: 1px solid rgba(111, 212, 255, 0.14);
+    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(9, 23, 48, 0.95), rgba(4, 10, 22, 0.96));
+    scroll-snap-align: center;
+  }
+
+  .hero-feature-strip .feature-card h3 {
+    margin: 10px 0 6px;
+    font-size: 25px;
+  }
+
+  .hero-feature-strip .feature-card p {
+    margin: 0;
+    font-size: 14px;
+  }
+
+  /* Dice mobile */
+  .dice-section {
+    display: flex;
+    flex-direction: column;
+    padding-top: 72px;
+    gap: 12px;
+  }
+
+  .dice-section .section-copy {
+    text-align: left;
+  }
+
+  .dice-section .section-copy h2 {
+    font-size: 44px;
+  }
+
+  .dice-section .micro-pills {
+    justify-content: flex-start;
+    gap: 7px;
+  }
+
+  .dice-section .micro-pills span {
+    min-height: 34px;
+    padding-inline: 10px;
+    font-size: 9px;
+  }
+
+  .dice-showcase {
+    min-height: 360px;
+  }
+
+  .d20-model {
+    width: min(88vw, 340px);
+    height: min(88vw, 340px);
+  }
+
+  .double-dice {
+    width: 100px;
+  }
+
+  .dice-badge {
+    width: 104px;
+  }
+
+  /* Evolution mobile: card first, controls second */
+  .evolution-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .evolution-showcase {
+    order: 1;
+    min-height: 395px;
+  }
+
+  .evolution-copy {
+    order: 2;
+    text-align: left;
+  }
+
+  .evolution-copy h2 {
+    font-size: 40px;
+  }
+
+  .evolution-copy > p:not(.eyebrow) {
+    margin-inline: 0;
+  }
+
+  .evolution-stage-nav {
+    margin-top: 22px;
+  }
+
+  .evolution-info {
+    margin-inline: 0;
+  }
+
+  .evolution-stack {
+    width: min(100%, 285px);
+    height: 370px;
+  }
+
+  .evolution-card-layer img {
+    max-height: 370px;
+  }
+
+  /* Conquest mobile: clean stacked cards */
+  .page-home .conquest-showcase .center-heading {
+    text-align: left;
+    margin-bottom: 28px;
+  }
+
+  .page-home .conquest-showcase .showcase-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .page-home .conquest-showcase .showcase-large,
+  .page-home .conquest-showcase .showcase-small {
+    height: auto;
+  }
+
+  .page-home .conquest-showcase .showcase-large img,
+  .page-home .conquest-showcase .showcase-small img {
+    height: auto;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+  }
+
+  .page-home .conquest-showcase .showcase-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .page-home .conquest-showcase .showcase-small {
+    order: 2;
+  }
+
+  .page-home .conquest-showcase .showcase-note {
+    order: 1;
+    padding: 20px;
+  }
+
+  .page-home .conquest-showcase .showcase-note li {
+    font-size: 13px;
+  }
+
+  .page-home .conquest-showcase .showcase-note .button {
+    width: 100%;
+  }
+
+  /* Hero roster becomes swipe gallery */
+  .hero-roster {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 4px 14px 14px;
+    margin-inline: -14px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .hero-roster::-webkit-scrollbar {
+    display: none;
+  }
+
+  .roster-card {
+    flex: 0 0 72vw;
+    min-height: 390px;
+    scroll-snap-align: center;
+  }
+
+  /* Summon becomes swipeable on phone */
+  .banner-grid {
+    display: flex;
+    max-width: none;
+    overflow-x: auto;
+    gap: 12px;
+    padding: 4px 14px 14px;
+    margin-inline: -14px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .banner-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .banner-card {
+    flex: 0 0 78vw;
+    scroll-snap-align: center;
+  }
+
+  .loot-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .loot-row div {
+    min-height: 138px;
+    padding: 14px;
+  }
+
+  /* Story teaser mobile */
+  .split-story {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .story-teaser .section-copy {
+    text-align: left;
+  }
+
+  .story-teaser .left-actions {
+    justify-content: stretch;
+  }
+
+  .story-teaser .button {
+    width: 100%;
+  }
+
+  /* Sub-page hero mobile */
+  .page-hero {
+    padding: 46px 0 62px;
+  }
+
+  .page-hero-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .page-hero-copy {
+    text-align: left;
+  }
+
+  .page-hero-copy h1 {
+    font-size: clamp(38px, 12vw, 54px);
+  }
+
+  .page-hero-copy > p {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .page-hero-copy .hero-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .page-hero-copy .button {
+    width: 100%;
+  }
+
+  .page-hero-side {
+    width: 100%;
+  }
+
+  .mini-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+  }
+
+  .mini-stat-grid div {
+    min-height: 96px;
+    padding: 15px;
+  }
+
+  .mini-stat-grid strong {
+    font-size: 28px;
+  }
+
+  /* Story opening video first on mobile */
+  .story-opening .section-split {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 24px;
+  }
+
+  .story-opening .section-copy {
+    text-align: left;
+  }
+
+  .story-video-card {
+    width: 100%;
+    padding: 5px;
+    border-radius: 20px;
+  }
+
+  .story-video-card video {
+    width: 100%;
+    height: auto;
+    max-height: none;
+    aspect-ratio: auto;
+    object-fit: contain;
+    border-radius: 14px;
+  }
+
+  .quote-block {
+    margin-top: 18px;
+    padding: 15px 16px;
+    font-size: 14px;
+  }
+
+  .chapter-grid,
+  .info-card-grid,
+  .timeline-grid,
+  .companion-grid {
+    gap: 12px;
+  }
+
+  .chapter-card,
+  .info-card,
+  .timeline-card {
+    padding: 20px;
+  }
+
+  .chapter-card h3,
+  .info-card h3,
+  .timeline-card h3 {
+    font-size: 22px;
+  }
+
+  .companion-card {
+    min-height: 380px;
+  }
+
+  .gallery-split {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .territory-section .section-copy,
+  .economy-section .reveal,
+  .economy-section .reveal-right,
+  .page-conquest .section-copy {
+    text-align: left;
+  }
+
+  .table-wrap {
+    border-radius: 18px;
+  }
+
+  footer {
+    padding: 28px 14px 34px;
+  }
+
+  footer nav {
+    gap: 10px 14px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 390px) {
+  .hero-shell-main .hero-content h1 {
+    font-size: 36px;
+  }
+
+  .hero-feature-strip .feature-card {
+    flex-basis: 86vw;
+  }
+
+  .roster-card {
+    flex-basis: 78vw;
+  }
+
+  .banner-card {
+    flex-basis: 84vw;
+  }
+
+  .evolution-stack {
+    width: 270px;
+    height: 350px;
+  }
+
+  .evolution-card-layer img {
+    max-height: 350px;
+  }
+}
