@@ -2921,3 +2921,67 @@ footer small {
     max-height: 350px;
   }
 }
+
+
+/* Prevent page-level horizontal drag / white overscroll on mobile */
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  background-color: #03060d;
+  overscroll-behavior-x: none;
+}
+
+@supports (overflow: clip) {
+  html,
+  body {
+    overflow-x: clip;
+  }
+}
+
+body {
+  position: relative;
+}
+
+main,
+.site-header,
+footer {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.page-noise {
+  width: 100%;
+  max-width: 100vw;
+}
+
+@media (max-width: 767px) {
+  html,
+  body {
+    min-width: 0;
+    overscroll-behavior-x: none;
+  }
+
+  main,
+  .site-header,
+  footer,
+  .hero,
+  .page-hero,
+  section {
+    max-width: 100vw;
+  }
+
+  .container {
+    max-width: calc(100vw - 28px);
+  }
+
+  /* These remain intentionally horizontally scrollable inside the locked page. */
+  .hero-feature-strip,
+  .hero-roster,
+  .banner-grid,
+  .table-wrap {
+    overscroll-behavior-x: contain;
+  }
+}
