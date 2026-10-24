@@ -80,3 +80,20 @@
 .summon-dialog #dialog-done{margin-top:16px;min-height:46px}
 @media(max-width:380px){.summon-dialog .dialog-inner{padding:14px 12px 16px}.summon-dialog .summon-reveal-eyebrow{font-size:9px;padding-bottom:10px}.summon-dialog #dialog-done{min-height:42px}}
 @media(max-height:580px){.summon-dialog .summon-reveal-eyebrow{padding-bottom:6px}.summon-dialog .summon-reveal-info{padding-top:8px}.summon-dialog #dialog-done{margin-top:9px}}
+
+/* Idle Profile — official Conquest avatar choices */
+.profile-avatar{width:126px;height:126px;border:0;overflow:visible;background:transparent;box-shadow:none}
+.profile-avatar img{width:100%;height:100%;object-fit:contain;display:block}
+.avatar-chooser{margin:18px 0 22px;padding:17px 13px 15px;background:linear-gradient(155deg,#172743,#101b31);border:1px solid #b6a06a64;border-radius:14px}
+.avatar-chooser h3{font-size:14px;color:#f4d89c;text-align:center;letter-spacing:.045em;margin:0 0 14px}
+.avatar-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.avatar-option{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;padding:7px 3px 9px;color:#aabbd2;background:#0a172b;border:1px solid #556a855c;border-radius:11px;transition:border-color .15s ease,background .15s ease,transform .15s ease}
+.avatar-option img{display:block;width:100%;max-width:90px;aspect-ratio:1;object-fit:contain}
+.avatar-option span{font-size:9px;letter-spacing:.06em;font-weight:800}
+.avatar-option:hover{border-color:#e0bf7d;color:#f1d79a}
+.avatar-option:active{transform:scale(.97)}
+.avatar-option:focus-visible{outline:2px solid #f2d18c;outline-offset:2px}
+.avatar-option.selected{border-color:#f6d68e;background:linear-gradient(180deg,#273d56,#18273d);box-shadow:0 0 0 1px #edc87982,0 0 18px #caa15c30;color:#ffe0a0}
+.avatar-option.selected:after{content:'✓';position:absolute;right:4px;top:4px;display:grid;place-items:center;width:18px;height:18px;background:#c89c51;color:#091426;border-radius:50%;font-size:11px;font-weight:900}
+.avatar-chooser .micro-note{margin:12px 0 0}
+@media(max-width:360px){.avatar-options{gap:5px}.avatar-option{padding:6px 1px}.avatar-option span{font-size:8px}.avatar-chooser{padding:15px 9px}}
