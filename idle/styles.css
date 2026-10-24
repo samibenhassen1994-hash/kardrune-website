@@ -97,3 +97,19 @@
 .avatar-option.selected:after{content:'✓';position:absolute;right:4px;top:4px;display:grid;place-items:center;width:18px;height:18px;background:#c89c51;color:#091426;border-radius:50%;font-size:11px;font-weight:900}
 .avatar-chooser .micro-note{margin:12px 0 0}
 @media(max-width:360px){.avatar-options{gap:5px}.avatar-option{padding:6px 1px}.avatar-option span{font-size:8px}.avatar-chooser{padding:15px 9px}}
+
+/* New combat statistics: red glowing ATK and fixed blue HP */
+.hero-image,.battle-portrait{position:relative;overflow:hidden}
+.battle-card-stats{position:absolute;z-index:5;top:4px;left:4px;right:4px;display:flex;align-items:flex-start;justify-content:space-between;pointer-events:none}
+.card-atk,.card-hp{display:grid;place-items:center;min-width:35px;height:35px;border-radius:50%;font:900 14px Cinzel,serif;color:white;text-shadow:0 1px 2px #000}
+.card-atk{background:radial-gradient(circle at 28% 22%,#ffb2a6,#cf1933 45%,#660015 90%);border:2px solid #ffab8d;box-shadow:0 0 11px #ff2535bb,inset 0 0 8px #fff6}
+.card-hp{border-radius:10px;background:linear-gradient(135deg,#307dd9,#0b285f);border:2px solid #b4deff;box-shadow:0 0 8px #399ffd99}
+.duel-health{height:9px;border:1px solid #5d7491;background:#061323;overflow:hidden;border-radius:12px;margin:9px 3px 5px}
+.duel-health span{display:block;width:100%;height:100%;background:linear-gradient(90deg,#348d5b,#a7df75);transition:width .4s ease}
+.battle-live-status{text-align:center;color:#efd18d;font:700 13px Inter,Arial,sans-serif;margin:14px 0 0}
+.live-duel .combatant-frame{height:190px}.live-duel .combatant-frame img{object-fit:contain}
+.duplicate-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}
+.duplicate-stats div{padding:18px 8px;border:1px solid #cda96b;border-radius:12px;background:#172943;color:#ffe3af;font-weight:800}
+.duplicate-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.duplicate-actions button{margin:0;min-height:48px;font-size:10px;letter-spacing:.02em}
+@media(max-width:390px){.live-duel .combatant-frame{height:153px}.card-atk,.card-hp{min-width:29px;height:29px;font-size:12px}.battle-card-stats{top:2px;left:2px;right:2px}}
