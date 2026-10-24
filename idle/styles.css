@@ -15,3 +15,49 @@
  .desktop-gate-code{font:700 21px Inter,sans-serif;border:1px solid #c4a76770;background:#0a1731;padding:20px 12px;border-radius:12px;color:#f2d28d;margin:24px 0;overflow-wrap:anywhere}
  .desktop-gate-back{display:inline-block;margin-top:8px;padding:14px 18px;color:#f3d596;border:1px solid #cdb07882;border-radius:9px;font-size:12px;font-weight:800;letter-spacing:.08em}
 }
+
+
+/* Idle hero-only collections and matching motion pulls */
+.cards-view-tabs{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 18px}
+.cards-view-tabs .filter{font-size:10px;letter-spacing:.08em}
+.hero-grid .card-group-heading{grid-column:1/-1;text-align:left;font-size:16px;color:#f0d18f;border-bottom:1px solid #b9985747;padding:12px 2px 8px;margin:7px 0 1px}
+.hero-card{position:relative;overflow:hidden}
+.hero-card.card-stage-2{border-color:#7fbdff9c}
+.hero-card.card-stage-3{border-color:#ffe19eaf;box-shadow:0 0 18px #deb8671b}
+.hero-card.card-stage-2 .hero-image{background:radial-gradient(circle at 40% 25%,#29688b,#101b34 75%)}
+.hero-card.card-stage-3 .hero-image{background:radial-gradient(circle at 50% 30%,#65503d,#101b34 75%)}
+.hero-card.locked .hero-image:after{content:'🔒';font:24px Inter,Arial,sans-serif;filter:drop-shadow(0 1px 5px #000)}
+.hero-card .hero-image{aspect-ratio:3/4}
+.hero-card .hero-image img{padding:3px;object-fit:contain}
+.hero-card h3{font-size:14px}
+.hero-card.locked .hero-image img{filter:grayscale(1) brightness(.45)}
+.summon-roster{margin:25px 0 18px}
+.summon-roster h3{font-size:18px;text-align:center;margin:0 0 7px}
+.summon-roster>p{text-align:center;color:#a9b8ce;font-size:11px;margin-bottom:15px}
+.summon-roster-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.summon-roster-card{display:flex;flex-direction:column;align-items:center;padding:8px 5px 10px;gap:4px;border:1px solid #bc985f7c;background:linear-gradient(155deg,#233856,#111d34);color:#f8e7ba;border-radius:11px;min-width:0}
+.summon-roster-card img{width:100%;height:108px;object-fit:contain}
+.summon-roster-card strong{font:700 12px Cinzel,serif}
+.summon-roster-card small{font-size:8px;letter-spacing:.07em;color:#a4b9d5}
+.summon-roster-card:active{transform:scale(.97)}
+.hero-preview h2{font-size:21px!important}
+.hero-preview-stages{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.hero-preview-choice{border:1px solid #caa96086;border-radius:9px;background:#132847;color:#ffe3a1;min-width:0;padding:7px 4px}
+.hero-preview-choice img{display:block;width:100%;height:125px;object-fit:contain;margin:0 auto 5px}
+.hero-preview-choice span{font-size:9px;font-weight:800}
+.summon-reveal .summon-reveal-media{position:relative;min-height:220px;max-width:100%;height:clamp(220px,56vh,420px);border:1px solid #dbbb816e;border-radius:14px;overflow:hidden;background:radial-gradient(circle at center,#304c74,#101a31 72%);display:grid;place-items:center}
+.summon-reveal-poster,.summon-reveal-video{position:absolute;inset:0;width:100%!important;height:100%!important;max-width:none;object-fit:contain!important;margin:0!important}
+.summon-reveal-poster.video-playing{opacity:0}
+.summon-reveal-video{z-index:1}
+.summon-reveal-stage{display:inline-block;margin-top:14px;padding:5px 14px;background:#a17f466e;border-radius:30px;font-size:10px;font-weight:800;letter-spacing:.12em}
+.summon-reveal h2{margin:9px 0 6px}
+.summon-reveal p{margin-bottom:0}
+.summon-reveal .dark-button{margin:18px auto 0}
+@media(max-width:380px){.summon-roster-grid{gap:7px}.summon-roster-card img{height:94px}.hero-grid{gap:9px}.hero-card{padding:6px 6px 10px}.hero-card h3{font-size:12px}}
+
+
+/* Original three-stage card frames; source art is kept within Idle. */
+.hero-card .hero-image::before{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background:url('./media/cards/frame/card_frame.webp') center/100% 100% no-repeat}
+.hero-card.card-stage-2 .hero-image::before{background-image:url('./media/cards/frame/frame_stage_2.webp')}
+.hero-card.card-stage-3 .hero-image::before{background-image:url('./media/cards/frame/frame_stage_3.webp')}
+.hero-card.locked .hero-image::after{z-index:3;filter:drop-shadow(0 2px 5px #000)}
