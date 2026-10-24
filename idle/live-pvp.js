@@ -42,7 +42,7 @@ function renderDeck(){
  }
  $('cards-deck-count').textContent=deck.length+' / 9';
  $('live-deck-count').textContent=deck.length+' / 9';
- syncStatus();
+ syncStatus();refreshLabels();
 }
 function onCardDragStart(event,id){event.dataTransfer.setData('text/plain',id);event.dataTransfer.effectAllowed='move'}
 function prepareCard(card,id){
