@@ -56,8 +56,9 @@
 @media(max-width:380px){.summon-roster-grid{gap:7px}.summon-roster-card img{height:94px}.hero-grid{gap:9px}.hero-card{padding:6px 6px 10px}.hero-card h3{font-size:12px}}
 
 
-/* Original three-stage card frames; source art is kept within Idle. */
-.hero-card .hero-image::before{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background:url('./media/cards/frame/card_frame.webp') center/100% 100% no-repeat}
-.hero-card.card-stage-2 .hero-image::before{background-image:url('./media/cards/frame/frame_stage_2.webp')}
-.hero-card.card-stage-3 .hero-image::before{background-image:url('./media/cards/frame/frame_stage_3.webp')}
-.hero-card.locked .hero-image::after{z-index:3;filter:drop-shadow(0 2px 5px #000)}
+/* Cards show their original artwork, without additional frame overlays. */
+.hero-card .hero-image::before{content:none!important;background:none!important}
+.hero-card.locked .hero-image::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(circle at 50% 43%,#131b3544 0%,#070b19e0 68%,#02040df5 100%);box-shadow:inset 0 0 30px 12px #02040dd9;filter:none}
+.hero-card.locked .hero-image img{filter:grayscale(.85) brightness(.26) blur(7px);transform:scale(1.065)}
+.hero-card.locked .mystery-mark{position:absolute;z-index:3;inset:0;display:grid;place-items:center;font:800 clamp(56px,13vw,100px) Cinzel,Georgia,serif;color:#e4d2a0;text-shadow:0 0 11px #f3dc9e77,0 3px 25px #000,0 0 38px #e6c87f55;pointer-events:none}
+.hero-card.locked{border-color:#6866818f;background:#0b1224}
