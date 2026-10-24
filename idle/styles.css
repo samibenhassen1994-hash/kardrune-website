@@ -137,3 +137,7 @@
 .duplicate-actions button{min-height:45px;margin:0;padding:8px 5px;font-size:11px}
 .duplicate-footnote{text-align:center;font-size:10px;line-height:1.5;color:#a2b4c8;margin:10px 4px 0}
 @media(max-width:375px){.duplicate-dialog .dialog-inner{padding:15px 9px}.duplicate-card-pair{gap:6px}.duplicate-card-panel{padding:6px 4px 9px}.duplicate-card-art .card-atk,.duplicate-card-art .card-hp{min-width:27px;height:27px;font-size:11px}.duplicate-card-art .card-crit{min-width:29px;height:23px;font-size:9px}.card-crit{font-size:9px;min-width:28px}}
+
+/* Keep first-time Summon a square cinematic reveal; preserve full horizontal video without cropping. */
+.summon-dialog .summon-reveal-media{aspect-ratio:1 / 1;width:min(100%,min(62dvh,440px));max-height:min(62dvh,440px);margin:0 auto;min-height:0;height:auto;background:radial-gradient(circle at 50% 50%,#243756,#060d1c 80%)}
+.summon-dialog .summon-reveal-video{object-fit:contain}
