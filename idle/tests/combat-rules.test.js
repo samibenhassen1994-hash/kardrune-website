@@ -3,7 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const combat=require('../combat-rules.js');
 test('HP is fixed by stage',()=>{
- assert.deepEqual([1,2,3].map(combat.hpForStage),[120,170,215]);
+ assert.deepEqual([1,2,3].map(combat.hpForStage),[240,340,430]);
 });
 test('ATK rolls cover inclusive 1-100',()=>{
  assert.equal(combat.rollAttack(()=>0),1);
@@ -67,24 +67,30 @@ test('legacy crit remains within allowed range and deterministic',()=>{
  assert.equal(crit,combat.legacyCrit('sam:1'));
 });
 
-test('HP is reduced by the actual ATK and clamps to zero on overkill',()=>{
+test('HP is reduced by ATK and remains positive after two 70 damage hits',()=>{
  const player={name:'Sam',stage:1,attack:70,crit:0};
  const enemy={name:'Lira',stage:1,attack:50,crit:0};
  let battle=combat.newBattle(player,enemy,()=>0);
  battle=combat.nextTurn(battle,()=>.9);
- assert.equal(battle.lastHit.damage,70);
- assert.equal(battle.enemy.hp,50);
+ assert.equal(battle.enemy.hp,170);
  battle=combat.nextTurn(battle,()=>.9);
- assert.equal(battle.player.hp,70);
+ assert.equal(battle.player.hp,190);
  battle=combat.nextTurn(battle,()=>.9);
- assert.equal(battle.lastHit.damage,70);
- assert.equal(battle.enemy.hp,0);
- assert.equal(battle.winner,'player');
+ assert.equal(battle.enemy.hp,100);
 });
-test('critical overkill does not produce negative HP',()=>{
+test('maximum critical cannot one-shot a full-health Stage 1',()=>{
  const battle=combat.newBattle({stage:1,attack:100,crit:25},{stage:1,attack:1,crit:0},()=>0);
  const after=combat.nextTurn(battle,()=>0);
  assert.equal(after.lastHit.damage,200);
- assert.equal(after.enemy.hp,0);
- assert.equal(after.status,'finished');
+ assert.equal(after.enemy.hp,40);
+ assert.equal(after.status,'running');
+});
+test('damage in excess of remaining HP clamps health to zero',()=>{
+ const battle=combat.newBattle({stage:1,attack:100,crit:25},{stage:1,attack:1,crit:0},()=>0);
+ const first=combat.nextTurn(battle,()=>0);
+ const second=combat.nextTurn(first,()=>.9);
+ const third=combat.nextTurn(second,()=>0);
+ assert.equal(third.enemy.hp,0);
+ assert.equal(third.status,'finished');
+ assert.equal(third.winner,'player');
 });
