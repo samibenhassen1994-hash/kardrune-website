@@ -53,6 +53,12 @@ function prepareCard(card,id){
  add.textContent=deck.includes(id)?'✓ IN DECK':'+ DECK';
  add.addEventListener('click',e=>{e.stopPropagation();insert(id);root.IDLE_LIVE_PVP.refreshLabels()});
  card.append(add);
+ // Touch drag is activated by a short hold, so ordinary taps keep their normal meaning.
+ let start=null,dragging=false,hold=null;
+ card.addEventListener('touchstart',e=>{if(e.target.closest('.deck-add-card'))return;const t=e.touches[0];start={x:t.clientX,y:t.clientY};dragging=false;hold=setTimeout(()=>{dragging=true;card.classList.add('deck-touch-dragging')},320)},{passive:true});
+ card.addEventListener('touchmove',e=>{if(!start)return;const t=e.touches[0];if(!dragging&&Math.hypot(t.clientX-start.x,t.clientY-start.y)>10){clearTimeout(hold);start=null;return}if(dragging){e.preventDefault();document.querySelectorAll('.deck-slot.drag-over').forEach(el=>el.classList.remove('drag-over'));const slot=document.elementFromPoint(t.clientX,t.clientY)?.closest('.deck-slot');slot?.classList.add('drag-over')}},{passive:false});
+ card.addEventListener('touchend',e=>{clearTimeout(hold);if(!dragging){start=null;return}const t=e.changedTouches[0],slot=document.elementFromPoint(t.clientX,t.clientY)?.closest('.deck-slot');card.classList.remove('deck-touch-dragging');document.querySelectorAll('.deck-slot.drag-over').forEach(el=>el.classList.remove('drag-over'));if(slot)insert(id,Number(slot.dataset.slot));dragging=false;start=null;e.preventDefault()},{passive:false});
+ card.addEventListener('touchcancel',()=>{clearTimeout(hold);dragging=false;start=null;card.classList.remove('deck-touch-dragging')});
 }
 function refreshLabels(){
  document.querySelectorAll('.deck-add-card').forEach(button=>{
@@ -124,12 +130,12 @@ async function setSession(user,request){
  if(socket){socket.close();socket=null}
  $('live-pvp-auth-hint').hidden=Boolean(uid);$('live-pvp-content').hidden=!uid;
  if(!uid){saved=[];dirty=true;updateDeck(getDraft());return}
- try{const result=await api('pvp/deck');if(!uid)return;
+ try{const sessionUid=uid;const result=await api('pvp/deck');if(uid!==sessionUid)return;
   saved=validDeck(result.cards);loaded=true;dirty=false;deck=[...saved];setDraft();renderDeck();status('Your saved deck is ready. Edit it in Cards.');
  }catch(e){deck=validDeck(getDraft());dirty=true;renderDeck();status('Deck unavailable: '+e.message)}
 }
 function setup(){
- deck=validDeck(getDraft());renderDeck();
+ deck=validDeck(getDraft());renderDeck();renderCardControls();
  $('cards-deck-save').addEventListener('click',async()=>{
   if(!api){deckStatus('Sign in from Profile to save the deck online.');return}
   if(!deck.length){deckStatus('Add at least one card for beta testing.');return}
