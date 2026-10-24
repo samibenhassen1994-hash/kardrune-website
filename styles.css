@@ -3107,33 +3107,6 @@ footer {
 }
 
 
-/* Idle KardRune invitation is intentionally mobile-only on the main site. */
-.idle-mobile-entry,.idle-mobile-nav{display:none!important}
-@media (max-width:767px){
-  .page-home .idle-mobile-nav{display:flex!important;align-items:center;gap:8px}
-  .page-home .idle-mobile-nav span{color:#f4cd82}
-  .page-home .idle-mobile-entry{display:block!important;padding:50px 0 56px;position:relative;background:radial-gradient(ellipse at top,#263b62,#0b162b 64%,#071020);border-block:1px solid #d2b46e44;overflow:hidden}
-  .idle-entry-content{text-align:center;position:relative;z-index:1}
-  .idle-entry-content>.eyebrow{color:#ebc980;letter-spacing:.15em}
-  .idle-entry-content h2{font:800 clamp(35px,10vw,52px)/1.06 Cinzel,serif;color:#fff4d9;margin:14px auto}
-  .idle-entry-content h2 span,.idle-install-title h3 span{color:#ecc37a}
-  .idle-entry-lead{color:#c5d1e5;font-size:14px;line-height:1.65;max-width:440px;margin:0 auto 13px}
-  .idle-entry-art{position:relative;height:240px;margin:0 auto 15px;width:min(100%,350px);display:grid;place-items:center}
-  .idle-entry-art>img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 12px 26px #050710b0)}
-  .idle-entry-icon{position:absolute;right:14px;bottom:8px;width:94px;min-height:85px;border:2px solid #e7bf76;border-radius:16px;background:linear-gradient(145deg,#214365ed,#0b1935f5);box-shadow:0 8px 35px #030613;display:grid;align-content:center;gap:4px;transform:rotate(7deg)}
-  .idle-entry-icon span{font:800 29px Cinzel,serif;color:#f2d793}.idle-entry-icon small{font-size:7px;letter-spacing:.08em;color:#c5d6eb;font-weight:800}
-  .idle-entry-note{font-size:9px;letter-spacing:.08em;color:#e5d2ac;margin-bottom:15px}
-  .idle-entry-cta{display:flex;align-items:center;justify-content:center;gap:10px;max-width:420px;margin:0 auto;min-height:54px;font-size:12px}
-  .idle-entry-hint{max-width:400px;color:#b1c3dc;font-size:11px;line-height:1.6;margin:12px auto 0}
-  .idle-install-title{margin:41px auto 19px}.idle-install-title h3{font:800 27px Cinzel,serif;margin:10px 0 0}
-  .idle-install-cards{display:grid;gap:12px;text-align:left}
-  .idle-install-card{background:linear-gradient(135deg,#1b2d49,#111e34);border:1px solid #c5a76b72;border-radius:16px;padding:21px 19px}
-  .idle-install-platform{display:flex;align-items:center;gap:9px;font-size:12px;color:#f6dfaa;letter-spacing:.06em}
-  .idle-install-platform span{font-size:16px;color:#d8e8fc}
-  .idle-install-platform.android span{color:#9dd1a0}
-  .idle-install-card ol{padding-left:21px;margin:18px 0 0;display:grid;gap:11px}
-  .idle-install-card li{font-size:12px;color:#c6d1e4;line-height:1.65;padding-left:4px}
-  .idle-install-card li::marker{color:#e5bf7a;font-weight:800}
-  .idle-install-card b{color:#f4dfa8}
-  .idle-entry-disclaimer{font-size:10px;color:#94acc7;line-height:1.6;margin:22px auto 0;max-width:420px}
-}
+/* Idle is a separate page, not a section of the homepage. */
+.idle-mobile-nav{display:none!important}
+@media(max-width:767px){.site-header .nav-links .idle-mobile-nav{display:flex!important;align-items:center;gap:8px}.idle-mobile-nav span{color:#f4cd82}}
