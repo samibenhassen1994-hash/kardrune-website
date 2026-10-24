@@ -10,14 +10,18 @@ const combat=window.IDLE_COMBAT_RULES;
 const cardId=(hero,stage)=>hero.id+':'+stage;
 const cardImage=(hero,stage)=>'./media/cards/'+hero.stages[stage-1];
 const cardVideo=(hero,stage)=>hero.loops[stage-1]?'./media/animations/'+hero.loops[stage-1]:null;
-const initial=()=>({name:'Runebearer',avatar:'player',shards:1500,owned:['sam:1','lira:1','rhea:1'],active:'sam:1',duels:0,wins:0,pulls:0,practiceDaily:{day:'',count:0},attacks:{'sam:1':50,'lira:1':50,'rhea:1':50},pendingDuplicate:null});
+const initial=()=>({name:'Runebearer',avatar:'player',shards:1500,owned:['sam:1','lira:1','rhea:1'],active:'sam:1',duels:0,wins:0,pulls:0,practiceDaily:{day:'',count:0},attacks:{'sam:1':50,'lira:1':50,'rhea:1':50},crits:{'sam:1':10,'lira:1':10,'rhea:1':10},pendingDuplicate:null});
 function normalizeAttacks(values,owned){
  const obj=values&&typeof values==='object'&&!Array.isArray(values)?values:{};
  return Object.fromEntries(owned.map(id=>[id,combat.isAttack(obj[id])?obj[id]:combat.legacyAttack(id)]));
 }
+function normalizeCrits(values,owned){
+ const obj=values&&typeof values==='object'&&!Array.isArray(values)?values:{};
+ return Object.fromEntries(owned.map(id=>[id,combat.isCrit(obj[id])?obj[id]:combat.legacyCrit(id)]));
+}
 function normalizePending(v,owned){
  if(!v||typeof v!=='object'||!owned.includes(v.id)||!combat.isAttack(v.attack))return null;
- return {id:v.id,attack:v.attack};
+ return {id:v.id,attack:v.attack,crit:combat.isCrit(v.crit)?v.crit:combat.legacyCrit(v.id+':duplicate')};
 }
 function migrate(v){
   const base=initial();if(!v||typeof v!=='object')return base;
@@ -26,7 +30,7 @@ function migrate(v){
   const active=String(v.active||base.active);const normalized=active.includes(':')?active:active+':1';
   const owned=[...new Set(valid.length?valid:base.owned)];
   return {name:typeof v.name==='string'?v.name.slice(0,20):base.name,avatar:Object.prototype.hasOwnProperty.call(AVATARS,v.avatar)?v.avatar:base.avatar,shards:Number.isFinite(v.shards)?Math.max(0,Math.floor(v.shards)):base.shards,
-    owned,active:owned.includes(normalized)?normalized:owned[0],duels:rules.safeCount(v.duels),wins:rules.safeCount(v.wins),pulls:rules.safeCount(v.pulls),practiceDaily:rules.dailyRewardState(v.practiceDaily),attacks:normalizeAttacks(v.attacks,owned),pendingDuplicate:normalizePending(v.pendingDuplicate,owned)};
+    owned,active:owned.includes(normalized)?normalized:owned[0],duels:rules.safeCount(v.duels),wins:rules.safeCount(v.wins),pulls:rules.safeCount(v.pulls),practiceDaily:rules.dailyRewardState(v.practiceDaily),attacks:normalizeAttacks(v.attacks,owned),crits:normalizeCrits(v.crits,owned),pendingDuplicate:normalizePending(v.pendingDuplicate,owned)};
 }
 function load(){try{return migrate(JSON.parse(localStorage.getItem(STORAGE)))}catch{return initial()}}
 let state=load(),filter='all',grouped=false,installEvent=null,pulling=false;
@@ -35,18 +39,23 @@ function persist(){try{localStorage.setItem(STORAGE,JSON.stringify(state));retur
 function notify(message){const el=$('toast');el.textContent=message;el.hidden=false;clearTimeout(notify.t);notify.t=setTimeout(()=>el.hidden=true,2800)}
 function ownedCards(){return heroes.flatMap(hero=>[1,2,3].filter(stage=>state.owned.includes(cardId(hero,stage))).map(stage=>({hero,stage})))}
 function itemById(id){const [key,level]=String(id).split(':');const hero=heroes.find(h=>h.id===key);return hero?{hero,stage:Math.max(1,Math.min(3,Number(level)||1))}:null}
-function displayStats(id,stage,attack){
+function displayStats(stage,attack,crit){
+ const sanitizedCrit=combat.isCrit(crit)?crit:0;
  const bar=elem('div','battle-card-stats');
  const atk=elem('span','card-atk',String(attack));
  atk.title='ATK '+attack;atk.setAttribute('aria-label','ATK '+attack);
+ const critical=elem('span','card-crit',sanitizedCrit+'%');
+ critical.title='Critical chance '+sanitizedCrit+'% · Double damage';
+ critical.setAttribute('aria-label','Critical chance '+sanitizedCrit+' percent');
  const hp=elem('span','card-hp',String(combat.hpForStage(stage)));
  hp.title='HP '+combat.hpForStage(stage);hp.setAttribute('aria-label','HP '+combat.hpForStage(stage));
- bar.append(atk,hp);return bar;
+ bar.append(atk,critical,hp);return bar;
 }
 function openDialog(node){
   const d=$('game-dialog');
   const isSummon=node.classList.contains('summon-reveal');
   d.classList.toggle('summon-dialog',isSummon);
+  d.classList.toggle('duplicate-dialog',node.classList.contains('duplicate-compare'));
   $('dialog-done').textContent=isSummon&&node.dataset.preview==='true'?'BACK TO SUMMON':'CONTINUE';
   $('dialog-content').replaceChildren(node);
   if(!d.open)d.showModal();
@@ -72,11 +81,7 @@ function reveal(hero,stage,dupe,preview){
     video.preload='metadata';
     video.setAttribute('webkit-playsinline','');
     video.setAttribute('aria-label',hero.name+' Stage '+stage+' summon animation');
-    video.addEventListener('loadedmetadata',()=>{
-      if(video.videoWidth>0&&video.videoHeight>0){
-        media.style.aspectRatio=video.videoWidth+' / '+video.videoHeight;
-      }
-    });
+    // New-card reveal remains square even for landscape video files.
     const errorText=elem('p','summon-video-fallback','The summon animation could not be loaded.');
     errorText.hidden=true;
     video.addEventListener('error',()=>{video.hidden=true;errorText.hidden=false});
@@ -101,9 +106,9 @@ function reveal(hero,stage,dupe,preview){
 function makeCard(hero,stage){
  const id=cardId(hero,stage),has=state.owned.includes(id),selected=state.active===id;
  const box=elem('article','hero-card card-stage-'+stage+(has?'':' locked'));
- const image=elem('div','hero-image');const img=elem('img');img.src=cardImage(hero,stage);img.alt=hero.name+' Stage '+stage;img.loading='lazy';image.append(img);if(has)image.append(displayStats(id,stage,state.attacks[id]));if(!has){const mystery=elem('span','mystery-mark','?');mystery.setAttribute('aria-hidden','true');image.append(mystery)}box.append(image);
+ const image=elem('div','hero-image');const img=elem('img');img.src=cardImage(hero,stage);img.alt=hero.name+' Stage '+stage;img.loading='lazy';image.append(img);if(has)image.append(displayStats(stage,state.attacks[id],state.crits[id]));if(!has){const mystery=elem('span','mystery-mark','?');mystery.setAttribute('aria-hidden','true');image.append(mystery)}box.append(image);
  box.append(elem('div','rarity-tag','STAGE '+stage+' · '+hero.element.toUpperCase()),elem('h3','',hero.name));
- box.append(elem('p','',has?'ATK '+state.attacks[id]+' · HP '+combat.hpForStage(stage):'NOT COLLECTED'));
+ box.append(elem('p','',has?'ATK '+state.attacks[id]+' · CRIT '+state.crits[id]+'% · HP '+combat.hpForStage(stage):'NOT COLLECTED'));
  if(selected)box.append(elem('span','hero-selected','✦ SELECTED CHAMPION'));
  if(has){box.tabIndex=0;box.role='button';box.title='Select '+hero.name+' Stage '+stage;const select=()=>{if(liveBattle)return notify('Finish your duel first');state.active=id;opponent=null;persist();render();notify(hero.name+' Stage '+stage+' selected')};box.addEventListener('click',select);box.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select()}})}
  return box;
@@ -147,6 +152,7 @@ function render(){
  $('duel-player-art').src=cardImage(current.hero,current.stage);$('duel-player-name').textContent=current.hero.name+' · S'+current.stage;
  if(!liveBattle){renderOpponent();$('player-health-fill').style.width='100%'}
  $('duel-player-attack').textContent=state.attacks[state.active];
+ $('duel-player-crit').textContent=state.crits[state.active]+'%';
  $('duel-player-maxhp').textContent=combat.hpForStage(current.stage);
  $('duel-player-hp').textContent=liveBattle?liveBattle.player.hp:combat.hpForStage(current.stage);
  renderCards();
@@ -164,6 +170,7 @@ function renderOpponent(){
  $('duel-enemy-art').src=cardImage(hero,opponent.stage);
  $('duel-enemy-name').textContent=opponent.name+' · S'+opponent.stage;
  $('duel-enemy-attack').textContent=opponent.attack;
+ $('duel-enemy-crit').textContent=opponent.crit+'%';
  $('duel-enemy-maxhp').textContent=opponent.maxHp;
  $('duel-enemy-hp').textContent=liveBattle?liveBattle.enemy.hp:opponent.maxHp;
  $('enemy-health-fill').style.width=((liveBattle?liveBattle.enemy.hp:opponent.maxHp)/opponent.maxHp*100)+'%';
@@ -176,7 +183,7 @@ function updateBattle(){
    $(side==='player'?'player-health-fill':'enemy-health-fill').style.width=(unit.hp/unit.maxHp*100)+'%';
  }
  const last=liveBattle.lastHit;
- $('battle-live-status').textContent=last?(last.actor==='player'?'You hit':'Opponent hits')+' for '+last.damage+' damage': 'Battle in progress…';
+ $('battle-live-status').textContent=last?(last.actor==='player'?'You hit':'Opponent hits')+' for '+last.damage+' damage'+(last.critical?' · CRITICAL ×2!':''): 'Battle in progress…';
  $('battle-turn-counter').textContent=String(liveBattle.hits);
 }
 function endBattle(){
@@ -205,7 +212,7 @@ function startPractice(){
  const current=itemById(state.active);
  if(!current)return notify('Choose a champion');
  if(!opponent)renderOpponent();
- liveBattle=combat.newBattle({id:current.hero.id,name:current.hero.name,stage:current.stage,attack:state.attacks[state.active]},opponent);
+ liveBattle=combat.newBattle({id:current.hero.id,name:current.hero.name,stage:current.stage,attack:state.attacks[state.active],crit:state.crits[state.active]},opponent);
  $('practice-button').disabled=true;
  $('reroll-enemy').disabled=true;
  $('active-hero-select').disabled=true;
@@ -237,36 +244,68 @@ function summon(featured){
  state.shards-=cost;state.pulls++;
  const id=cardId(hero,stage),duplicate=state.owned.includes(id);
  const attack=combat.rollAttack();
+ const crit=combat.rollCrit();
  if(duplicate){
-   pendingDuplicate={id,attack,hero,stage};
-   state.pendingDuplicate={id,attack};
+   pendingDuplicate={id,attack,crit,hero,stage};
+   state.pendingDuplicate={id,attack,crit};
    persist();render();showDuplicate();
  }else{
-   state.owned.push(id);state.attacks[id]=attack;
+   state.owned.push(id);state.attacks[id]=attack;state.crits[id]=crit;
    persist();render();reveal(hero,stage,false,false);
  }
  pulling=false;
 }
+function duplicateCardPanel(hero,stage,attack,crit,label,newPull){
+ const panel=elem('article','duplicate-card-panel'+(newPull?' is-new':''));
+ const title=elem('div','duplicate-card-title',label);
+ const art=elem('div','duplicate-card-art hero-image');
+ const picture=elem('img','');
+ picture.src=cardImage(hero,stage);
+ picture.alt=hero.name+' Stage '+stage+' card';
+ art.append(picture,displayStats(stage,attack,crit));
+ panel.append(title,art,elem('div','duplicate-card-name',hero.name+' · S'+stage));
+ const stats=elem('div','duplicate-card-summary','ATK '+attack+' · CRIT '+crit+'% · HP '+combat.hpForStage(stage));
+ panel.append(stats);
+ return panel;
+}
 function showDuplicate(){
  if(!pendingDuplicate)return;
- const {id,attack,hero,stage}=pendingDuplicate;
+ const {id,attack,crit,hero,stage}=pendingDuplicate;
  const wrap=elem('div','duplicate-compare');
- wrap.append(elem('h2','','DUPLICATE FOUND'),elem('p','',hero.name+' · Stage '+stage+' · HP '+combat.hpForStage(stage)));
- const row=elem('div','duplicate-stats');
- row.append(elem('div','', 'CURRENT ATK: '+state.attacks[id]),elem('div','', 'NEW ATK: '+attack));
- wrap.append(row);
+ const header=elem('div','duplicate-heading');
+ const title=elem('h2','','DUPLICATE FOUND');
+ title.id='dialog-title';
+ header.append(elem('span','duplicate-kicker','✦ TWO CARDS · ONE SLOT ✦'),title,
+   elem('p','','Compare both cards. Keep the current one, or replace it with this pull.'));
+ wrap.append(header);
+ const pair=elem('div','duplicate-card-pair');
+ pair.append(
+   duplicateCardPanel(hero,stage,state.attacks[id],state.crits[id],'YOUR CARD',false),
+   duplicateCardPanel(hero,stage,attack,crit,'NEW PULL',true)
+ );
+ wrap.append(pair);
  const actions=elem('div','duplicate-actions');
- for(const [caption,replace] of [['KEEP OLD',false],['REPLACE ATK',true]]){
-  const button=elem('button',replace?'gold-button':'dark-button',caption);button.type='button';
+ for(const [caption,replace] of [['KEEP CURRENT',false],['KEEP NEW',true]]){
+  const button=elem('button',replace?'gold-button':'dark-button',caption);
+  button.type='button';
   button.addEventListener('click',()=>{
    if(!pendingDuplicate)return;
-   if(replace)state.attacks[id]=attack;
-   else state.shards+=100;
-   pendingDuplicate=null;state.pendingDuplicate=null;persist();render();$('game-dialog').close();
-   notify(replace?'New ATK saved':'Old ATK kept · +100 demo Shards');
-  });actions.append(button);
+   // One decision, persisted atomically with both battle statistics.
+   if(replace){
+     state.attacks[id]=attack;
+     state.crits[id]=crit;
+   }else{
+     state.shards+=100; // Existing duplicate discard reward
+   }
+   pendingDuplicate=null;
+   state.pendingDuplicate=null;
+   persist();render();
+   $('game-dialog').close();
+   notify(replace?'New card equipped · previous stats discarded':'Current card kept · new pull discarded · +100 Shards');
+  });
+  actions.append(button);
  }
- wrap.append(actions,elem('p','micro-note','Replacing changes only this card\'s ATK. HP stays fixed.'));
+ wrap.append(actions,elem('p','duplicate-footnote','HP depends on Stage. Discarding the new duplicate rewards 100 demo Shards.'));
  openDialog(wrap);
  $('dialog-done').hidden=true;
 }

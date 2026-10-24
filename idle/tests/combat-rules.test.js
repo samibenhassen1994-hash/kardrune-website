@@ -43,3 +43,23 @@ test('legacy ATK is deterministic in a safe middle range',()=>{
  assert.equal(combat.legacyAttack('sam:1'),val);
  assert.ok(val>=25&&val<=75);
 });
+
+test('CRIT roll spans 0 to 25 percent',()=>{
+ assert.equal(combat.rollCrit(()=>0),0);
+ assert.equal(combat.rollCrit(()=>.999999),25);
+ assert.ok(combat.isCrit(25));assert.ok(!combat.isCrit(26));
+});
+test('critical damage is exactly double noncritical damage',()=>{
+ const player={name:'Sam',stage:1,attack:50,crit:25};
+ const enemy={name:'Lira',stage:1,attack:50,crit:0};
+ const normal=combat.nextTurn(combat.newBattle(player,enemy,()=>0),(()=>{let c=0;return()=>++c===1?.5:.99})());
+ const critical=combat.nextTurn(combat.newBattle(player,enemy,()=>0),(()=>{let c=0;return()=>++c===1?.5:0})());
+ assert.equal(normal.lastHit.critical,false);
+ assert.equal(critical.lastHit.critical,true);
+ assert.equal(critical.lastHit.damage,normal.lastHit.damage*2);
+});
+test('legacy crit remains within allowed range and deterministic',()=>{
+ const crit=combat.legacyCrit('sam:1');
+ assert.ok(crit>=0&&crit<=25);
+ assert.equal(crit,combat.legacyCrit('sam:1'));
+});
