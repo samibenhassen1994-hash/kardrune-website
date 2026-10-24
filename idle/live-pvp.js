@@ -53,7 +53,8 @@ function renderOwnedStrip(){
   const img=document.createElement('img');img.src=cardImage(id);img.alt=id;img.draggable=false;button.append(img);
   const label=document.createElement('span');label.textContent=id.replace(':',' S');button.append(label);
   button.addEventListener('dragstart',e=>onCardDragStart(e,id));
-  button.addEventListener('click',()=>insert(id));
+  let suppressClick=false;
+  button.addEventListener('click',e=>{if(suppressClick){e.preventDefault();suppressClick=false;return}insert(id)});
   let start=null,active=false,pointer=null;
   button.addEventListener('pointerdown',e=>{
    if(e.pointerType==='mouse')return;
@@ -73,6 +74,7 @@ function renderOwnedStrip(){
   button.addEventListener('pointerup',e=>{
    if(pointer!==e.pointerId)return;
    if(active){
+    suppressClick=true;
     const slot=document.elementFromPoint(e.clientX,e.clientY)?.closest('.deck-slot');
     if(slot)insert(id,Number(slot.dataset.slot));
     button.classList.remove('deck-touch-dragging');
