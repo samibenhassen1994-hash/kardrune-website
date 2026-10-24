@@ -47,9 +47,8 @@
         <span class="brand-symbol">KR</span>
         <span class="brand-copy"><strong>IDLE <em>KARDRUNE</em></strong><small>THE POCKET REALM</small></span>
       </a>
-      <div class="wallet" aria-label="Demo currency balance"><span class="shard-icon">◆</span><strong id="wallet-shards">1,500</strong></div>
+      <button class="wallet wallet-edit" type="button" id="edit-shards-button" aria-label="Set local test Rune Shards" title="Set your test Rune Shards"><span class="shard-icon">◆</span><strong id="wallet-shards">1,500</strong><span class="wallet-plus" aria-hidden="true">＋</span></button>
     </header>
-    <div class="alpha-ribbon"><span class="status-dot"></span> PLAYABLE ALPHA <span class="ribbon-sep">•</span> LOCAL DEMO <span class="ribbon-sep">•</span> NO ONLINE MATCHMAKING YET</div>
     <main id="main-content">
       <section class="screen" id="screen-tournament" aria-labelledby="tournament-heading">
         <div class="eyebrow"><span class="eyebrow-line"></span> ARENA OF THE RUNES <span class="eyebrow-line"></span></div>
@@ -96,31 +95,36 @@
         </div>
       </section>
       <section class="screen" id="screen-cards" aria-labelledby="cards-heading" hidden>
-        <div class="eyebrow"><span class="eyebrow-line"></span> THE HERO COLLECTION <span class="eyebrow-line"></span></div>
         <h1 id="cards-heading">YOUR <span class="gold-text">CARDS</span></h1>
-        <p class="screen-intro">Collect all 27 card forms across nine heroes. Unlock each stage through Summon, then select a champion.</p><div class="cards-view-tabs"><button type="button" class="filter active" id="card-view-grid">CARD GRID</button><button type="button" class="filter" id="card-view-heroes">BY HERO</button></div>
+        <div class="cards-view-tabs"><button type="button" class="filter active" id="card-view-grid">CARD GRID</button><button type="button" class="filter" id="card-view-heroes">BY HERO</button></div>
         <div class="collection-banner"><div><small>COLLECTION PROGRESS</small><strong id="owned-count">3 <span>/ 27 CARDS</span></strong></div><div class="collection-progress"><span id="collection-bar" style="width:11.11%"></span></div></div>
         <div class="filters" role="group" aria-label="Collection filter"><button class="filter active" data-filter="all" type="button">All Heroes</button><button class="filter" data-filter="owned" type="button">Owned</button><button class="filter" data-filter="missing" type="button">Locked</button></div>
         <div class="hero-grid" id="hero-grid"></div>
+        <nav class="cards-pagination" id="cards-pagination" aria-label="Cards pages">
+          <button type="button" id="cards-prev" class="cards-page-arrow" aria-label="Previous cards page">‹</button>
+          <span id="cards-page-label" aria-live="polite">PAGE 1</span>
+          <button type="button" id="cards-next" class="cards-page-arrow" aria-label="Next cards page">›</button>
+        </nav>
       </section>
       <section class="screen" id="screen-summon" aria-labelledby="summon-heading" hidden>
-        <div class="eyebrow"><span class="eyebrow-line"></span> CALL FROM THE ASTRAL REALM <span class="eyebrow-line"></span></div>
         <h1 id="summon-heading">HERO <span class="gold-text">SUMMON</span></h1>
-        <p class="screen-intro">Summon any of the nine heroes in three stages. New heroes reveal an animation. Duplicates let you compare and keep one card.</p>
         <div class="summon-feature">
           <span class="feature-tag">FEATURED HERO</span>
           <div class="summon-art"><img src="./media/cards/dren/dren_stage_3.webp" alt="Dren featured summon hero"></div>
           <div class="summon-feature-bottom"><span class="mini-label">EPIC · SHADOW</span><h2>DREN</h2><p>The darkness answers his call.</p></div>
         </div>
         <div class="summon-choice">
-          <div class="choice-head"><div><small>SUMMON PORTAL 01</small><h3>Standard Summon</h3><p>78% Stage 1 · 19% Stage 2 · 3% Stage 3</p></div><span class="portal-badge">✧</span></div>
+          <div class="choice-head"><div><small>SUMMON PORTAL 01</small><h3>Standard Summon</h3></div><span class="portal-badge">✧</span></div>
           <button type="button" class="dark-button" id="summon-standard">SUMMON 1 <span>◆ 300</span></button>
         </div>
         <div class="summon-choice featured-choice">
-          <div class="choice-head"><div><small>SUMMON PORTAL 02</small><h3>Featured Summon</h3><p>60% Stage 1 · 30% Stage 2 · 10% Stage 3 · Dren rate-up</p></div><span class="portal-badge">✦</span></div>
+          <div class="choice-head"><div><small>SUMMON PORTAL 02</small><h3>Featured Summon</h3></div><span class="portal-badge">✦</span></div>
           <button type="button" class="gold-button" id="summon-featured">FEATURED PULL <span>◆ 600</span></button>
         </div>
-        <div class="summon-roster"><h3>ALL SUMMONABLE HEROES</h3><p>Tap a portrait to preview its 3 card stages and animations.</p><div id="summon-roster-grid" class="summon-roster-grid"></div></div><p class="micro-note">Local demo only: these Stage odds and Shard costs are test values, not the official KardRune economy. No payments or real PvP inventory.</p>
+        <div class="summon-quick-actions">
+          <button type="button" id="open-summon-roster" class="summon-mini-action">✦ ALL HEROES</button>
+          <button type="button" id="open-summon-info" class="summon-mini-action">ⓘ RATES & INFO</button>
+        </div>
       </section>
       <section class="screen" id="screen-profile" aria-labelledby="profile-heading" hidden>
         <div class="eyebrow"><span class="eyebrow-line"></span> YOUR LEGEND BEGINS <span class="eyebrow-line"></span></div>
