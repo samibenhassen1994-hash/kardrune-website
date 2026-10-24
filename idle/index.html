@@ -18,6 +18,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
   <script src="./catalog.js" defer></script>
+  <script src="./game-rules.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -72,7 +73,7 @@
         <label class="select-label" for="active-hero-select">CHOOSE YOUR CHAMPION</label>
         <select id="active-hero-select" class="field"></select>
         <button type="button" class="gold-button" id="practice-button">⚔ START PRACTICE DUEL <svg><use href="#i-chevron"></use></svg></button>
-        <p class="micro-note">Practice duels use local simulation and earn demo Shards. Real PvP requires a separate online server.</p>
+        <p class="micro-note">Practice duels use local simulation. Rewarded duels remaining today: <strong id="practice-rewards-left">10</strong>/10 (local midnight reset). You can still practice afterward. Real PvP requires a separate online server.</p>
         <div class="section-heading bracket-heading"><div><span class="mini-label">COMPETITION ROADMAP</span><h2>Championship Bracket</h2></div></div>
         <div class="bracket">
           <div class="bracket-step"><span class="bracket-index">01</span><div><strong>Qualifiers</strong><small>Register your team</small></div><span class="bracket-lock">SOON</span></div>
@@ -84,7 +85,7 @@
         <div class="eyebrow"><span class="eyebrow-line"></span> THE HERO COLLECTION <span class="eyebrow-line"></span></div>
         <h1 id="cards-heading">YOUR <span class="gold-text">CARDS</span></h1>
         <p class="screen-intro">Collect all 27 card forms across nine heroes. Unlock each stage through Summon, then select a champion.</p><div class="cards-view-tabs"><button type="button" class="filter active" id="card-view-grid">CARD GRID</button><button type="button" class="filter" id="card-view-heroes">BY HERO</button></div>
-        <div class="collection-banner"><div><small>COLLECTION PROGRESS</small><strong id="owned-count">3 <span>/ 27 CARDS</span></strong></div><div class="collection-progress"><span id="collection-bar" style="width:50%"></span></div></div>
+        <div class="collection-banner"><div><small>COLLECTION PROGRESS</small><strong id="owned-count">3 <span>/ 27 CARDS</span></strong></div><div class="collection-progress"><span id="collection-bar" style="width:11.11%"></span></div></div>
         <div class="filters" role="group" aria-label="Collection filter"><button class="filter active" data-filter="all" type="button">All Heroes</button><button class="filter" data-filter="owned" type="button">Owned</button><button class="filter" data-filter="missing" type="button">Locked</button></div>
         <div class="hero-grid" id="hero-grid"></div>
       </section>
@@ -121,7 +122,7 @@
           <div class="stat-card"><span>⚔</span><strong id="stat-duels">0</strong><small>PRACTICE DUELS</small></div>
           <div class="stat-card"><span>★</span><strong id="stat-wins">0</strong><small>PRACTICE WINS</small></div>
           <div class="stat-card"><span>✦</span><strong id="stat-pulls">0</strong><small>SUMMONS</small></div>
-          <div class="stat-card"><span>▣</span><strong id="stat-cards">3</strong><small>OWNED HEROES</small></div>
+          <div class="stat-card"><span>▣</span><strong id="stat-cards">3</strong><small>OWNED CARDS</small></div>
         </div>
         <div class="profile-actions"><button type="button" class="dark-button" id="install-button">＋ INSTALL IDLE KARDRUNE</button><p id="install-help" class="micro-note">Install to your home screen from your browser menu.</p><button type="button" class="plain-link" id="reset-button">Reset local demo progress</button></div>
         <div class="data-separation">🛡 <span>Independent prototype: it does not access or modify your KardRune app account, purchases or database.</span></div>
