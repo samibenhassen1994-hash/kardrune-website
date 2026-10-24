@@ -48,9 +48,9 @@ function dragPreview(id){
  const preview=document.createElement('div');
  preview.className='deck-drag-preview';
  preview.setAttribute('aria-hidden','true');
- const img=document.createElement('img');img.src=cardImage(id);img.alt='';img.draggable=false;
- const caption=document.createElement('span');caption.textContent=id.replace(':',' · S');
- preview.append(img,caption);
+ const img=document.createElement('img');
+ img.src=cardImage(id);img.alt='';img.draggable=false;
+ preview.append(img);
  return preview;
 }
 function onCardDragStart(event,id){
@@ -88,7 +88,10 @@ function prepareCard(card,id){
   document.querySelectorAll('#cards-deck-slots .deck-slot.drag-over').forEach(el=>el.classList.remove('drag-over'));
   const slot=targetSlot(x,y);
   if(slot)slot.classList.add('drag-over');
-  ghost?.classList.toggle('over-slot',Boolean(slot));
+  const deckArea=$('cards-deck-slots').getBoundingClientRect();
+  const inside=x>=deckArea.left&&x<=deckArea.right&&y>=deckArea.top-16&&y<=deckArea.bottom+16;
+  ghost?.classList.toggle('over-slot',inside);
+  if(ghost&&inside){const first=$('cards-deck-slots').querySelector('.deck-slot');if(first){const bounds=first.getBoundingClientRect();ghost.style.setProperty('--slot-width',bounds.width+'px');ghost.style.setProperty('--slot-height',bounds.height+'px')}}
   return slot;
  }
  function movePreview(x,y){
