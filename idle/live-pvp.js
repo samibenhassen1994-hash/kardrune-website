@@ -225,13 +225,13 @@ async function setSession(user,request){
 function setup(){
  deck=validDeck(getDraft());renderDeck();renderCardControls();
  $('cards-deck-save').addEventListener('click',async()=>{
-  if(!api){deckStatus('Sign in from Profile to save the deck online.');return}
+  if(!api){setDraft();deckStatus('Deck saved on this device. Sign in from Profile to save online.');return}
   if(!deck.length){deckStatus('Add at least one card for beta testing.');return}
   const requested=[...deck];
   try{deckStatus('Saving deck…');const result=await api('pvp/deck','PUT',{cards:requested});
    saved=result.cards;dirty=JSON.stringify(deck)!==JSON.stringify(saved);renderDeck();
    if(!dirty){deckStatus('✓ Deck saved to your account');status('Deck updated. Ready for live matchmaking.')}
-  }catch(e){deckStatus('Save failed: '+e.message)}
+  }catch(e){setDraft();deckStatus('Deck saved on this device only. Cloud: '+e.message)}
  });
  $('live-deck-edit').addEventListener('click',()=>{document.querySelector('[data-nav="cards"]')?.click();setTimeout(()=>$('deck-builder').scrollIntoView({block:'start',behavior:'smooth'}),50)});
  $('live-pvp-connect').addEventListener('click',begin);
