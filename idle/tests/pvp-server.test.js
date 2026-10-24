@@ -17,7 +17,7 @@ test('only valid owned active cards can enter queue',()=>{
 test('server duel uses exact attack, doubled critical and fixed stage HP',()=>{
  const a={id:'sam:1',attack:58,crit:25,maxHp:240};
  const b={id:'dren:1',attack:1,crit:0,maxHp:240};
- let sequence=[0,.99,.99,.99,0];
+ let sequence=[0,.99,.99,.99,.99,0];
  let index=0;
  const result=fight(a,b,()=>sequence[index++]??.99);
  assert.equal(result.log[0].damage,58);
