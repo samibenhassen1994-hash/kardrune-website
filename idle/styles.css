@@ -64,3 +64,19 @@
 .hero-card.locked .hero-image img{filter:grayscale(.9) brightness(.57) contrast(1.08);transform:none}
 .hero-card.locked .hero-image::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,#060b1b1a 0%,#090e2229 55%,#060a1a73 100%);box-shadow:inset 0 0 12px #02040d77;filter:none}
 .hero-card.locked .mystery-mark{position:absolute;z-index:3;inset:0;display:grid;place-items:center;font:800 clamp(50px,12vw,85px) Cinzel,Georgia,serif;color:#eee2c8e6;text-shadow:0 2px 12px #000,0 0 22px #000c;pointer-events:none}
+
+
+/* Cinematic responsive landscape summon reveal — no letterboxed tall viewport. */
+.game-dialog.summon-dialog{width:min(94vw,520px);max-height:calc(100dvh - 28px);overflow:auto;border:1px solid #d9b8759c;border-radius:20px;background:linear-gradient(160deg,#162744,#091327 72%);box-shadow:0 22px 75px #000d,0 0 28px #c89e4425}
+.summon-dialog .dialog-inner{padding:18px 16px 20px}
+.summon-dialog .dialog-close{top:7px;right:11px;z-index:4;width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:#050c1dc9;color:#f0d698;font-size:25px}
+.summon-dialog .summon-reveal-eyebrow{color:#efd495;font-size:10px;font-weight:800;letter-spacing:.22em;text-align:center;padding:4px 36px 12px}
+.summon-dialog .summon-reveal-media{position:relative;width:100%;height:auto;min-height:0;max-width:none;aspect-ratio:16 / 9;overflow:hidden;display:grid;place-items:center;border:1px solid #cfac6999;border-radius:12px;background:#080f20;box-shadow:0 8px 22px #0008,0 0 19px #dbaf4630}
+.summon-dialog .summon-reveal-video{display:block;width:100%;height:100%;object-fit:contain;background:transparent}
+.summon-dialog .summon-reveal-info{padding:13px 4px 0;text-align:center}
+.summon-dialog .summon-reveal-stage{margin:0;background:#bd9b5a3b;border:1px solid #e8c27e73;color:#f6dba4;letter-spacing:.12em}
+.summon-dialog .summon-reveal-name{font-size:clamp(23px,6vw,29px);margin:8px 0 4px;color:#f9e7c1}
+.summon-dialog .summon-reveal-caption{margin:0;color:#bcc9dd;font-size:12px;line-height:1.5}
+.summon-dialog #dialog-done{margin-top:16px;min-height:46px}
+@media(max-width:380px){.summon-dialog .dialog-inner{padding:14px 12px 16px}.summon-dialog .summon-reveal-eyebrow{font-size:9px;padding-bottom:10px}.summon-dialog #dialog-done{min-height:42px}}
+@media(max-height:580px){.summon-dialog .summon-reveal-eyebrow{padding-bottom:6px}.summon-dialog .summon-reveal-info{padding-top:8px}.summon-dialog #dialog-done{margin-top:9px}}
