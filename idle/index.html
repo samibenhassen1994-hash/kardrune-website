@@ -21,6 +21,7 @@
   <script src="./game-rules.js" defer></script>
   <script src="./combat-rules.js" defer></script>
   <script src="./i18n.js" defer></script>
+  <script src="./cloud-sync-rules.js" defer></script>
   <script src="./cloud.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
@@ -184,6 +185,7 @@
           </div>
           <div id="cloud-signed-in" hidden>
             <p id="cloud-identity"></p><p class="micro-note" id="cloud-save-info"></p>
+            <button type="button" class="dark-button" id="cloud-autosave-toggle">Enable automatic backup</button><p class="micro-note" id="cloud-auto-status" role="status" aria-live="polite">Automatic backup off</p>
             <div class="cloud-actions"><button type="button" class="dark-button" id="cloud-upload">Upload local save</button><button type="button" class="dark-button" id="cloud-download">Load cloud save</button></div>
             <button type="button" class="plain-link" id="cloud-admin" hidden>Admin debug status</button>
             <button type="button" class="plain-link" id="cloud-sign-out">Sign out</button>
