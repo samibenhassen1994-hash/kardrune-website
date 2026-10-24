@@ -42,49 +42,7 @@ function renderDeck(){
  }
  $('cards-deck-count').textContent=deck.length+' / 9';
  $('live-deck-count').textContent=deck.length+' / 9';
- renderOwnedStrip();syncStatus();refreshLabels();
-}
-function renderOwnedStrip(){
- const strip=$('cards-deck-owned');strip.replaceChildren();
- const all=save().owned||[];
- for(const id of all){
-  const button=document.createElement('button');button.type='button';button.className='deck-owned-card';button.dataset.cardId=id;
-  button.draggable=true;button.title='Drag '+id+' into your deck';
-  const img=document.createElement('img');img.src=cardImage(id);img.alt=id;img.draggable=false;button.append(img);
-  const label=document.createElement('span');label.textContent=id.replace(':',' S');button.append(label);
-  button.addEventListener('dragstart',e=>onCardDragStart(e,id));
-  let suppressClick=false;
-  button.addEventListener('click',e=>{if(suppressClick){e.preventDefault();suppressClick=false;return}insert(id)});
-  let start=null,active=false,pointer=null;
-  button.addEventListener('pointerdown',e=>{
-   if(e.pointerType==='mouse')return;
-   start={x:e.clientX,y:e.clientY};pointer=e.pointerId;active=false;
-  });
-  button.addEventListener('pointermove',e=>{
-   if(pointer!==e.pointerId||!start)return;
-   if(!active&&Math.hypot(e.clientX-start.x,e.clientY-start.y)>8){
-    active=true;button.setPointerCapture(e.pointerId);button.classList.add('deck-touch-dragging');
-   }
-   if(active){
-    e.preventDefault();
-    document.querySelectorAll('.deck-slot.drag-over').forEach(el=>el.classList.remove('drag-over'));
-    document.elementFromPoint(e.clientX,e.clientY)?.closest('.deck-slot')?.classList.add('drag-over');
-   }
-  });
-  button.addEventListener('pointerup',e=>{
-   if(pointer!==e.pointerId)return;
-   if(active){
-    suppressClick=true;
-    const slot=document.elementFromPoint(e.clientX,e.clientY)?.closest('.deck-slot');
-    if(slot)insert(id,Number(slot.dataset.slot));
-    button.classList.remove('deck-touch-dragging');
-    document.querySelectorAll('.deck-slot.drag-over').forEach(el=>el.classList.remove('drag-over'));
-   }
-   start=null;pointer=null;active=false;
-  });
-  button.addEventListener('pointercancel',()=>{start=null;pointer=null;active=false;button.classList.remove('deck-touch-dragging')});
-  strip.append(button);
- }
+ syncStatus();refreshLabels();
 }
 function onCardDragStart(event,id){event.dataTransfer.setData('text/plain',id);event.dataTransfer.effectAllowed='move'}
 function prepareCard(card,id){
@@ -95,12 +53,42 @@ function prepareCard(card,id){
  add.textContent=deck.includes(id)?'✓ IN DECK':'+ DECK';
  add.addEventListener('click',e=>{e.stopPropagation();insert(id);root.IDLE_LIVE_PVP.refreshLabels()});
  card.append(add);
- // Touch drag is activated by a short hold, so ordinary taps keep their normal meaning.
- let start=null,dragging=false,hold=null;
- card.addEventListener('touchstart',e=>{if(e.target.closest('.deck-add-card'))return;const t=e.touches[0];start={x:t.clientX,y:t.clientY};dragging=false;hold=setTimeout(()=>{dragging=true;card.classList.add('deck-touch-dragging')},320)},{passive:true});
- card.addEventListener('touchmove',e=>{if(!start)return;const t=e.touches[0];if(!dragging&&Math.hypot(t.clientX-start.x,t.clientY-start.y)>10){clearTimeout(hold);start=null;return}if(dragging){e.preventDefault();document.querySelectorAll('.deck-slot.drag-over').forEach(el=>el.classList.remove('drag-over'));const slot=document.elementFromPoint(t.clientX,t.clientY)?.closest('.deck-slot');slot?.classList.add('drag-over')}},{passive:false});
- card.addEventListener('touchend',e=>{clearTimeout(hold);if(!dragging){start=null;return}const t=e.changedTouches[0],slot=document.elementFromPoint(t.clientX,t.clientY)?.closest('.deck-slot');card.classList.remove('deck-touch-dragging');document.querySelectorAll('.deck-slot.drag-over').forEach(el=>el.classList.remove('drag-over'));if(slot)insert(id,Number(slot.dataset.slot));dragging=false;start=null;e.preventDefault()},{passive:false});
- card.addEventListener('touchcancel',()=>{clearTimeout(hold);dragging=false;start=null;card.classList.remove('deck-touch-dragging')});
+ // Drag directly from the full-size inventory card; keep natural scroll until long press.
+ let hold=null,active=false,start=null,last=null,scrollTimer=null,suppressTap=false;
+ const clearHighlights=()=>document.querySelectorAll('.deck-slot.drag-over').forEach(el=>el.classList.remove('drag-over'));
+ const stopScroll=()=>{clearInterval(scrollTimer);scrollTimer=null};
+ const hitSlot=()=>last?document.elementFromPoint(last.x,last.y)?.closest('.deck-slot'):null;
+ const hover=()=>{clearHighlights();hitSlot()?.classList.add('drag-over')};
+ const reset=()=>{clearTimeout(hold);stopScroll();clearHighlights();card.classList.remove('deck-touch-dragging');start=null;last=null;active=false};
+ const startScroll=()=>{
+  if(scrollTimer)return;
+  scrollTimer=setInterval(()=>{
+   if(!active||!last)return;
+   const edge=96;
+   const velocity=last.y<edge?-Math.min(18,(edge-last.y)/3):last.y>innerHeight-edge?Math.min(18,(last.y-(innerHeight-edge))/3):0;
+   if(velocity){root.scrollBy(0,velocity);hover()}
+  },30);
+ };
+ card.addEventListener('touchstart',e=>{
+  if(e.target.closest('.deck-add-card')||e.touches.length!==1)return;
+  const t=e.touches[0];start={x:t.clientX,y:t.clientY};last={...start};
+  active=false;clearTimeout(hold);
+  hold=setTimeout(()=>{if(!start)return;active=true;suppressTap=true;card.classList.add('deck-touch-dragging');startScroll()},320);
+ },{passive:true});
+ card.addEventListener('touchmove',e=>{
+  if(!start||e.touches.length!==1)return;
+  const t=e.touches[0];last={x:t.clientX,y:t.clientY};
+  if(!active&&Math.hypot(t.clientX-start.x,t.clientY-start.y)>10){reset();return}
+  if(active){e.preventDefault();hover()}
+ },{passive:false});
+ card.addEventListener('touchend',e=>{
+  if(!start)return;
+  if(active){const t=e.changedTouches[0];last={x:t.clientX,y:t.clientY};const slot=hitSlot();if(slot)insert(id,Number(slot.dataset.slot));e.preventDefault()}
+  reset();
+ },{passive:false});
+ card.addEventListener('touchcancel',reset);
+ // Don't accidentally select the champion after dropping its card into the deck.
+ card.addEventListener('click',e=>{if(suppressTap){e.preventDefault();e.stopImmediatePropagation();suppressTap=false}},true);
 }
 function refreshLabels(){
  document.querySelectorAll('.deck-add-card').forEach(button=>{
@@ -109,7 +97,6 @@ function refreshLabels(){
  });
 }
 function renderCardControls(){
- renderOwnedStrip();
  document.querySelectorAll('#hero-grid .hero-card[data-card-id]').forEach(card=>{
   if(!card.querySelector('.deck-add-card'))prepareCard(card,card.dataset.cardId);
  });
