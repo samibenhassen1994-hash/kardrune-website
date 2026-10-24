@@ -23,41 +23,58 @@ function persist(){try{localStorage.setItem(STORAGE,JSON.stringify(state));retur
 function notify(message){const el=$('toast');el.textContent=message;el.hidden=false;clearTimeout(notify.t);notify.t=setTimeout(()=>el.hidden=true,2800)}
 function ownedCards(){return heroes.flatMap(hero=>[1,2,3].filter(stage=>state.owned.includes(cardId(hero,stage))).map(stage=>({hero,stage})))}
 function itemById(id){const [key,level]=String(id).split(':');const hero=heroes.find(h=>h.id===key);return hero?{hero,stage:Math.max(1,Math.min(3,Number(level)||1))}:null}
-function openDialog(node){const d=$('game-dialog');$('dialog-content').replaceChildren(node);if(!d.open)d.showModal()}
+function openDialog(node){
+  const d=$('game-dialog');
+  const isSummon=node.classList.contains('summon-reveal');
+  d.classList.toggle('summon-dialog',isSummon);
+  $('dialog-done').textContent=isSummon&&node.dataset.preview==='true'?'BACK TO SUMMON':'CONTINUE';
+  $('dialog-content').replaceChildren(node);
+  if(!d.open)d.showModal();
+}
 function elem(name,className,text){const n=document.createElement(name);if(className)n.className=className;if(text!==undefined)n.textContent=text;return n}
 function reveal(hero,stage,dupe,preview){
   const wrap=elem('div','summon-reveal');
+  wrap.dataset.preview=String(preview);
+  wrap.dataset.stage=String(stage);
+
+  const eyebrow=elem('div','summon-reveal-eyebrow',preview?'✦ SUMMON PREVIEW ✦':dupe?'✦ RUNIC ECHO ✦':'✦ HERO SUMMONED ✦');
   const media=elem('div','summon-reveal-media');
   const videoSrc=cardVideo(hero,stage);
   let video=null;
   if(videoSrc){
-    // Never overlay the static card image or use it as a video poster.
-    // That used to display two copies of the revealed hero.
+    // One animated asset only; don't overlay the static card artwork or a poster.
     video=elem('video','summon-reveal-video');
     video.src=videoSrc;
     video.autoplay=true;
     video.muted=true;
     video.loop=true;
     video.playsInline=true;
-    video.preload='auto';
+    video.preload='metadata';
     video.setAttribute('webkit-playsinline','');
     video.setAttribute('aria-label',hero.name+' Stage '+stage+' summon animation');
-    const errorText=elem('p','summon-video-fallback','The animation is unavailable on this device.');
+    video.addEventListener('loadedmetadata',()=>{
+      if(video.videoWidth>0&&video.videoHeight>0){
+        media.style.aspectRatio=video.videoWidth+' / '+video.videoHeight;
+      }
+    });
+    const errorText=elem('p','summon-video-fallback','The summon animation could not be loaded.');
     errorText.hidden=true;
     video.addEventListener('error',()=>{video.hidden=true;errorText.hidden=false});
     media.append(video,errorText);
   }else{
     media.append(elem('p','summon-video-fallback','Animation coming soon for '+hero.name+' Stage '+stage+'.'));
   }
-  wrap.append(media,elem('span','summon-reveal-stage','STAGE '+stage));
-  wrap.append(elem('h2','',hero.name.toUpperCase()),
-    elem('p','summon-reveal-caption',preview?'Summon animation preview':dupe?'Duplicate card · 100 demo Shards refunded.':'NEW CARD UNLOCKED · Saved to your collection.'));
-  if(preview){
-    const close=elem('button','dark-button','BACK TO SUMMON');
-    close.type='button';
-    close.addEventListener('click',()=>$('game-dialog').close());
-    wrap.append(close);
-  }
+
+  const info=elem('div','summon-reveal-info');
+  const stageBadge=elem('span','summon-reveal-stage','STAGE '+stage);
+  const name=elem('h2','summon-reveal-name',hero.name.toUpperCase());
+  name.id='dialog-title';
+  const subtitle=elem('p','summon-reveal-caption',
+    preview?'Preview of this hero evolution':
+      dupe?'Duplicate card · 100 demo Shards refunded.':
+      'NEW CARD UNLOCKED · Saved to your collection.');
+  info.append(stageBadge,name,subtitle);
+  wrap.append(eyebrow,media,info);
   openDialog(wrap);
   if(video)video.play().catch(()=>{video.controls=true});
 }
