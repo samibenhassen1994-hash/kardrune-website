@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="./styles.css">
   <script src="./catalog.js" defer></script>
   <script src="./game-rules.js" defer></script>
+  <script src="./combat-rules.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -59,21 +60,34 @@
           <div class="crest" aria-hidden="true">♜</div>
         </div>
         <div class="section-heading"><div><span class="mini-label">YOUR NEXT BATTLE</span><h2>Practice Arena</h2></div><span class="chip chip-blue">SOLO DEMO</span></div>
-        <div class="duel-stage">
+        <div class="duel-stage live-duel">
           <div class="combatant">
-            <div class="combatant-frame"><img id="duel-player-art" src="https://kardrune.com/assets/young_sam_stage_1.webp" alt="Your selected hero" loading="eager"></div>
-            <strong id="duel-player-name">Sam</strong><small>YOUR HERO</small>
+            <div class="combatant-frame battle-portrait">
+              <img id="duel-player-art" src="./media/cards/young_sam/young_sam_stage_1.webp" alt="Your selected hero">
+              <div class="battle-card-stats"><span class="card-atk" id="duel-player-attack">50</span><span class="card-hp" id="duel-player-maxhp">120</span></div>
+            </div>
+            <strong id="duel-player-name">Sam · S1</strong><small>YOUR HERO</small>
+            <div class="duel-health"><span id="player-health-fill"></span></div>
+            <small>HP <b id="duel-player-hp">120</b></small>
           </div>
           <div class="vs-mark"><span>VS</span><i>⚔</i></div>
           <div class="combatant">
-            <div class="combatant-frame enemy-frame"><img src="https://kardrune.com/assets/corrupted_sentinel.webp" alt="Corrupted Sentinel practice enemy"></div>
-            <strong>Sentinel</strong><small>TRAINING FOE</small>
+            <div class="combatant-frame battle-portrait enemy-frame">
+              <img id="duel-enemy-art" src="./media/cards/dren/dren_stage_1.webp" alt="Random rival">
+              <div class="battle-card-stats"><span class="card-atk" id="duel-enemy-attack">50</span><span class="card-hp" id="duel-enemy-maxhp">120</span></div>
+            </div>
+            <strong id="duel-enemy-name">Rival</strong><small>RANDOM OPPONENT</small>
+            <div class="duel-health"><span id="enemy-health-fill"></span></div>
+            <small>HP <b id="duel-enemy-hp">120</b></small>
           </div>
         </div>
+        <p id="battle-live-status" class="battle-live-status" role="status" aria-live="polite">Ready for a real-time duel</p>
+        <p class="micro-note">HITS: <strong id="battle-turn-counter">0</strong> · 1 turn every 1.2s</p>
+        <button class="dark-button" id="reroll-enemy" type="button">↻ RANDOM OPPONENT</button>
         <label class="select-label" for="active-hero-select">CHOOSE YOUR CHAMPION</label>
         <select id="active-hero-select" class="field"></select>
         <button type="button" class="gold-button" id="practice-button">⚔ START PRACTICE DUEL <svg><use href="#i-chevron"></use></svg></button>
-        <p class="micro-note">Practice duels use local simulation. Rewarded duels remaining today: <strong id="practice-rewards-left">10</strong>/10 (local midnight reset). You can still practice afterward. Real PvP requires a separate online server.</p>
+        <p class="micro-note">Turn-based battles play automatically in real time against randomized demo opponents. Rewarded duels remaining today: <strong id="practice-rewards-left">10</strong>/10 (local midnight reset). You can still practice afterward. Real PvP requires a separate online server.</p>
         <div class="section-heading bracket-heading"><div><span class="mini-label">COMPETITION ROADMAP</span><h2>Championship Bracket</h2></div></div>
         <div class="bracket">
           <div class="bracket-step"><span class="bracket-index">01</span><div><strong>Qualifiers</strong><small>Register your team</small></div><span class="bracket-lock">SOON</span></div>
