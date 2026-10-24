@@ -10,10 +10,10 @@ export async function onRequestPost({request,env}){
   await env.DB.prepare('INSERT OR IGNORE INTO pvp_friendly_queue(uid,ticket,card_json,joined_at,match_id) VALUES(?,?,?,?,NULL)')
     .bind(user.uid,ticket,JSON.stringify(card),now).run();
   // A lock-free matchmaking claim is guarded by a single conditional UPDATE.
-  const opponent=await env.DB.prepare('SELECT q.uid,q.ticket,q.card_json FROM pvp_friendly_queue q JOIN players p ON p.uid=q.uid WHERE q.uid<>? AND q.match_id IS NULL AND p.is_banned=0 ORDER BY q.joined_at LIMIT 1').bind(user.uid).first();
+  const opponent=await env.DB.prepare('SELECT q.uid,q.ticket,q.card_json FROM pvp_friendly_queue q JOIN players p ON p.uid=q.uid WHERE q.uid<>? AND q.match_id IS NULL AND q.joined_at>=? AND p.is_banned=0 ORDER BY q.joined_at LIMIT 1').bind(user.uid,now-300000).first();
   if(!opponent)return json({state:'waiting'});
   const matchId=crypto.randomUUID();
-  const claimed=await env.DB.prepare('UPDATE pvp_friendly_queue SET match_id=? WHERE uid=? AND ticket=? AND match_id IS NULL').bind(matchId,opponent.uid,opponent.ticket).run();
+  const claimed=await env.DB.prepare('UPDATE pvp_friendly_queue SET match_id=? WHERE uid=? AND ticket=? AND match_id IS NULL AND joined_at>=?').bind(matchId,opponent.uid,opponent.ticket,now-300000).run();
   if(claimed.meta?.changes!==1)return json({state:'waiting'});
   try{
    const own=await env.DB.prepare('UPDATE pvp_friendly_queue SET match_id=? WHERE uid=? AND ticket=? AND match_id IS NULL').bind(matchId,user.uid,ticket).run();
