@@ -10,10 +10,14 @@ const combat=window.IDLE_COMBAT_RULES;
 const cardId=(hero,stage)=>hero.id+':'+stage;
 const cardImage=(hero,stage)=>'./media/cards/'+hero.stages[stage-1];
 const cardVideo=(hero,stage)=>hero.loops[stage-1]?'./media/animations/'+hero.loops[stage-1]:null;
-const initial=()=>({name:'Runebearer',avatar:'player',shards:1500,owned:['sam:1','lira:1','rhea:1'],active:'sam:1',duels:0,wins:0,pulls:0,practiceDaily:{day:'',count:0},attacks:{'sam:1':50,'lira:1':50,'rhea:1':50}});
+const initial=()=>({name:'Runebearer',avatar:'player',shards:1500,owned:['sam:1','lira:1','rhea:1'],active:'sam:1',duels:0,wins:0,pulls:0,practiceDaily:{day:'',count:0},attacks:{'sam:1':50,'lira:1':50,'rhea:1':50},pendingDuplicate:null});
 function normalizeAttacks(values,owned){
  const obj=values&&typeof values==='object'&&!Array.isArray(values)?values:{};
  return Object.fromEntries(owned.map(id=>[id,combat.isAttack(obj[id])?obj[id]:combat.legacyAttack(id)]));
+}
+function normalizePending(v,owned){
+ if(!v||typeof v!=='object'||!owned.includes(v.id)||!combat.isAttack(v.attack))return null;
+ return {id:v.id,attack:v.attack};
 }
 function migrate(v){
   const base=initial();if(!v||typeof v!=='object')return base;
@@ -22,11 +26,11 @@ function migrate(v){
   const active=String(v.active||base.active);const normalized=active.includes(':')?active:active+':1';
   const owned=[...new Set(valid.length?valid:base.owned)];
   return {name:typeof v.name==='string'?v.name.slice(0,20):base.name,avatar:Object.prototype.hasOwnProperty.call(AVATARS,v.avatar)?v.avatar:base.avatar,shards:Number.isFinite(v.shards)?Math.max(0,Math.floor(v.shards)):base.shards,
-    owned,active:owned.includes(normalized)?normalized:owned[0],duels:rules.safeCount(v.duels),wins:rules.safeCount(v.wins),pulls:rules.safeCount(v.pulls),practiceDaily:rules.dailyRewardState(v.practiceDaily),attacks:normalizeAttacks(v.attacks,owned)};
+    owned,active:owned.includes(normalized)?normalized:owned[0],duels:rules.safeCount(v.duels),wins:rules.safeCount(v.wins),pulls:rules.safeCount(v.pulls),practiceDaily:rules.dailyRewardState(v.practiceDaily),attacks:normalizeAttacks(v.attacks,owned),pendingDuplicate:normalizePending(v.pendingDuplicate,owned)};
 }
 function load(){try{return migrate(JSON.parse(localStorage.getItem(STORAGE)))}catch{return initial()}}
 let state=load(),filter='all',grouped=false,installEvent=null,pulling=false;
-let opponent=null,liveBattle=null,battleTimer=null,pendingDuplicate=null;
+let opponent=null,liveBattle=null,battleTimer=null,pendingDuplicate=state.pendingDuplicate?{...state.pendingDuplicate,...itemById(state.pendingDuplicate.id)}:null;
 function persist(){try{localStorage.setItem(STORAGE,JSON.stringify(state));return true}catch{notify('Local progress could not be saved');return false}}
 function notify(message){const el=$('toast');el.textContent=message;el.hidden=false;clearTimeout(notify.t);notify.t=setTimeout(()=>el.hidden=true,2800)}
 function ownedCards(){return heroes.flatMap(hero=>[1,2,3].filter(stage=>state.owned.includes(cardId(hero,stage))).map(stage=>({hero,stage})))}
@@ -141,7 +145,7 @@ function render(){
  if(!owned.some(({hero,stage})=>cardId(hero,stage)===state.active))state.active=owned[0]?cardId(owned[0].hero,owned[0].stage):'sam:1';
  select.value=state.active;const current=itemById(state.active);
  $('duel-player-art').src=cardImage(current.hero,current.stage);$('duel-player-name').textContent=current.hero.name+' · S'+current.stage;
- if(!liveBattle)renderOpponent();
+ if(!liveBattle){renderOpponent();$('player-health-fill').style.width='100%'}
  $('duel-player-attack').textContent=state.attacks[state.active];
  $('duel-player-maxhp').textContent=combat.hpForStage(current.stage);
  $('duel-player-hp').textContent=liveBattle?liveBattle.player.hp:combat.hpForStage(current.stage);
@@ -235,6 +239,7 @@ function summon(featured){
  const attack=combat.rollAttack();
  if(duplicate){
    pendingDuplicate={id,attack,hero,stage};
+   state.pendingDuplicate={id,attack};
    persist();render();showDuplicate();
  }else{
    state.owned.push(id);state.attacks[id]=attack;
@@ -257,7 +262,7 @@ function showDuplicate(){
    if(!pendingDuplicate)return;
    if(replace)state.attacks[id]=attack;
    else state.shards+=100;
-   pendingDuplicate=null;persist();render();$('game-dialog').close();
+   pendingDuplicate=null;state.pendingDuplicate=null;persist();render();$('game-dialog').close();
    notify(replace?'New ATK saved':'Old ATK kept · +100 demo Shards');
   });actions.append(button);
  }
@@ -281,11 +286,12 @@ $('dialog-close').addEventListener('click',()=>{if(pendingDuplicate)return notif
 $('dialog-done').addEventListener('click',()=>{if(pendingDuplicate)return;$('game-dialog').close()});
 $('game-dialog').addEventListener('click',e=>{if(e.target===$('game-dialog')&&!pendingDuplicate)e.target.close()});
 $('game-dialog').addEventListener('cancel',e=>{if(pendingDuplicate)e.preventDefault()});
-$('game-dialog').addEventListener('close',()=>{$('dialog-done').hidden=false;if(pendingDuplicate){pendingDuplicate=null;notify('Duplicate choice dismissed — old ATK kept')}for(const v of $('dialog-content').querySelectorAll('video')){v.pause();v.removeAttribute('src');v.load()}});
+$('game-dialog').addEventListener('close',()=>{$('dialog-done').hidden=false;if(pendingDuplicate){notify('Choose KEEP or REPLACE to finish the pull');setTimeout(showDuplicate,0)}for(const v of $('dialog-content').querySelectorAll('video')){v.pause();v.removeAttribute('src');v.load()}});
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvent=e;$('install-help').textContent='Ready to add to your home screen.'});
 $('install-button').addEventListener('click',async()=>{if(installEvent){installEvent.prompt();await installEvent.userChoice;installEvent=null}else notify('Use Safari Share or Chrome menu → Add to Home Screen')});
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 renderRoster();render();go(location.hash.slice(1)||'tournament');
+if(pendingDuplicate)showDuplicate();
 const param=new URLSearchParams(location.search).get('install');
 if(param==='ios'||param==='android'){const wrap=elem('div');wrap.append(elem('h2','','INSTALL IDLE KARDRUNE'),elem('p','',param==='ios'?'In Safari tap Share → Add to Home Screen.':'In Chrome tap ⋮ → Install app or Add to Home Screen.'));openDialog(wrap);history.replaceState(null,'',location.pathname+(location.hash||''))}
 })();
