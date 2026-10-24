@@ -189,3 +189,13 @@
 .cloud-actions button{min-width:0;font-size:10px;padding:9px;min-height:45px}
 #cloud-identity{text-align:center;font-size:12px;color:#e8d6b3;overflow-wrap:anywhere}
 [hidden]{display:none!important}
+
+/* Asynchronous PvP uses existing fantasy controls, no new illustration assets. */
+.pvp-online-box{margin:18px 0 22px;padding:15px 13px 16px;border:1px solid #cba95c77;border-radius:14px;background:linear-gradient(145deg,#192c46,#0a1327)}
+.pvp-online-box .section-heading{margin-top:2px}
+.pvp-online-box h2{font-size:19px}
+.pvp-online-box .gold-button,.pvp-online-box .dark-button{width:100%;margin-top:9px;min-height:44px}
+.pvp-online-box #pvp-online-status{margin:6px 0 10px;font-size:12px}
+#pvp-online-result{margin-top:13px;padding:11px;border:1px solid #c4a56b55;border-radius:9px}
+#pvp-online-result h3{color:#f2d18d;font-size:14px}
+.pvp-replay{white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow-y:auto;font:11px/1.6 Inter,monospace;color:#d4e6f9;background:#09162a;border-radius:8px;padding:9px}
