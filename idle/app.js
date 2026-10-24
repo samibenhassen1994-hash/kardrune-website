@@ -244,7 +244,7 @@ function updateBattle(){
    $(side==='player'?'player-health-fill':'enemy-health-fill').style.width=(unit.hp/unit.maxHp*100)+'%';
  }
  const last=liveBattle.lastHit;
- $('battle-live-status').textContent=last?(last.actor==='player'?'You hit':'Opponent hits')+' for '+last.damage+' damage'+(last.critical?' · CRITICAL ×2!':''): 'Battle in progress…';
+ $('battle-live-status').textContent=last?(last.actor==='player'?'You hit':'Opponent hits')+' · ATK '+last.attack+' '+(last.critical?'×2 CRIT ':'')+'= '+last.damage+' damage · HP '+last.hpBefore+' → '+last.hp+(last.actualHpLost<last.damage?' (KO)':''): 'Battle in progress…';
  $('battle-turn-counter').textContent=String(liveBattle.hits);
 }
 function endBattle(){
