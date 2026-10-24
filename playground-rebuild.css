@@ -109,3 +109,29 @@
 .page-tools .premium-art.game-art-ready {
   max-width: min(100%, 370px);
 }
+
+
+/* All Playground subpage mastheads (not just the card creator).
+   Sprite tiles are portrait; display them as portrait on desktop and mobile. */
+.page-tools .tool-hero-grid > [data-game-art].game-art-ready {
+  box-sizing: border-box;
+  display: block;
+  width: min(100%, 370px);
+  height: auto !important;
+  aspect-ratio: 264 / 344 !important;
+  justify-self: center;
+  align-self: center;
+}
+.page-tools .tool-hero-grid > .premium-art-secondary.game-art-ready {
+  width: 25%;
+  max-width: 120px;
+}
+@media (max-width: 760px) {
+  .page-tools .tool-hero-grid > [data-game-art].game-art-ready:not(.premium-art-secondary) {
+    width: clamp(145px, 55vw, 225px);
+    max-width: 100%;
+  }
+  .page-tools .tool-hero-grid > .premium-art-secondary.game-art-ready {
+    width: 36%;
+  }
+}
