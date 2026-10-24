@@ -2,7 +2,6 @@
 (function(root){
 'use strict';
 const STAGE_HP=Object.freeze([0,120,170,215]);
-const STAGE_BASE_DAMAGE=Object.freeze([0,14,19,24]);
 const TURN_MS=1200;
 const MAX_CRIT=25;
 const isAttack=x=>Number.isInteger(x)&&x>=1&&x<=100;
@@ -43,11 +42,10 @@ function newBattle(player,enemy,random=Math.random){
   const right={...enemy,crit:isCrit(enemy.crit)?enemy.crit:0,hp:hpForStage(enemy.stage),maxHp:hpForStage(enemy.stage)};
   return {player:left,enemy:right,turn:normalizedRandom(random)<.5?'player':'enemy',hits:0,status:'running',lastHit:null,winner:null};
 }
-function calculateDamage(stage,attack,random=Math.random){
-  const base=STAGE_BASE_DAMAGE[validStage(stage)?stage:1];
-  const atk=isAttack(attack)?attack:50;
-  const variance=.9+normalizedRandom(random)*.2;
-  return Math.max(1,Math.round((base+atk*.12)*variance));
+function calculateDamage(stage,attack){
+  // Card ATK is the exact damage per normal hit. Stage determines HP only.
+  // Critical hits multiply this value by two in nextTurn().
+  return isAttack(attack)?attack:50;
 }
 function nextTurn(battle,random=Math.random){
   if(battle.status!=='running')return battle;
@@ -66,7 +64,7 @@ function nextTurn(battle,random=Math.random){
     lastHit:{actor,target,damage,critical,hp:remaining}
   };
 }
-const api=Object.freeze({STAGE_HP,STAGE_BASE_DAMAGE,TURN_MS,MAX_CRIT,isAttack,isCrit,validStage,hpForStage,rollAttack,rollCrit,legacyAttack,legacyCrit,cardStats,pickEnemy,newBattle,calculateDamage,nextTurn});
+const api=Object.freeze({STAGE_HP,TURN_MS,MAX_CRIT,isAttack,isCrit,validStage,hpForStage,rollAttack,rollCrit,legacyAttack,legacyCrit,cardStats,pickEnemy,newBattle,calculateDamage,nextTurn});
 root.IDLE_COMBAT_RULES=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

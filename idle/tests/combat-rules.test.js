@@ -9,10 +9,12 @@ test('ATK rolls cover inclusive 1-100',()=>{
  assert.equal(combat.rollAttack(()=>0),1);
  assert.equal(combat.rollAttack(()=>.999999),100);
 });
-test('stage bonuses and bounded attack damage',()=>{
- assert.equal(combat.calculateDamage(1,50,()=>.5),20);
- assert.equal(combat.calculateDamage(2,50,()=>.5),25);
- assert.equal(combat.calculateDamage(3,50,()=>.5),30);
+test('normal hit equals card ATK regardless of Stage',()=>{
+ for(const stage of [1,2,3]){
+  for(const attack of [1,25,50,75,100]){
+   assert.equal(combat.calculateDamage(stage,attack),attack);
+  }
+ }
 });
 test('opponents only use known cards and stages',()=>{
  const heroes=[{id:'sam',name:'Sam'},{id:'aria',name:'Aria'}];
@@ -56,10 +58,33 @@ test('critical damage is exactly double noncritical damage',()=>{
  const critical=combat.nextTurn(combat.newBattle(player,enemy,()=>0),(()=>{let c=0;return()=>++c===1?.5:0})());
  assert.equal(normal.lastHit.critical,false);
  assert.equal(critical.lastHit.critical,true);
- assert.equal(critical.lastHit.damage,normal.lastHit.damage*2);
+ assert.equal(normal.lastHit.damage,50);
+ assert.equal(critical.lastHit.damage,100);
 });
 test('legacy crit remains within allowed range and deterministic',()=>{
  const crit=combat.legacyCrit('sam:1');
  assert.ok(crit>=0&&crit<=25);
  assert.equal(crit,combat.legacyCrit('sam:1'));
+});
+
+test('HP is reduced by the actual ATK and clamps to zero on overkill',()=>{
+ const player={name:'Sam',stage:1,attack:70,crit:0};
+ const enemy={name:'Lira',stage:1,attack:50,crit:0};
+ let battle=combat.newBattle(player,enemy,()=>0);
+ battle=combat.nextTurn(battle,()=>.9);
+ assert.equal(battle.lastHit.damage,70);
+ assert.equal(battle.enemy.hp,50);
+ battle=combat.nextTurn(battle,()=>.9);
+ assert.equal(battle.player.hp,70);
+ battle=combat.nextTurn(battle,()=>.9);
+ assert.equal(battle.lastHit.damage,70);
+ assert.equal(battle.enemy.hp,0);
+ assert.equal(battle.winner,'player');
+});
+test('critical overkill does not produce negative HP',()=>{
+ const battle=combat.newBattle({stage:1,attack:100,crit:25},{stage:1,attack:1,crit:0},()=>0);
+ const after=combat.nextTurn(battle,()=>0);
+ assert.equal(after.lastHit.damage,200);
+ assert.equal(after.enemy.hp,0);
+ assert.equal(after.status,'finished');
 });
