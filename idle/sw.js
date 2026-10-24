@@ -1,4 +1,4 @@
-const CACHE='idle-kardrune-shell-v26';
+const CACHE='idle-kardrune-shell-v27';
 const CORE=['./','./index.html','./styles.css','./app.js','./game-rules.js','./combat-rules.js','./i18n.js','./cloud-sync-rules.js','./cloud.js','./pvp.js','./live-pvp.js','./update.js','./catalog.js','./icon.svg','./manifest.webmanifest'];
 const IMAGES=[
  "./media/cards/young_sam/young_sam_stage_1.webp",
