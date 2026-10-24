@@ -141,3 +141,39 @@
 /* Keep first-time Summon a square cinematic reveal; preserve full horizontal video without cropping. */
 .summon-dialog .summon-reveal-media{aspect-ratio:1 / 1;width:min(100%,min(62dvh,440px));max-height:min(62dvh,440px);margin:0 auto;min-height:0;height:auto;background:radial-gradient(circle at 50% 50%,#243756,#060d1c 80%)}
 .summon-dialog .summon-reveal-video{object-fit:contain}
+
+/* Compact mobile routes: preserve all original card artwork and summoning surfaces. */
+.wallet-edit{cursor:pointer;color:#f9f4e9}.wallet-plus{font-size:17px;color:#f5d28b;font-weight:800}
+#screen-cards,#screen-summon{padding-top:12px}
+#screen-cards h1,#screen-summon h1{font-size:clamp(25px,6vw,34px);margin:4px 0 12px}
+#screen-cards .cards-view-tabs{margin-top:0}
+#screen-cards .collection-banner{padding:11px 13px;margin-bottom:10px}
+#screen-cards .collection-banner strong{font-size:21px;margin-top:2px}
+#screen-cards .collection-progress{margin-top:8px}
+#screen-cards .filters{margin-bottom:10px}
+#screen-cards .hero-grid{gap:9px}
+#screen-cards .hero-card{padding:6px 6px 9px}
+#screen-cards .rarity-tag{margin-top:6px}
+.cards-pagination{display:flex;justify-content:center;align-items:center;gap:20px;margin:13px 0 6px;color:#f4d38c;font-size:11px;font-weight:800;letter-spacing:.10em}
+.cards-pagination[hidden]{display:none}
+.cards-page-arrow{min-width:45px;min-height:39px;border:1px solid #ba9856;border-radius:9px;background:#20314e;color:#f4d38c;font-size:26px}
+.cards-page-arrow:disabled{opacity:.32;cursor:default}
+#screen-summon .summon-feature{min-height:0;height:clamp(170px,27dvh,238px)}
+#screen-summon .summon-art{height:100%}
+#screen-summon .summon-feature-bottom{position:absolute;bottom:0;left:0;right:0;margin:0;padding:26px 10px 9px;background:linear-gradient(0deg,#071022f5,#07102200)}
+#screen-summon .summon-feature-bottom h2{font-size:21px;margin:3px 0}
+#screen-summon .summon-feature-bottom p{display:none}
+#screen-summon .summon-choice{margin-top:9px;padding:10px 13px}
+#screen-summon .choice-head h3{font-size:15px;margin:3px 0}
+#screen-summon .choice-head small{font-size:8px}
+#screen-summon .portal-badge{font-size:27px}
+#screen-summon .summon-choice .gold-button,#screen-summon .summon-choice .dark-button{min-height:41px;margin-top:8px;padding:0 13px}
+.summon-quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.summon-mini-action{border:1px solid #a98c5c7c;border-radius:9px;padding:11px 5px;color:#f5dcaa;background:linear-gradient(120deg,#1c3150,#0e1b33);font-size:10px;font-weight:800;letter-spacing:.07em}
+.summon-roster-dialog h2,.summon-info-dialog h2,.currency-dialog h2{font-size:20px;text-align:center;margin:6px 0 13px}
+.summon-roster-dialog p{font-size:11px;color:#b6c8de}
+.summon-roster-dialog .summon-roster-grid{max-height:min(55dvh,470px);overflow-y:auto;margin:12px 0 0;padding:2px}
+.summon-info-dialog p{text-align:left}
+.currency-form .field{font-size:20px;text-align:center}
+.currency-dialog .micro-note{margin-bottom:14px}
+@media(max-height:700px){#screen-summon .summon-feature{height:clamp(125px,23dvh,180px)}#screen-summon h1{margin:2px 0 8px}#screen-summon .summon-choice{padding:8px 11px;margin-top:7px}#screen-summon .summon-choice .gold-button,#screen-summon .summon-choice .dark-button{min-height:36px;margin-top:5px}.summon-mini-action{padding:8px 4px}}
