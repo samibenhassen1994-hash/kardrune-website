@@ -97,9 +97,8 @@
           <p class="micro-note">Build a deck of up to 9 owned cards. Each round draw 3, play one, and watch both cards duel in real time. Friendly mode · no ranked rewards.</p>
           <p id="live-pvp-auth-hint" class="micro-note">Sign in from your Profile to prepare a PvP deck.</p>
           <div id="live-pvp-content" hidden>
-            <div class="live-deck-header"><strong>YOUR DECK</strong><span id="live-deck-count">0 / 9</span></div>
-            <div id="live-deck-editor" class="live-deck-editor"></div>
-            <button class="dark-button" id="live-deck-save" type="button">SAVE DECK</button>
+            <div class="live-deck-header"><strong>SELECTED DECK</strong><span id="live-deck-count">0 / 9</span></div>
+            <button class="dark-button" id="live-deck-edit" type="button">✦ EDIT DECK IN CARDS</button>
             <p class="battle-live-status" id="live-pvp-state" role="status">Ready to connect</p>
             <button class="gold-button" id="live-pvp-connect" type="button">⚔ FIND LIVE MATCH</button>
             <button class="dark-button" id="live-pvp-disconnect" type="button">DISCONNECT</button>
@@ -134,6 +133,18 @@
       </section>
       <section class="screen" id="screen-cards" aria-labelledby="cards-heading" hidden>
         <h1 id="cards-heading">YOUR <span class="gold-text">CARDS</span></h1>
+        <section class="deck-builder" id="deck-builder" aria-labelledby="cards-deck-heading">
+          <div class="deck-builder-header">
+            <div><span class="deck-builder-eyebrow">⚔ PVP LOADOUT</span><h2 id="cards-deck-heading">MY DECK</h2></div>
+            <strong id="cards-deck-count">0 / 9</strong>
+          </div>
+          <p class="deck-builder-help">Drag your owned cards into the nine slots, or tap <strong>+ DECK</strong> on a card. Tap a filled slot to remove it.</p>
+          <div class="deck-slots" id="cards-deck-slots" role="group" aria-label="Nine PvP deck slots"></div>
+          <div class="deck-builder-footer">
+            <p class="deck-builder-status" id="cards-deck-status" role="status" aria-live="polite">Prepare your deck before joining PvP.</p>
+            <button type="button" class="gold-button" id="cards-deck-save">SAVE DECK</button>
+          </div>
+        </section>
         <div class="cards-view-tabs"><button type="button" class="filter active" id="card-view-grid">CARD GRID</button><button type="button" class="filter" id="card-view-heroes">BY HERO</button></div>
         <div class="collection-banner"><div><small>COLLECTION PROGRESS</small><strong id="owned-count">1 <span>/ 27 CARDS</span></strong></div><div class="collection-progress"><span id="collection-bar" style="width:3.70%"></span></div></div>
         <div class="filters" role="group" aria-label="Collection filter"><button class="filter" data-filter="all" type="button">All Heroes</button><button class="filter active" data-filter="owned" type="button">Owned</button><button class="filter" data-filter="missing" type="button">Locked</button></div>
