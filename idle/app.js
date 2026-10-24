@@ -81,11 +81,7 @@ function reveal(hero,stage,dupe,preview){
     video.preload='metadata';
     video.setAttribute('webkit-playsinline','');
     video.setAttribute('aria-label',hero.name+' Stage '+stage+' summon animation');
-    video.addEventListener('loadedmetadata',()=>{
-      if(video.videoWidth>0&&video.videoHeight>0){
-        media.style.aspectRatio=video.videoWidth+' / '+video.videoHeight;
-      }
-    });
+    // New-card reveal remains square even for landscape video files.
     const errorText=elem('p','summon-video-fallback','The summon animation could not be loaded.');
     errorText.hidden=true;
     video.addEventListener('error',()=>{video.hidden=true;errorText.hidden=false});
