@@ -38,7 +38,7 @@ let state=load(),filter='owned',grouped=false,installEvent=null,pulling=false;
 let cardsPage=0;
 const CARDS_PER_PAGE=4;
 let opponent=null,liveBattle=null,battleTimer=null,pendingDuplicate=state.pendingDuplicate?{...state.pendingDuplicate,...itemById(state.pendingDuplicate.id)}:null;
-function persist(){try{localStorage.setItem(STORAGE,JSON.stringify(state));return true}catch{notify('Local progress could not be saved');return false}}
+function persist(){try{localStorage.setItem(STORAGE,JSON.stringify(state));window.IDLE_CLOUD?.onLocalChange?.();return true}catch{notify('Local progress could not be saved');return false}}
 function notify(message){const el=$('toast');el.textContent=message;el.hidden=false;clearTimeout(notify.t);notify.t=setTimeout(()=>el.hidden=true,2800)}
 function ownedCards(){return heroes.flatMap(hero=>[1,2,3].filter(stage=>state.owned.includes(cardId(hero,stage))).map(stage=>({hero,stage})))}
 function itemById(id){const [key,level]=String(id).split(':');const hero=heroes.find(h=>h.id===key);return hero?{hero,stage:Math.max(1,Math.min(3,Number(level)||1))}:null}
