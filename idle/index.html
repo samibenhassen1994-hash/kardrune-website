@@ -20,6 +20,7 @@
   <script src="./catalog.js" defer></script>
   <script src="./game-rules.js" defer></script>
   <script src="./combat-rules.js" defer></script>
+  <script src="./i18n.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -63,11 +64,11 @@
           <div class="combatant">
             <div class="combatant-frame battle-portrait">
               <img id="duel-player-art" src="./media/cards/young_sam/young_sam_stage_1.webp" alt="Your selected hero">
-              <div class="battle-card-stats"><span class="card-atk" id="duel-player-attack">50</span><span class="card-crit" id="duel-player-crit">10%</span><span class="card-hp" id="duel-player-maxhp">120</span></div>
+              <div class="battle-card-stats"><span class="card-atk" id="duel-player-attack">40</span><span class="card-crit" id="duel-player-crit">4%</span><span class="card-hp" id="duel-player-maxhp">240</span></div>
             </div>
             <strong id="duel-player-name">Sam · S1</strong><small>YOUR HERO</small>
             <div class="duel-health"><span id="player-health-fill"></span></div>
-            <small>HP <b id="duel-player-hp">120</b></small>
+            <small>HP <b id="duel-player-hp">240</b></small>
           </div>
           <div class="vs-mark"><span>VS</span><i>⚔</i></div>
           <div class="combatant">
@@ -97,8 +98,8 @@
       <section class="screen" id="screen-cards" aria-labelledby="cards-heading" hidden>
         <h1 id="cards-heading">YOUR <span class="gold-text">CARDS</span></h1>
         <div class="cards-view-tabs"><button type="button" class="filter active" id="card-view-grid">CARD GRID</button><button type="button" class="filter" id="card-view-heroes">BY HERO</button></div>
-        <div class="collection-banner"><div><small>COLLECTION PROGRESS</small><strong id="owned-count">3 <span>/ 27 CARDS</span></strong></div><div class="collection-progress"><span id="collection-bar" style="width:11.11%"></span></div></div>
-        <div class="filters" role="group" aria-label="Collection filter"><button class="filter active" data-filter="all" type="button">All Heroes</button><button class="filter" data-filter="owned" type="button">Owned</button><button class="filter" data-filter="missing" type="button">Locked</button></div>
+        <div class="collection-banner"><div><small>COLLECTION PROGRESS</small><strong id="owned-count">1 <span>/ 27 CARDS</span></strong></div><div class="collection-progress"><span id="collection-bar" style="width:3.70%"></span></div></div>
+        <div class="filters" role="group" aria-label="Collection filter"><button class="filter" data-filter="all" type="button">All Heroes</button><button class="filter active" data-filter="owned" type="button">Owned</button><button class="filter" data-filter="missing" type="button">Locked</button></div>
         <div class="hero-grid" id="hero-grid"></div>
         <nav class="cards-pagination" id="cards-pagination" aria-label="Cards pages">
           <button type="button" id="cards-prev" class="cards-page-arrow" aria-label="Previous cards page">‹</button>
@@ -157,12 +158,13 @@
           </div>
           <p class="micro-note">Your avatar choice is saved on this device.</p>
         </div>
+        <div class="language-setting"><label class="select-label" for="language-select">LANGUAGE</label><select id="language-select" class="field"><option value="auto">Automatic (device)</option><option value="it">Italiano</option><option value="en">English</option></select></div>
         <form id="name-form" class="profile-form"><label class="select-label" for="name-input">DISPLAY NAME</label><div class="name-row"><input id="name-input" class="field" name="nickname" minlength="2" maxlength="20" autocomplete="nickname" required><button class="dark-button" type="submit">SAVE</button></div></form>
         <div class="stats-grid">
           <div class="stat-card"><span>⚔</span><strong id="stat-duels">0</strong><small>PRACTICE DUELS</small></div>
           <div class="stat-card"><span>★</span><strong id="stat-wins">0</strong><small>PRACTICE WINS</small></div>
           <div class="stat-card"><span>✦</span><strong id="stat-pulls">0</strong><small>SUMMONS</small></div>
-          <div class="stat-card"><span>▣</span><strong id="stat-cards">3</strong><small>OWNED CARDS</small></div>
+          <div class="stat-card"><span>▣</span><strong id="stat-cards">1</strong><small>OWNED CARDS</small></div>
         </div>
         <div class="profile-actions"><button type="button" class="dark-button" id="install-button">＋ INSTALL IDLE KARDRUNE</button><p id="install-help" class="micro-note">Install to your home screen from your browser menu.</p><button type="button" class="plain-link" id="reset-button">Reset local demo progress</button></div>
         <div class="data-separation">🛡 <span>Independent prototype: it does not access or modify your KardRune app account, purchases or database.</span></div>
