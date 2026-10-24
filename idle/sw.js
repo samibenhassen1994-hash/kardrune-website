@@ -1,5 +1,5 @@
-const CACHE='idle-kardrune-shell-v14';
-const CORE=['./','./index.html','./styles.css','./app.js','./game-rules.js','./combat-rules.js','./catalog.js','./icon.svg','./manifest.webmanifest'];
+const CACHE='idle-kardrune-shell-v15';
+const CORE=['./','./index.html','./styles.css','./app.js','./game-rules.js','./combat-rules.js','./i18n.js','./catalog.js','./icon.svg','./manifest.webmanifest'];
 const IMAGES=[
  "./media/cards/young_sam/young_sam_stage_1.webp",
  "./media/cards/young_sam/sam_of_aster_stage_2.webp",
