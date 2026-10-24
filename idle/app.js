@@ -10,7 +10,7 @@ const combat=window.IDLE_COMBAT_RULES;
 const cardId=(hero,stage)=>hero.id+':'+stage;
 const cardImage=(hero,stage)=>'./media/cards/'+hero.stages[stage-1];
 const cardVideo=(hero,stage)=>hero.loops[stage-1]?'./media/animations/'+hero.loops[stage-1]:null;
-const initial=()=>({name:'Runebearer',avatar:'player',shards:1500,owned:['sam:1','lira:1','rhea:1'],active:'sam:1',duels:0,wins:0,pulls:0,practiceDaily:{day:'',count:0},attacks:{}});
+const initial=()=>({name:'Runebearer',avatar:'player',shards:1500,owned:['sam:1','lira:1','rhea:1'],active:'sam:1',duels:0,wins:0,pulls:0,practiceDaily:{day:'',count:0},attacks:{'sam:1':50,'lira:1':50,'rhea:1':50}});
 function normalizeAttacks(values,owned){
  const obj=values&&typeof values==='object'&&!Array.isArray(values)?values:{};
  return Object.fromEntries(owned.map(id=>[id,combat.isAttack(obj[id])?obj[id]:combat.legacyAttack(id)]));
@@ -280,7 +280,8 @@ $('reset-button').addEventListener('click',()=>{if(!confirm('Reset all local Idl
 $('dialog-close').addEventListener('click',()=>{if(pendingDuplicate)return notify('Choose KEEP or REPLACE');$('game-dialog').close()});
 $('dialog-done').addEventListener('click',()=>{if(pendingDuplicate)return;$('game-dialog').close()});
 $('game-dialog').addEventListener('click',e=>{if(e.target===$('game-dialog')&&!pendingDuplicate)e.target.close()});
-$('game-dialog').addEventListener('close',()=>{$('dialog-done').hidden=false;if(pendingDuplicate)showDuplicate();for(const v of $('dialog-content').querySelectorAll('video')){v.pause();v.removeAttribute('src');v.load()}});
+$('game-dialog').addEventListener('cancel',e=>{if(pendingDuplicate)e.preventDefault()});
+$('game-dialog').addEventListener('close',()=>{$('dialog-done').hidden=false;if(pendingDuplicate){pendingDuplicate=null;notify('Duplicate choice dismissed — old ATK kept')}for(const v of $('dialog-content').querySelectorAll('video')){v.pause();v.removeAttribute('src');v.load()}});
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvent=e;$('install-help').textContent='Ready to add to your home screen.'});
 $('install-button').addEventListener('click',async()=>{if(installEvent){installEvent.prompt();await installEvent.userChoice;installEvent=null}else notify('Use Safari Share or Chrome menu → Add to Home Screen')});
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
