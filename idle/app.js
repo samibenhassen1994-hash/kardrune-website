@@ -7,10 +7,11 @@ const AVATARS=Object.freeze({player:'Player',guard:'Guard',vassal:'Vassal',king:
 const avatarImage=id=>'./media/avatars/avatar_'+id+'.webp';
 const rules=window.IDLE_GAME_RULES;
 const combat=window.IDLE_COMBAT_RULES;
+const i18n=window.IDLE_I18N;
 const cardId=(hero,stage)=>hero.id+':'+stage;
 const cardImage=(hero,stage)=>'./media/cards/'+hero.stages[stage-1];
 const cardVideo=(hero,stage)=>hero.loops[stage-1]?'./media/animations/'+hero.loops[stage-1]:null;
-const initial=()=>({name:'Runebearer',avatar:'player',shards:1500,owned:['sam:1','lira:1','rhea:1'],active:'sam:1',duels:0,wins:0,pulls:0,practiceDaily:{day:'',count:0},attacks:{'sam:1':50,'lira:1':50,'rhea:1':50},crits:{'sam:1':10,'lira:1':10,'rhea:1':10},pendingDuplicate:null});
+const initial=()=>({name:'Runebearer',avatar:'player',shards:1500,owned:['sam:1'],active:'sam:1',duels:0,wins:0,pulls:0,practiceDaily:{day:'',count:0},attacks:{'sam:1':40},crits:{'sam:1':4},pendingDuplicate:null});
 function normalizeAttacks(values,owned){
  const obj=values&&typeof values==='object'&&!Array.isArray(values)?values:{};
  return Object.fromEntries(owned.map(id=>[id,combat.isAttack(obj[id])?obj[id]:combat.legacyAttack(id)]));
@@ -33,7 +34,7 @@ function migrate(v){
     owned,active:owned.includes(normalized)?normalized:owned[0],duels:rules.safeCount(v.duels),wins:rules.safeCount(v.wins),pulls:rules.safeCount(v.pulls),practiceDaily:rules.dailyRewardState(v.practiceDaily),attacks:normalizeAttacks(v.attacks,owned),crits:normalizeCrits(v.crits,owned),pendingDuplicate:normalizePending(v.pendingDuplicate,owned)};
 }
 function load(){try{return migrate(JSON.parse(localStorage.getItem(STORAGE)))}catch{return initial()}}
-let state=load(),filter='all',grouped=false,installEvent=null,pulling=false;
+let state=load(),filter='owned',grouped=false,installEvent=null,pulling=false;
 let cardsPage=0;
 const CARDS_PER_PAGE=4;
 let opponent=null,liveBattle=null,battleTimer=null,pendingDuplicate=state.pendingDuplicate?{...state.pendingDuplicate,...itemById(state.pendingDuplicate.id)}:null;
@@ -150,7 +151,7 @@ function previewHero(hero){
  openDialog(wrap);
 }
 function render(){
- $('wallet-shards').textContent=state.shards.toLocaleString('en-US');
+ $('wallet-shards').textContent=state.shards.toLocaleString(i18n.locale==='it'?'it-IT':'en-US');
  $('stat-duels').textContent=state.duels;$('stat-wins').textContent=state.wins;$('stat-pulls').textContent=state.pulls;
  state.practiceDaily=rules.dailyRewardState(state.practiceDaily);
  $('practice-rewards-left').textContent=String(rules.DAILY_REWARD_LIMIT-state.practiceDaily.count);
@@ -372,6 +373,10 @@ function showDuplicate(){
 }
 $('summon-standard').addEventListener('click',()=>summon(false));
 $('summon-featured').addEventListener('click',()=>summon(true));
+$('language-select').value=i18n.choice;
+$('language-select').addEventListener('change',event=>{
+ if(i18n.setLanguage(event.target.value)){render();notify(i18n.locale==='it'?'Lingua aggiornata':'Language updated');}
+});
 document.querySelectorAll('[data-avatar]').forEach(button=>button.addEventListener('click',()=>{
  const id=button.dataset.avatar;
  if(!Object.prototype.hasOwnProperty.call(AVATARS,id)||id===state.avatar)return;
@@ -381,7 +386,7 @@ document.querySelectorAll('[data-avatar]').forEach(button=>button.addEventListen
  notify(AVATARS[id]+' avatar selected');
 }));
 $('name-form').addEventListener('submit',e=>{e.preventDefault();const value=$('name-input').value.trim().replace(/\s+/g,' ');if(value.length<2)return notify('Name needs at least two characters');state.name=value.slice(0,20);persist();render();notify('Name saved on this device')});
-$('reset-button').addEventListener('click',()=>{if(!confirm('Reset all local Idle KardRune progress on this device?'))return;state=initial();persist();filter='all';document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('active',b.dataset.filter==='all'));render();go('profile');notify('Local demo reset')});
+$('reset-button').addEventListener('click',()=>{if(!confirm('Reset all local Idle KardRune progress on this device?'))return;state=initial();persist();filter='owned';cardsPage=0;document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('active',b.dataset.filter==='owned'));render();go('cards');notify('Local demo reset')});
 $('dialog-close').addEventListener('click',()=>{if(pendingDuplicate)return notify('Choose KEEP or REPLACE');$('game-dialog').close()});
 $('dialog-done').addEventListener('click',()=>{if(pendingDuplicate)return;$('game-dialog').close()});
 $('game-dialog').addEventListener('click',e=>{if(e.target===$('game-dialog')&&!pendingDuplicate)e.target.close()});
@@ -390,6 +395,7 @@ $('game-dialog').addEventListener('close',()=>{$('dialog-done').hidden=false;if(
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvent=e;$('install-help').textContent='Ready to add to your home screen.'});
 $('install-button').addEventListener('click',async()=>{if(installEvent){installEvent.prompt();await installEvent.userChoice;installEvent=null}else notify('Use Safari Share or Chrome menu → Add to Home Screen')});
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+i18n.init();
 renderRoster();render();go(location.hash.slice(1)||'tournament');
 if(pendingDuplicate)showDuplicate();
 const param=new URLSearchParams(location.search).get('install');
