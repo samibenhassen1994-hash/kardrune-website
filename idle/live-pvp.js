@@ -53,98 +53,84 @@ function dragPreview(id){
  preview.append(img);
  return preview;
 }
-function onCardDragStart(event,id){
- if(!event.dataTransfer)return;
- event.dataTransfer.setData('text/plain',id);
- event.dataTransfer.effectAllowed='copy';
- const ghost=dragPreview(id);
- ghost.classList.add('deck-drag-native');
- document.body.append(ghost);
- if(event.dataTransfer.setDragImage)event.dataTransfer.setDragImage(ghost,50,60);
- requestAnimationFrame(()=>ghost.remove());
-}
 function prepareCard(card,id){
  if(!save().owned?.includes(id))return;
- card.draggable=true;
+ // Native HTML drag creates an opaque iOS preview and fails intermittently on desktop.
+ card.draggable=false;
  const artwork=card.querySelector('.hero-image');
- artwork?.querySelector('img')?.setAttribute('draggable','false');
- card.addEventListener('dragstart',e=>onCardDragStart(e,id));
-
- const add=document.createElement('button');
- add.type='button';add.className='deck-add-card';
- add.addEventListener('click',e=>{
+ card.querySelectorAll('img').forEach(img=>img.draggable=false);
+ card.addEventListener('dragstart',e=>e.preventDefault());
+ const button=document.createElement('button');
+ button.type='button';button.className='deck-add-card';
+ button.addEventListener('click',e=>{
   e.preventDefault();e.stopPropagation();
-  if(deck.includes(id))remove(deck.indexOf(id));
-  else insert(id);
+  if(deck.includes(id))remove(deck.indexOf(id));else insert(id);
  });
- card.append(add);
-
- // Direct swipe on the inventory artwork: a tiny movement starts dragging immediately.
- // Other parts of each card still allow normal vertical page scrolling.
+ card.append(button);
  if(!artwork)return;
- let origin=null,last=null,ghost=null,dragging=false,autoScroll=null,ignoreClickUntil=0;
- function targetSlot(x,y){return document.elementFromPoint(x,y)?.closest('.deck-slot')||null}
- function markSlot(x,y){
-  document.querySelectorAll('#cards-deck-slots .deck-slot.drag-over').forEach(el=>el.classList.remove('drag-over'));
-  const slot=targetSlot(x,y);
-  if(slot)slot.classList.add('drag-over');
-  const deckArea=$('cards-deck-slots').getBoundingClientRect();
-  const inside=x>=deckArea.left&&x<=deckArea.right&&y>=deckArea.top-16&&y<=deckArea.bottom+16;
-  ghost?.classList.toggle('over-slot',inside);
-  if(ghost&&inside){const first=$('cards-deck-slots').querySelector('.deck-slot');if(first){const bounds=first.getBoundingClientRect();ghost.style.setProperty('--slot-width',bounds.width+'px');ghost.style.setProperty('--slot-height',bounds.height+'px')}}
-  return slot;
+ let pointer=null,origin=null,last=null,preview=null,dragging=false,scrollLoop=null,blockClick=false;
+ function highlight(x,y){
+  const box=$('cards-deck-slots'),rect=box.getBoundingClientRect();
+  const near=x>=rect.left&&x<=rect.right&&y>=rect.top-12&&y<=rect.bottom+12;
+  const slots=[...box.querySelectorAll('.deck-slot')];
+  const hit=near?document.elementFromPoint(x,y)?.closest('.deck-slot'):null;
+  slots.forEach(el=>el.classList.toggle('drag-over',el===hit));
+  if(preview){
+   preview.classList.toggle('over-slot',near);
+   if(near&&slots.length){
+    const size=slots[0].getBoundingClientRect();
+    preview.style.setProperty('--slot-width',size.width+'px');
+    preview.style.setProperty('--slot-height',size.height+'px');
+   }
+  }
+  return hit;
  }
- function movePreview(x,y){
-  if(!ghost)return;
-  ghost.style.left=x+'px';ghost.style.top=y+'px';
-  markSlot(x,y);
- }
- function begin(x,y){
-  dragging=true;ghost=dragPreview(id);document.body.append(ghost);
-  card.classList.add('deck-touch-dragging');
-  movePreview(x,y);
-  autoScroll=setInterval(()=>{
-   if(!dragging||!last)return;
-   const edge=115;
-   const up=last.y<edge?Math.min(23,(edge-last.y)*.25):0;
-   const down=last.y>innerHeight-edge?Math.min(23,(last.y-(innerHeight-edge))*.25):0;
-   if(up||down){root.scrollBy(0,down-up);movePreview(last.x,last.y)}
-  },28);
+ function move(x,y){
+  last={x,y};if(!preview)return;
+  preview.style.left=x+'px';preview.style.top=y+'px';highlight(x,y);
  }
  function cleanup(){
-  clearInterval(autoScroll);autoScroll=null;
-  ghost?.remove();ghost=null;
-  document.querySelectorAll('#cards-deck-slots .deck-slot.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  clearInterval(scrollLoop);scrollLoop=null;
+  preview?.remove();preview=null;
+  $('cards-deck-slots').querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
   card.classList.remove('deck-touch-dragging');
-  origin=null;last=null;dragging=false;
+  origin=null;last=null;pointer=null;dragging=false;
  }
- artwork.addEventListener('touchstart',e=>{
-  if(e.touches.length!==1)return;
-  const t=e.touches[0];origin={x:t.clientX,y:t.clientY};last={...origin};
- },{passive:true});
- artwork.addEventListener('touchmove',e=>{
-  if(!origin||e.touches.length!==1)return;
-  const t=e.touches[0];last={x:t.clientX,y:t.clientY};
-  if(!dragging&&Math.hypot(last.x-origin.x,last.y-origin.y)>=4)begin(last.x,last.y);
-  if(dragging){e.preventDefault();movePreview(last.x,last.y)}
- },{passive:false});
- artwork.addEventListener('touchend',e=>{
-  if(!origin)return;
+ artwork.addEventListener('pointerdown',e=>{
+  if(e.button!==0||e.isPrimary===false)return;
+  pointer=e.pointerId;origin={x:e.clientX,y:e.clientY};last=origin;
+  if(e.pointerType==='mouse')e.preventDefault();
+  try{artwork.setPointerCapture(e.pointerId)}catch{}
+ });
+ artwork.addEventListener('pointermove',e=>{
+  if(e.pointerId!==pointer||!origin)return;
+  const delta=Math.hypot(e.clientX-origin.x,e.clientY-origin.y);
+  if(!dragging&&delta>=3){
+   dragging=true;blockClick=true;
+   preview=dragPreview(id);document.body.append(preview);
+   card.classList.add('deck-touch-dragging');
+   scrollLoop=setInterval(()=>{
+    if(!dragging||!last)return;
+    const edge=110,up=last.y<edge?Math.min(20,(edge-last.y)*.22):0;
+    const down=last.y>innerHeight-edge?Math.min(20,(last.y-(innerHeight-edge))*.22):0;
+    if(up||down){root.scrollBy(0,down-up);move(last.x,last.y)}
+   },28);
+  }
+  if(dragging){e.preventDefault();move(e.clientX,e.clientY)}
+ });
+ artwork.addEventListener('pointerup',e=>{
+  if(e.pointerId!==pointer)return;
   if(dragging){
-   const t=e.changedTouches[0],slot=targetSlot(t.clientX,t.clientY);
+   const slot=highlight(e.clientX,e.clientY);
    if(slot)insert(id,Number(slot.dataset.slot));
-   ignoreClickUntil=Date.now()+450;
    e.preventDefault();
   }
   cleanup();
- },{passive:false});
- artwork.addEventListener('touchcancel',cleanup);
- // Suppress the card's 'select champion' handler after a drag, not after a tap.
+ });
+ artwork.addEventListener('pointercancel',cleanup);
+ artwork.addEventListener('lostpointercapture',()=>{if(pointer!==null)cleanup()});
  card.addEventListener('click',e=>{
-  if(Date.now()<ignoreClickUntil){
-   e.preventDefault();e.stopImmediatePropagation();
-   ignoreClickUntil=0;
-  }
+  if(blockClick){e.preventDefault();e.stopImmediatePropagation();blockClick=false}
  },true);
 }
 function refreshLabels(){
