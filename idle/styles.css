@@ -177,3 +177,15 @@
 .currency-form .field{font-size:20px;text-align:center}
 .currency-dialog .micro-note{margin-bottom:14px}
 @media(max-height:700px){#screen-summon .summon-feature{height:clamp(125px,23dvh,180px)}#screen-summon h1{margin:2px 0 8px}#screen-summon .summon-choice{padding:8px 11px;margin-top:7px}#screen-summon .summon-choice .gold-button,#screen-summon .summon-choice .dark-button{min-height:36px;margin-top:5px}.summon-mini-action{padding:8px 4px}}
+
+/* Optional cloud account panel; no changes to the original card artwork. */
+.cloud-panel{margin-top:22px;padding:16px 14px;border:1px solid #bdaa7a75;border-radius:14px;background:linear-gradient(140deg,#192c48,#0b1830)}
+.cloud-panel h2{text-align:center;color:#f1cf88;font-size:20px;margin:4px 0 10px}
+.cloud-notice{font-size:11px;line-height:1.5;color:#a9bad2;text-align:center}
+.cloud-email-form{display:grid;gap:8px;margin-top:15px}
+.cloud-email-form label{font-size:10px;color:#e3c589;letter-spacing:.09em}
+.cloud-email-form .gold-button{margin-top:7px}
+.cloud-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cloud-actions button{min-width:0;font-size:10px;padding:9px;min-height:45px}
+#cloud-identity{text-align:center;font-size:12px;color:#e8d6b3;overflow-wrap:anywhere}
+[hidden]{display:none!important}

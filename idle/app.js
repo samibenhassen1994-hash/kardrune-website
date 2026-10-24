@@ -397,6 +397,18 @@ $('install-button').addEventListener('click',async()=>{if(installEvent){installE
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 i18n.init();
 renderRoster();render();go(location.hash.slice(1)||'tournament');
+window.IDLE_CLOUD.actions();
+window.IDLE_CLOUD.init({
+ getSave:()=>JSON.parse(JSON.stringify(state)),
+ setSave:save=>{
+   if(liveBattle)throw Error('Finish battle before loading a save');
+   if(!save||typeof save!=='object')throw Error('Invalid cloud save');
+   state=migrate(save);pendingDuplicate=state.pendingDuplicate?{...state.pendingDuplicate,...itemById(state.pendingDuplicate.id)}:null;
+   opponent=null;cardsPage=0;persist();render();
+   if(pendingDuplicate)showDuplicate();
+ },
+ onState:()=>{}
+});
 if(pendingDuplicate)showDuplicate();
 const param=new URLSearchParams(location.search).get('install');
 if(param==='ios'||param==='android'){const wrap=elem('div');wrap.append(elem('h2','','INSTALL IDLE KARDRUNE'),elem('p','',param==='ios'?'In Safari tap Share → Add to Home Screen.':'In Chrome tap ⋮ → Install app or Add to Home Screen.'));openDialog(wrap);history.replaceState(null,'',location.pathname+(location.hash||''))}

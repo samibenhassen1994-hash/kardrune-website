@@ -1,0 +1,13 @@
+-- Idle KardRune foundation. Demo saves are not competitive records.
+CREATE TABLE IF NOT EXISTS players (uid TEXT PRIMARY KEY, display_name TEXT NOT NULL DEFAULT 'Runebearer', avatar TEXT NOT NULL DEFAULT 'player', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, is_banned INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS demo_saves (uid TEXT PRIMARY KEY REFERENCES players(uid) ON DELETE CASCADE, save_json TEXT NOT NULL, revision INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS player_roles (uid TEXT PRIMARY KEY REFERENCES players(uid) ON DELETE CASCADE, role TEXT NOT NULL CHECK(role IN ('player','admin')) DEFAULT 'player', assigned_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS competitive_inventory (uid TEXT NOT NULL REFERENCES players(uid), card_id TEXT NOT NULL, attack INTEGER NOT NULL CHECK(attack BETWEEN 1 AND 100), crit INTEGER NOT NULL CHECK(crit BETWEEN 0 AND 25), acquired_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(uid,card_id));
+CREATE TABLE IF NOT EXISTS currency_ledger (id TEXT PRIMARY KEY, uid TEXT NOT NULL REFERENCES players(uid), delta INTEGER NOT NULL, reason TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS pvp_queue (uid TEXT PRIMARY KEY REFERENCES players(uid), rating INTEGER NOT NULL DEFAULT 1000, joined_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS pvp_matches (id TEXT PRIMARY KEY, player_a TEXT NOT NULL REFERENCES players(uid), player_b TEXT NOT NULL REFERENCES players(uid), state TEXT NOT NULL CHECK(state IN ('pending','running','complete','void')), winner TEXT, seed TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, completed_at TEXT);
+CREATE TABLE IF NOT EXISTS tournaments (id TEXT PRIMARY KEY, name TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('draft','registration','active','complete')), starts_at TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS tournament_entries (tournament_id TEXT NOT NULL REFERENCES tournaments(id), uid TEXT NOT NULL REFERENCES players(uid), joined_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(tournament_id,uid));
+CREATE TABLE IF NOT EXISTS admin_audit (id TEXT PRIMARY KEY, actor_uid TEXT NOT NULL, action TEXT NOT NULL, target_uid TEXT, detail TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE INDEX IF NOT EXISTS idx_pvp_matches_players ON pvp_matches(player_a,player_b);
+CREATE INDEX IF NOT EXISTS idx_tournament_entries_uid ON tournament_entries(uid);

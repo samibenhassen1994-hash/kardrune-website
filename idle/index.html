@@ -21,6 +21,7 @@
   <script src="./game-rules.js" defer></script>
   <script src="./combat-rules.js" defer></script>
   <script src="./i18n.js" defer></script>
+  <script src="./cloud.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -167,6 +168,28 @@
           <div class="stat-card"><span>▣</span><strong id="stat-cards">1</strong><small>OWNED CARDS</small></div>
         </div>
         <div class="profile-actions"><button type="button" class="dark-button" id="install-button">＋ INSTALL IDLE KARDRUNE</button><p id="install-help" class="micro-note">Install to your home screen from your browser menu.</p><button type="button" class="plain-link" id="reset-button">Reset local demo progress</button></div>
+        <section class="cloud-panel" aria-label="Cloud account and saves">
+          <h2>☁ CLOUD ACCOUNT</h2>
+          <p class="micro-note">Sign in to back up your local demo progress on another device. Competitive progress will be separate.</p>
+          <p id="cloud-disabled" class="cloud-notice">Cloud login is not configured yet. Local play remains available.</p>
+          <div id="cloud-auth-form" hidden>
+            <button type="button" class="dark-button" id="cloud-google">Continue with Google</button>
+            <form id="cloud-email-form" class="cloud-email-form">
+              <label for="cloud-email">Email</label><input class="field" type="email" id="cloud-email" autocomplete="email" required>
+              <label for="cloud-password">Password</label><input class="field" type="password" id="cloud-password" autocomplete="current-password" minlength="6" required>
+              <label for="cloud-email-mode">Action</label>
+              <select class="field" id="cloud-email-mode"><option value="login">Sign in</option><option value="register">Create account</option></select>
+              <button type="submit" class="gold-button">Continue</button>
+            </form>
+          </div>
+          <div id="cloud-signed-in" hidden>
+            <p id="cloud-identity"></p><p class="micro-note" id="cloud-save-info"></p>
+            <div class="cloud-actions"><button type="button" class="dark-button" id="cloud-upload">Upload local save</button><button type="button" class="dark-button" id="cloud-download">Load cloud save</button></div>
+            <button type="button" class="plain-link" id="cloud-admin" hidden>Admin debug status</button>
+            <button type="button" class="plain-link" id="cloud-sign-out">Sign out</button>
+          </div>
+          <p class="micro-note" id="cloud-message" role="status" aria-live="polite"></p>
+        </section>
         <div class="data-separation">🛡 <span>Independent prototype: it does not access or modify your KardRune app account, purchases or database.</span></div>
       </section>
     </main>
