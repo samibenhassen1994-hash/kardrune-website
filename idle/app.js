@@ -34,6 +34,8 @@ function migrate(v){
 }
 function load(){try{return migrate(JSON.parse(localStorage.getItem(STORAGE)))}catch{return initial()}}
 let state=load(),filter='all',grouped=false,installEvent=null,pulling=false;
+let cardsPage=0;
+const CARDS_PER_PAGE=4;
 let opponent=null,liveBattle=null,battleTimer=null,pendingDuplicate=state.pendingDuplicate?{...state.pendingDuplicate,...itemById(state.pendingDuplicate.id)}:null;
 function persist(){try{localStorage.setItem(STORAGE,JSON.stringify(state));return true}catch{notify('Local progress could not be saved');return false}}
 function notify(message){const el=$('toast');el.textContent=message;el.hidden=false;clearTimeout(notify.t);notify.t=setTimeout(()=>el.hidden=true,2800)}
@@ -114,15 +116,30 @@ function makeCard(hero,stage){
  return box;
 }
 function renderCards(){
- const grid=$('hero-grid');grid.replaceChildren();const all=heroes.flatMap(hero=>[1,2,3].map(stage=>({hero,stage}))).filter(x=>filter==='all'||(filter==='owned'?state.owned.includes(cardId(x.hero,x.stage)):!state.owned.includes(cardId(x.hero,x.stage))));
- if(grouped){for(const hero of heroes){const cards=all.filter(x=>x.hero===hero);if(!cards.length)continue;const heading=elem('h2','card-group-heading',hero.name+' · 3 STAGES');grid.append(heading);cards.forEach(x=>grid.append(makeCard(x.hero,x.stage)))}}else all.forEach(x=>grid.append(makeCard(x.hero,x.stage)));
+ const grid=$('hero-grid');
+ grid.replaceChildren();
+ const all=heroes.flatMap(hero=>[1,2,3].map(stage=>({hero,stage}))).filter(x=>filter==='all'||(filter==='owned'?state.owned.includes(cardId(x.hero,x.stage)):!state.owned.includes(cardId(x.hero,x.stage))));
+ const groupNames=grouped?[...new Set(all.map(x=>x.hero.id))]:[];
+ const totalPages=grouped?groupNames.length:Math.ceil(all.length/CARDS_PER_PAGE);
+ cardsPage=Math.max(0,Math.min(cardsPage,Math.max(0,totalPages-1)));
+ if(grouped&&totalPages){
+  const cards=all.filter(x=>x.hero.id===groupNames[cardsPage]);
+  cards.forEach(x=>grid.append(makeCard(x.hero,x.stage)));
+ }else{
+  all.slice(cardsPage*CARDS_PER_PAGE,(cardsPage+1)*CARDS_PER_PAGE).forEach(x=>grid.append(makeCard(x.hero,x.stage)));
+ }
+ if(!all.length)grid.append(elem('p','micro-note','No cards in this filter.'));
+ $('cards-pagination').hidden=totalPages<=1;
+ $('cards-page-label').textContent=!totalPages?'NO CARDS':grouped?heroes.find(hero=>hero.id===groupNames[cardsPage]).name.toUpperCase()+' · '+(cardsPage+1)+' / '+totalPages:'PAGE '+(cardsPage+1)+' / '+totalPages;
+ $('cards-prev').disabled=cardsPage===0;
+ $('cards-next').disabled=cardsPage>=totalPages-1;
  const owned=ownedCards().length,total=heroes.length*3;
  $('owned-count').innerHTML=owned+' <span>/ '+total+' CARDS</span>';
  $('collection-bar').style.width=(owned/total*100)+'%';
  $('stat-cards').textContent=owned;
 }
 function renderRoster(){
- const grid=$('summon-roster-grid');grid.replaceChildren();
+ const grid=$('summon-roster-grid');if(!grid)return;grid.replaceChildren();
  for(const hero of heroes){const button=elem('button','summon-roster-card');button.type='button';const img=elem('img');img.src=cardImage(hero,1);img.loading='lazy';img.alt=hero.name;button.append(img,elem('strong','',hero.name),elem('small','',''));button.lastChild.textContent='STAGES 1–3';button.addEventListener('click',()=>previewHero(hero));grid.append(button)}
 }
 function previewHero(hero){
@@ -160,10 +177,54 @@ function render(){
 function go(route){if(!['tournament','cards','summon','profile'].includes(route))route='tournament';document.querySelectorAll('.screen').forEach(el=>el.hidden=el.id!=='screen-'+route);document.querySelectorAll('[data-nav]').forEach(el=>{const a=el.dataset.nav===route;el.classList.toggle('active',a);if(a)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current')});if(location.hash!=='#'+route)history.replaceState(null,'','#'+route);scrollTo(0,0)}
 document.querySelectorAll('[data-nav]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.nav)));
 addEventListener('hashchange',()=>go(location.hash.slice(1)));
-document.querySelectorAll('[data-filter]').forEach(el=>el.addEventListener('click',()=>{filter=el.dataset.filter;document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('active',b===el));renderCards()}));
-$('card-view-grid').addEventListener('click',()=>{grouped=false;$('card-view-grid').classList.add('active');$('card-view-heroes').classList.remove('active');renderCards()});
-$('card-view-heroes').addEventListener('click',()=>{grouped=true;$('card-view-heroes').classList.add('active');$('card-view-grid').classList.remove('active');renderCards()});
+document.querySelectorAll('[data-filter]').forEach(el=>el.addEventListener('click',()=>{cardsPage=0;filter=el.dataset.filter;document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('active',b===el));renderCards()}));
+$('card-view-grid').addEventListener('click',()=>{cardsPage=0;grouped=false;$('card-view-grid').classList.add('active');$('card-view-heroes').classList.remove('active');renderCards()});
+$('card-view-heroes').addEventListener('click',()=>{cardsPage=0;grouped=true;$('card-view-heroes').classList.add('active');$('card-view-grid').classList.remove('active');renderCards()});
 $('active-hero-select').addEventListener('change',e=>{if(liveBattle)return;state.active=e.target.value;opponent=null;persist();render()});
+$('cards-prev').addEventListener('click',()=>{if(cardsPage>0){cardsPage--;renderCards()}});
+$('cards-next').addEventListener('click',()=>{cardsPage++;renderCards()});
+function showSummonRoster(){
+ const wrap=elem('div','summon-roster-dialog');
+ const title=elem('h2','','ALL SUMMONABLE HEROES');title.id='dialog-title';
+ wrap.append(title,elem('p','','Preview any hero and its three stages.'));
+ const grid=elem('div','summon-roster-grid');
+ for(const hero of heroes){
+  const button=elem('button','summon-roster-card');
+  button.type='button';
+  const art=elem('img');art.src=cardImage(hero,1);art.alt=hero.name;
+  button.append(art,elem('strong','',hero.name),elem('small','','STAGES 1–3'));
+  button.addEventListener('click',()=>previewHero(hero));
+  grid.append(button);
+ }
+ wrap.append(grid);openDialog(wrap);
+}
+$('open-summon-roster').addEventListener('click',showSummonRoster);
+$('open-summon-info').addEventListener('click',()=>{
+ const wrap=elem('div','summon-info-dialog');
+ const title=elem('h2','','SUMMON RATES');title.id='dialog-title';
+ wrap.append(title,
+  elem('p','','STANDARD · 300 Shards: Stage 1 78% · Stage 2 19% · Stage 3 3%.'),
+  elem('p','','FEATURED · 600 Shards: Stage 1 60% · Stage 2 30% · Stage 3 10%. Dren has a 35% rate-up before the regular hero draw.'),
+  elem('p','micro-note','Local test currency and probabilities. Summon results are stored on this device only.'));
+ openDialog(wrap);
+});
+$('edit-shards-button').addEventListener('click',()=>{
+ const wrap=elem('div','currency-dialog');
+ const title=elem('h2','','TEST RUNE SHARDS');title.id='dialog-title';
+ const form=elem('form','currency-form');
+ const label=elem('label','select-label','SET SHARD BALANCE');label.htmlFor='currency-input';
+ const input=elem('input','field');input.id='currency-input';input.type='number';input.min='0';input.max='999999999';input.step='1';input.required=true;input.value=String(state.shards);
+ const note=elem('p','micro-note','Local test balance only. No purchases or official game accounts are affected.');
+ const button=elem('button','gold-button','SAVE SHARDS');button.type='submit';
+ form.append(label,input,note,button);
+ form.addEventListener('submit',e=>{
+  e.preventDefault();
+  const value=Number(input.value);
+  if(!Number.isSafeInteger(value)||value<0||value>999999999)return notify('Enter a whole number between 0 and 999,999,999');
+  state.shards=value;persist();render();$('game-dialog').close();notify('Test Shards updated');
+ });
+ wrap.append(title,form);openDialog(wrap);
+});
 function renderOpponent(){
  if(!opponent)opponent=combat.pickEnemy(heroes,itemById(state.active).stage);
  const hero=heroes.find(x=>x.id===opponent.id);
