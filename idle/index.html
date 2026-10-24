@@ -23,6 +23,7 @@
   <script src="./i18n.js" defer></script>
   <script src="./cloud-sync-rules.js" defer></script>
   <script src="./cloud.js" defer></script>
+  <script src="./pvp.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -90,6 +91,21 @@
         <select id="active-hero-select" class="field"></select>
         <button type="button" class="gold-button" id="practice-button">⚔ START PRACTICE DUEL <svg><use href="#i-chevron"></use></svg></button>
         <p class="micro-note">Turn-based battles play automatically in real time against randomized demo opponents. Rewarded duels remaining today: <strong id="practice-rewards-left">10</strong>/10 (local midnight reset). You can still practice afterward. Real PvP requires a separate online server.</p>
+        <section class="pvp-online-box">
+          <div class="section-heading"><div><span class="mini-label">ONLINE FRIENDLY · NO RANKED REWARDS</span><h2>Challenge another player</h2></div></div>
+          <p id="pvp-sign-in-hint" class="micro-note">Sign in with Google or email under Profile to find another player online.</p>
+          <div id="pvp-online-controls" hidden>
+            <p id="pvp-online-status" role="status" class="battle-live-status">Ready to find an online opponent.</p>
+            <button class="gold-button" id="pvp-queue-button" type="button">⚔ FIND ONLINE RIVAL</button>
+            <button class="dark-button" id="pvp-leave-button" type="button" hidden>STOP SEARCH / NEW MATCH</button>
+            <div id="pvp-online-result" hidden>
+              <h3>Opponent: <span id="pvp-match-rival"></span></h3>
+              <p class="micro-note" id="pvp-match-stats"></p>
+              <pre class="pvp-replay" id="pvp-match-log"></pre>
+              <p class="micro-note">Friendly test only. Battles are simulated by the server; no ranked rewards or currency.</p>
+            </div>
+          </div>
+        </section>
         <div class="section-heading bracket-heading"><div><span class="mini-label">COMPETITION ROADMAP</span><h2>Championship Bracket</h2></div></div>
         <div class="bracket">
           <div class="bracket-step"><span class="bracket-index">01</span><div><strong>Qualifiers</strong><small>Register your team</small></div><span class="bracket-lock">SOON</span></div>

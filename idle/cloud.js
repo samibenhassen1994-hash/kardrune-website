@@ -57,6 +57,7 @@ async function refresh(){
  $('cloud-signed-in').hidden=false;$('cloud-auth-form').hidden=true;
  $('cloud-save-info').textContent=currentRemote?'Cloud backup available · revision '+remoteRevision:'No cloud save yet';
  status('Signed in');
+ root.IDLE_PVP?.setSession({uid},request);
  stopAuto();
  const local=snapshot(),remote=currentRemote===null?null:JSON.stringify(currentRemote);
  const link=readLink(uid);
@@ -113,7 +114,7 @@ async function init({getSave,setSave,onState}={}){
    currentUser=user;currentRemote=null;remoteRevision=0;
    if(!user){
     $('cloud-signed-in').hidden=true;$('cloud-auth-form').hidden=false;$('cloud-admin').hidden=true;
-    status('Local');return;
+    status('Local');root.IDLE_PVP?.setSession(null,null);return;
    }
    await run(refresh);
   });

@@ -397,6 +397,7 @@ $('install-button').addEventListener('click',async()=>{if(installEvent){installE
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 i18n.init();
 renderRoster();render();go(location.hash.slice(1)||'tournament');
+window.IDLE_PVP.setup();
 window.IDLE_CLOUD.actions();
 window.IDLE_CLOUD.init({
  getSave:()=>JSON.parse(JSON.stringify(state)),
