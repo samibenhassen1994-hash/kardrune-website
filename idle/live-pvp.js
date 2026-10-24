@@ -42,7 +42,49 @@ function renderDeck(){
  }
  $('cards-deck-count').textContent=deck.length+' / 9';
  $('live-deck-count').textContent=deck.length+' / 9';
- syncStatus();refreshLabels();
+ renderOwnedStrip();syncStatus();refreshLabels();
+}
+function renderOwnedStrip(){
+ const strip=$('cards-deck-owned');strip.replaceChildren();
+ const all=save().owned||[];
+ for(const id of all){
+  const button=document.createElement('button');button.type='button';button.className='deck-owned-card';button.dataset.cardId=id;
+  button.draggable=true;button.title='Drag '+id+' into your deck';
+  const img=document.createElement('img');img.src=cardImage(id);img.alt=id;img.draggable=false;button.append(img);
+  const label=document.createElement('span');label.textContent=id.replace(':',' S');button.append(label);
+  button.addEventListener('dragstart',e=>onCardDragStart(e,id));
+  let suppressClick=false;
+  button.addEventListener('click',e=>{if(suppressClick){e.preventDefault();suppressClick=false;return}insert(id)});
+  let start=null,active=false,pointer=null;
+  button.addEventListener('pointerdown',e=>{
+   if(e.pointerType==='mouse')return;
+   start={x:e.clientX,y:e.clientY};pointer=e.pointerId;active=false;
+  });
+  button.addEventListener('pointermove',e=>{
+   if(pointer!==e.pointerId||!start)return;
+   if(!active&&Math.hypot(e.clientX-start.x,e.clientY-start.y)>8){
+    active=true;button.setPointerCapture(e.pointerId);button.classList.add('deck-touch-dragging');
+   }
+   if(active){
+    e.preventDefault();
+    document.querySelectorAll('.deck-slot.drag-over').forEach(el=>el.classList.remove('drag-over'));
+    document.elementFromPoint(e.clientX,e.clientY)?.closest('.deck-slot')?.classList.add('drag-over');
+   }
+  });
+  button.addEventListener('pointerup',e=>{
+   if(pointer!==e.pointerId)return;
+   if(active){
+    suppressClick=true;
+    const slot=document.elementFromPoint(e.clientX,e.clientY)?.closest('.deck-slot');
+    if(slot)insert(id,Number(slot.dataset.slot));
+    button.classList.remove('deck-touch-dragging');
+    document.querySelectorAll('.deck-slot.drag-over').forEach(el=>el.classList.remove('drag-over'));
+   }
+   start=null;pointer=null;active=false;
+  });
+  button.addEventListener('pointercancel',()=>{start=null;pointer=null;active=false;button.classList.remove('deck-touch-dragging')});
+  strip.append(button);
+ }
 }
 function onCardDragStart(event,id){event.dataTransfer.setData('text/plain',id);event.dataTransfer.effectAllowed='move'}
 function prepareCard(card,id){
@@ -67,6 +109,7 @@ function refreshLabels(){
  });
 }
 function renderCardControls(){
+ renderOwnedStrip();
  document.querySelectorAll('#hero-grid .hero-card[data-card-id]').forEach(card=>{
   if(!card.querySelector('.deck-add-card'))prepareCard(card,card.dataset.cardId);
  });
