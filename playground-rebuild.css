@@ -93,34 +93,25 @@
 @media(max-width:760px){.page-tools .tool-hero-grid{min-height:530px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;padding:42px 0 20px;}.page-tools .tool-hero-grid>div:first-child{max-width:100%;}.page-tools .tool-hero-home h1{font-size:clamp(38px,9vw,64px);}.page-tools .tool-hero .premium-art{width:clamp(145px,55vw,225px);position:relative;margin:auto;}.page-tools .tool-hero .premium-art-secondary{position:absolute;right:1%;bottom:0;width:36%;}.page-tools .hero-art-annotation{right:20px;bottom:15px;padding:6px 12px;}.page-tools .tool-grid{grid-template-columns:1fr;gap:14px;}.page-tools .tool-card{min-height:260px;display:grid;grid-template-columns:40% 60%;}.page-tools .tool-card-art{height:100%;min-height:250px;}.page-tools .tool-card-art .game-art{max-width:100%;height:190px;width:145px;}.page-tools .tool-card-body{padding:18px 16px;}.page-tools .tool-card-body h3{font-size:17px;}.page-tools .tool-card-body p{font-size:12px;min-height:0;}.page-tools .tool-directory{padding:42px 0;}.page-tools .experience-feature{grid-template-columns:1fr;padding:22px;}.page-tools .feature-sprite{width:125px;}.page-tools .wiki-entry{grid-template-columns:35% 1fr;gap:10px;padding:11px;min-height:235px;}.page-tools .wiki-entry h2{font-size:18px;}.page-tools .wiki-entry p{font-size:12px;}.page-tools .stage-chip{font-size:9px;padding:6px;}.page-tools .art-gallery{grid-template-columns:repeat(2,minmax(0,1fr));}.page-tools .art-filters{grid-template-columns:1fr;}.page-tools .art-filters input,.page-tools .art-filters select{grid-row:auto;}.page-tools .summon-reveal{grid-template-columns:1fr;text-align:center;}.page-tools .dice-stage{height:225px;}}
 @media(prefers-reduced-motion:reduce){.page-tools .tool-card,.page-tools .evolution-pop{animation:none;transition:none;}}
 
-/* Preserve the native 264 × 344 aspect ratio of every Playground atlas tile.
-   The atlas background is scaled to its element, so a forced width AND height
-   stretches characters/cards even when background-size is otherwise correct. */
-.page-tools .game-art.game-art-ready,
-.page-tools .tool-hero-art.game-art-ready,
-.page-tools .premium-art.game-art-ready {
-  aspect-ratio: 264 / 344 !important;
-  height: auto !important;
-  background-repeat: no-repeat;
-  flex-shrink: 0;
-}
-/* Allow the hero artwork to stay inside its column at smaller viewports. */
-.page-tools .tool-hero-art.game-art-ready,
-.page-tools .premium-art.game-art-ready {
-  max-width: min(100%, 370px);
-}
 
-
-/* All Playground subpage mastheads (not just the card creator).
-   Sprite tiles are portrait; display them as portrait on desktop and mobile. */
+/*
+ * Playground mastheads share the 264 x 344 atlas tile ratio.
+ * The original fixed 238px hero height squashed the artwork.
+ * Scope this rule to hero sections so tool controls and gallery layouts
+ * retain their independent, purpose-built dimensions.
+ */
 .page-tools .tool-hero-grid > [data-game-art].game-art-ready {
-  box-sizing: border-box;
   display: block;
+  box-sizing: border-box;
   width: min(100%, 370px);
+  max-width: 370px;
   height: auto !important;
+  min-height: 0;
   aspect-ratio: 264 / 344 !important;
-  justify-self: center;
+  flex: none;
   align-self: center;
+  justify-self: center;
+  background-repeat: no-repeat;
 }
 .page-tools .tool-hero-grid > .premium-art-secondary.game-art-ready {
   width: 25%;
@@ -133,5 +124,6 @@
   }
   .page-tools .tool-hero-grid > .premium-art-secondary.game-art-ready {
     width: 36%;
+    max-width: 120px;
   }
 }
