@@ -1,4 +1,4 @@
-const CACHE='idle-kardrune-shell-v13';
+const CACHE='idle-kardrune-shell-v14';
 const CORE=['./','./index.html','./styles.css','./app.js','./game-rules.js','./combat-rules.js','./catalog.js','./icon.svg','./manifest.webmanifest'];
 const IMAGES=[
  "./media/cards/young_sam/young_sam_stage_1.webp",
@@ -48,13 +48,18 @@ self.addEventListener('fetch',event=>{
  const isVideo=/\.mp4$/i.test(path);
  if(isVideo)return; // Stream videos normally; never cache multi-megabyte video responses.
  event.respondWith(
-  caches.match(req).then(cached=>cached||fetch(req).then(response=>{
+  ( /\.(?:js|css|html)$/.test(path) || path.endsWith('/idle/') ? fetch(req).then(response=>{
    const cacheable=CORE.concat(IMAGES).some(asset=>new URL(asset,self.registration.scope).pathname===path);
    if(cacheable&&response.ok&&response.type==='basic') {
     const copy=response.clone();
     event.waitUntil(caches.open(CACHE).then(cache=>cache.put(req,copy)).catch(()=>{}));
    }
    return response;
-  }))
+  }).catch(()=>caches.match(req).then(cached=>cached||Response.error())) : caches.match(req).then(cached=>cached||fetch(req).then(response=>{
+   if(response.ok&&response.type==='basic'&&IMAGES.some(asset=>new URL(asset,self.registration.scope).pathname===path)){
+    const copy=response.clone();event.waitUntil(caches.open(CACHE).then(cache=>cache.put(req,copy)).catch(()=>{}));
+   }
+   return response;
+  })) )
  );
 });

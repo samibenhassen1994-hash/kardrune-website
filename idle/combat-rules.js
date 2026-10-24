@@ -54,7 +54,8 @@ function nextTurn(battle,random=Math.random){
   const baseDamage=calculateDamage(battle[actor].stage,battle[actor].attack,random);
   const critical=normalizedRandom(random)<battle[actor].crit/100;
   const damage=critical?baseDamage*2:baseDamage;
-  const remaining=Math.max(0,battle[target].hp-damage);
+  const hpBefore=battle[target].hp;
+  const remaining=Math.max(0,hpBefore-damage);
   const winner=remaining===0?actor:null;
   return {...battle,
     [target]:{...battle[target],hp:remaining},
@@ -62,7 +63,7 @@ function nextTurn(battle,random=Math.random){
     hits:battle.hits+1,
     status:winner?'finished':'running',
     winner,
-    lastHit:{actor,target,damage,critical,hp:remaining}
+    lastHit:{actor,target,attack:baseDamage,damage,critical,hpBefore,hp:remaining,actualHpLost:hpBefore-remaining}
   };
 }
 const api=Object.freeze({STAGE_HP,TURN_MS,MAX_CRIT,isAttack,isCrit,validStage,hpForStage,rollAttack,rollCrit,legacyAttack,legacyCrit,cardStats,pickEnemy,newBattle,calculateDamage,nextTurn});

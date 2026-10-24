@@ -94,3 +94,18 @@ test('damage in excess of remaining HP clamps health to zero',()=>{
  assert.equal(third.status,'finished');
  assert.equal(third.winner,'player');
 });
+
+test('ATK 58 deals exactly 58 or 116 and records true HP change',()=>{
+ const a={stage:1,attack:58,crit:25},b={stage:1,attack:10,crit:0};
+ const base=combat.newBattle(a,b,()=>0);
+ const normal=combat.nextTurn(base,()=>.99);
+ assert.equal(normal.lastHit.attack,58);
+ assert.equal(normal.lastHit.damage,58);
+ assert.equal(normal.lastHit.hpBefore,240);
+ assert.equal(normal.lastHit.hp,182);
+ assert.equal(normal.lastHit.actualHpLost,58);
+ const critical=combat.nextTurn(base,()=>0);
+ assert.equal(critical.lastHit.damage,116);
+ assert.equal(critical.lastHit.hp,124);
+ assert.equal(critical.lastHit.actualHpLost,116);
+});
