@@ -1,0 +1,8 @@
+{
+ "name":"idle-kardrune-live-pvp",
+ "main":"src/index.js",
+ "compatibility_date":"2026-10-24",
+ "durable_objects":{"bindings":[{"name":"LOBBY","class_name":"PvpLobby"}]},
+ "migrations":[{"tag":"v1","new_sqlite_classes":["PvpLobby"]}],
+ "d1_databases":[{"binding":"DB","database_name":"idle-kardrune","database_id":"00dc24f0-6a1a-4753-b5a8-c811d05d986d"}]
+}
