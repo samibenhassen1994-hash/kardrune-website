@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#080e1e">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Idle KardRune — a mobile-first fantasy idle tournament and card collection demo.">
+  <title>Idle KardRune | Pocket Arena</title>
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <svg class="svg-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v6a4 4 0 0 1-8 0V4ZM8 6H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4M12 14v4m-4 2h8m-6-2h4"/></symbol>
+    <symbol id="i-cards" viewBox="0 0 24 24"><rect x="7" y="3" width="13" height="17" rx="2"/><path d="M4 7H3a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1M13.5 8l2.5 3.5-2.5 3.5-2.5-3.5z"/></symbol>
+    <symbol id="i-summon" viewBox="0 0 24 24"><path d="m12 2 2.1 7.9L22 12l-7.9 2.1L12 22l-2.1-7.9L2 12l7.9-2.1L12 2Z"/><path d="m18 2 .7 2.3L21 5l-2.3.7L18 8l-.7-2.3L15 5l2.3-.7L18 2Z"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2H4Z"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+    <symbol id="i-sword" viewBox="0 0 24 24"><path d="m4 20 7-7m-7 4 3 3m-4 1 3-3m5-5 9-9 1-1-5 1-9 9m5-1 3 3"/></symbol>
+  </svg>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#tournament" aria-label="Idle KardRune home">
+        <span class="brand-symbol">KR</span>
+        <span class="brand-copy"><strong>IDLE <em>KARDRUNE</em></strong><small>THE POCKET REALM</small></span>
+      </a>
+      <div class="wallet" aria-label="Demo currency balance"><span class="shard-icon">◆</span><strong id="wallet-shards">1,500</strong></div>
+    </header>
+    <div class="alpha-ribbon"><span class="status-dot"></span> PLAYABLE ALPHA <span class="ribbon-sep">•</span> LOCAL DEMO <span class="ribbon-sep">•</span> NO ONLINE MATCHMAKING YET</div>
+    <main id="main-content">
+      <section class="screen" id="screen-tournament" aria-labelledby="tournament-heading">
+        <div class="eyebrow"><span class="eyebrow-line"></span> ARENA OF THE RUNES <span class="eyebrow-line"></span></div>
+        <h1 id="tournament-heading">TOURNAMENT <span class="gold-text">PvP</span></h1>
+        <p class="screen-intro">Build your team. Face your rivals. Rise to the top of the Rune Circuit.</p>
+        <div class="season-banner">
+          <div><small>SEASON PREVIEW</small><h2>THE RUNE <span>CIRCUIT</span></h2><p>First championship • Coming with online accounts</p></div>
+          <div class="crest" aria-hidden="true">♜</div>
+        </div>
+        <div class="section-heading"><div><span class="mini-label">YOUR NEXT BATTLE</span><h2>Practice Arena</h2></div><span class="chip chip-blue">SOLO DEMO</span></div>
+        <div class="duel-stage">
+          <div class="combatant">
+            <div class="combatant-frame"><img id="duel-player-art" src="https://kardrune.com/assets/young_sam_stage_1.webp" alt="Your selected hero" loading="eager"></div>
+            <strong id="duel-player-name">Sam</strong><small>YOUR HERO</small>
+          </div>
+          <div class="vs-mark"><span>VS</span><i>⚔</i></div>
+          <div class="combatant">
+            <div class="combatant-frame enemy-frame"><img src="https://kardrune.com/assets/corrupted_sentinel.webp" alt="Corrupted Sentinel practice enemy"></div>
+            <strong>Sentinel</strong><small>TRAINING FOE</small>
+          </div>
+        </div>
+        <label class="select-label" for="active-hero-select">CHOOSE YOUR CHAMPION</label>
+        <select id="active-hero-select" class="field"></select>
+        <button type="button" class="gold-button" id="practice-button">⚔ START PRACTICE DUEL <svg><use href="#i-chevron"></use></svg></button>
+        <p class="micro-note">Practice duels use local simulation and earn demo Shards. Real PvP requires a separate online server.</p>
+        <div class="section-heading bracket-heading"><div><span class="mini-label">COMPETITION ROADMAP</span><h2>Championship Bracket</h2></div></div>
+        <div class="bracket">
+          <div class="bracket-step"><span class="bracket-index">01</span><div><strong>Qualifiers</strong><small>Register your team</small></div><span class="bracket-lock">SOON</span></div>
+          <div class="bracket-step"><span class="bracket-index">02</span><div><strong>Playoffs</strong><small>Advance through the ranks</small></div><span class="bracket-lock">SOON</span></div>
+          <div class="bracket-step"><span class="bracket-index">03</span><div><strong>Grand Final</strong><small>One champion remains</small></div><span class="bracket-lock">SOON</span></div>
+        </div>
+      </section>
+      <section class="screen" id="screen-cards" aria-labelledby="cards-heading" hidden>
+        <div class="eyebrow"><span class="eyebrow-line"></span> THE HERO COLLECTION <span class="eyebrow-line"></span></div>
+        <h1 id="cards-heading">YOUR <span class="gold-text">CARDS</span></h1>
+        <p class="screen-intro">Collect legendary heroes, expand your roster and prepare your future tournament squad.</p>
+        <div class="collection-banner"><div><small>COLLECTION PROGRESS</small><strong id="owned-count">3 <span>/ 6 HEROES</span></strong></div><div class="collection-progress"><span id="collection-bar" style="width:50%"></span></div></div>
+        <div class="filters" role="group" aria-label="Collection filter"><button class="filter active" data-filter="all" type="button">All Heroes</button><button class="filter" data-filter="owned" type="button">Owned</button><button class="filter" data-filter="missing" type="button">Locked</button></div>
+        <div class="hero-grid" id="hero-grid"></div>
+      </section>
+      <section class="screen" id="screen-summon" aria-labelledby="summon-heading" hidden>
+        <div class="eyebrow"><span class="eyebrow-line"></span> CALL FROM THE ASTRAL REALM <span class="eyebrow-line"></span></div>
+        <h1 id="summon-heading">HERO <span class="gold-text">SUMMON</span></h1>
+        <p class="screen-intro">Channel your demo Rune Shards to uncover new champions for your collection.</p>
+        <div class="summon-feature">
+          <span class="feature-tag">FEATURED HERO</span>
+          <div class="summon-art"><img src="https://kardrune.com/assets/dren_act_2.webp" alt="Dren featured summon hero"></div>
+          <div class="summon-feature-bottom"><span class="mini-label">EPIC · SHADOW</span><h2>DREN</h2><p>The darkness answers his call.</p></div>
+        </div>
+        <div class="summon-choice">
+          <div class="choice-head"><div><small>SUMMON PORTAL 01</small><h3>Standard Summon</h3><p>60% Common · 30% Rare · 9% Epic · 1% Legendary</p></div><span class="portal-badge">✧</span></div>
+          <button type="button" class="dark-button" id="summon-standard">SUMMON 1 <span>◆ 300</span></button>
+        </div>
+        <div class="summon-choice featured-choice">
+          <div class="choice-head"><div><small>SUMMON PORTAL 02</small><h3>Featured Summon</h3><p>55% Common · 30% Rare · 14% Epic · 1% Legendary</p></div><span class="portal-badge">✦</span></div>
+          <button type="button" class="gold-button" id="summon-featured">FEATURED PULL <span>◆ 600</span></button>
+        </div>
+        <p class="micro-note">Demo pulls are saved only on this device. No payments, real-money purchases or server inventory.</p>
+      </section>
+      <section class="screen" id="screen-profile" aria-labelledby="profile-heading" hidden>
+        <div class="eyebrow"><span class="eyebrow-line"></span> YOUR LEGEND BEGINS <span class="eyebrow-line"></span></div>
+        <h1 id="profile-heading">PLAYER <span class="gold-text">PROFILE</span></h1>
+        <p class="screen-intro">Your local adventurer profile. Online accounts will be introduced before real PvP.</p>
+        <div class="profile-panel">
+          <div class="profile-avatar"><img src="https://kardrune.com/assets/young_sam_stage_1.webp" alt="Sam hero avatar"></div>
+          <span class="profile-label">RUNE ADVENTURER</span><h2 id="profile-display-name">Runebearer</h2>
+          <span class="chip chip-blue">LOCAL ACCOUNT · LEVEL 1</span>
+        </div>
+        <form id="name-form" class="profile-form"><label class="select-label" for="name-input">DISPLAY NAME</label><div class="name-row"><input id="name-input" class="field" name="nickname" minlength="2" maxlength="20" autocomplete="nickname" required><button class="dark-button" type="submit">SAVE</button></div></form>
+        <div class="stats-grid">
+          <div class="stat-card"><span>⚔</span><strong id="stat-duels">0</strong><small>PRACTICE DUELS</small></div>
+          <div class="stat-card"><span>★</span><strong id="stat-wins">0</strong><small>PRACTICE WINS</small></div>
+          <div class="stat-card"><span>✦</span><strong id="stat-pulls">0</strong><small>SUMMONS</small></div>
+          <div class="stat-card"><span>▣</span><strong id="stat-cards">3</strong><small>OWNED HEROES</small></div>
+        </div>
+        <div class="profile-actions"><button type="button" class="dark-button" id="install-button">＋ INSTALL IDLE KARDRUNE</button><p id="install-help" class="micro-note">Install to your home screen from your browser menu.</p><button type="button" class="plain-link" id="reset-button">Reset local demo progress</button></div>
+        <div class="data-separation">🛡 <span>Independent prototype: it does not access or modify your KardRune app account, purchases or database.</span></div>
+      </section>
+    </main>
+  </div>
+  <nav class="bottom-nav" id="bottom-nav" aria-label="Game sections">
+    <button type="button" class="nav-tab active" data-nav="tournament" aria-current="page"><svg><use href="#i-trophy"></use></svg><span>Tournament</span></button>
+    <button type="button" class="nav-tab" data-nav="cards"><svg><use href="#i-cards"></use></svg><span>Cards</span></button>
+    <button type="button" class="nav-tab" data-nav="summon"><svg><use href="#i-summon"></use></svg><span>Summon</span></button>
+    <button type="button" class="nav-tab" data-nav="profile"><svg><use href="#i-user"></use></svg><span>Profile</span></button>
+  </nav>
+  <dialog id="game-dialog" class="game-dialog" aria-labelledby="dialog-title"><div class="dialog-inner"><button type="button" class="dialog-close" id="dialog-close" aria-label="Close dialog">×</button><div id="dialog-content"></div><button type="button" id="dialog-done" class="gold-button">CONTINUE</button></div></dialog>
+  <div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
+</body>
+</html>
