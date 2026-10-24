@@ -29,13 +29,37 @@ function reveal(hero,stage,dupe,preview){
   const wrap=elem('div','summon-reveal');
   const media=elem('div','summon-reveal-media');
   const videoSrc=cardVideo(hero,stage);
-  const image=elem('img','summon-reveal-poster');image.src=cardImage(hero,stage);image.alt=hero.name+' stage '+stage;
-  media.append(image);
-  if(videoSrc){const video=elem('video','summon-reveal-video');video.src=videoSrc;video.poster=image.src;video.autoplay=true;video.muted=true;video.loop=true;video.playsInline=true;video.preload='metadata';video.setAttribute('webkit-playsinline','');video.addEventListener('playing',()=>image.classList.add('video-playing'));video.addEventListener('error',()=>{video.remove();image.classList.remove('video-playing')});media.append(video);video.play().catch(()=>{});}
+  let video=null;
+  if(videoSrc){
+    // Never overlay the static card image or use it as a video poster.
+    // That used to display two copies of the revealed hero.
+    video=elem('video','summon-reveal-video');
+    video.src=videoSrc;
+    video.autoplay=true;
+    video.muted=true;
+    video.loop=true;
+    video.playsInline=true;
+    video.preload='auto';
+    video.setAttribute('webkit-playsinline','');
+    video.setAttribute('aria-label',hero.name+' Stage '+stage+' summon animation');
+    const errorText=elem('p','summon-video-fallback','The animation is unavailable on this device.');
+    errorText.hidden=true;
+    video.addEventListener('error',()=>{video.hidden=true;errorText.hidden=false});
+    media.append(video,errorText);
+  }else{
+    media.append(elem('p','summon-video-fallback','Animation coming soon for '+hero.name+' Stage '+stage+'.'));
+  }
   wrap.append(media,elem('span','summon-reveal-stage','STAGE '+stage));
-  wrap.append(elem('h2','',hero.name.toUpperCase()),elem('p','',preview?'Card and summon animation preview':dupe?'Duplicate card — 100 demo Shards refunded.':'NEW CARD UNLOCKED · Saved to your collection.'));
-  if(preview){const close=elem('button','dark-button','BACK TO SUMMON');close.type='button';close.addEventListener('click',()=>{const d=$('game-dialog');d.close()});wrap.append(close);}
+  wrap.append(elem('h2','',hero.name.toUpperCase()),
+    elem('p','summon-reveal-caption',preview?'Summon animation preview':dupe?'Duplicate card · 100 demo Shards refunded.':'NEW CARD UNLOCKED · Saved to your collection.'));
+  if(preview){
+    const close=elem('button','dark-button','BACK TO SUMMON');
+    close.type='button';
+    close.addEventListener('click',()=>$('game-dialog').close());
+    wrap.append(close);
+  }
   openDialog(wrap);
+  if(video)video.play().catch(()=>{video.controls=true});
 }
 function makeCard(hero,stage){
  const id=cardId(hero,stage),has=state.owned.includes(id),selected=state.active===id;
