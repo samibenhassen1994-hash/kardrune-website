@@ -1,7 +1,8 @@
 /* Idle KardRune offline training: pure, testable battle rules. */
 (function(root){
 'use strict';
-const STAGE_HP=Object.freeze([0,120,170,215]);
+// Double the original per-Stage health to prevent a max-ATK critical one-shot.
+const STAGE_HP=Object.freeze([0,240,340,430]);
 const TURN_MS=1200;
 const MAX_CRIT=25;
 const isAttack=x=>Number.isInteger(x)&&x>=1&&x<=100;
