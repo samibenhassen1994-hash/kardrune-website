@@ -44,56 +44,114 @@ function renderDeck(){
  $('live-deck-count').textContent=deck.length+' / 9';
  syncStatus();refreshLabels();
 }
-function onCardDragStart(event,id){event.dataTransfer.setData('text/plain',id);event.dataTransfer.effectAllowed='move'}
+function dragPreview(id){
+ const preview=document.createElement('div');
+ preview.className='deck-drag-preview';
+ preview.setAttribute('aria-hidden','true');
+ const img=document.createElement('img');img.src=cardImage(id);img.alt='';img.draggable=false;
+ const caption=document.createElement('span');caption.textContent=id.replace(':',' · S');
+ preview.append(img,caption);
+ return preview;
+}
+function onCardDragStart(event,id){
+ if(!event.dataTransfer)return;
+ event.dataTransfer.setData('text/plain',id);
+ event.dataTransfer.effectAllowed='copy';
+ const ghost=dragPreview(id);
+ ghost.classList.add('deck-drag-native');
+ document.body.append(ghost);
+ if(event.dataTransfer.setDragImage)event.dataTransfer.setDragImage(ghost,50,60);
+ requestAnimationFrame(()=>ghost.remove());
+}
 function prepareCard(card,id){
  if(!save().owned?.includes(id))return;
  card.draggable=true;
+ const artwork=card.querySelector('.hero-image');
+ artwork?.querySelector('img')?.setAttribute('draggable','false');
  card.addEventListener('dragstart',e=>onCardDragStart(e,id));
- const add=document.createElement('button');add.type='button';add.className='deck-add-card';
- add.textContent=deck.includes(id)?'✓ IN DECK':'+ DECK';
- add.addEventListener('click',e=>{e.stopPropagation();insert(id);root.IDLE_LIVE_PVP.refreshLabels()});
+
+ const add=document.createElement('button');
+ add.type='button';add.className='deck-add-card';
+ add.addEventListener('click',e=>{
+  e.preventDefault();e.stopPropagation();
+  if(deck.includes(id))remove(deck.indexOf(id));
+  else insert(id);
+ });
  card.append(add);
- // Drag directly from the full-size inventory card; keep natural scroll until long press.
- let hold=null,active=false,start=null,last=null,scrollTimer=null,suppressTap=false;
- const clearHighlights=()=>document.querySelectorAll('.deck-slot.drag-over').forEach(el=>el.classList.remove('drag-over'));
- const stopScroll=()=>{clearInterval(scrollTimer);scrollTimer=null};
- const hitSlot=()=>last?document.elementFromPoint(last.x,last.y)?.closest('.deck-slot'):null;
- const hover=()=>{clearHighlights();hitSlot()?.classList.add('drag-over')};
- const reset=()=>{clearTimeout(hold);stopScroll();clearHighlights();card.classList.remove('deck-touch-dragging');start=null;last=null;active=false};
- const startScroll=()=>{
-  if(scrollTimer)return;
-  scrollTimer=setInterval(()=>{
-   if(!active||!last)return;
-   const edge=96;
-   const velocity=last.y<edge?-Math.min(18,(edge-last.y)/3):last.y>innerHeight-edge?Math.min(18,(last.y-(innerHeight-edge))/3):0;
-   if(velocity){root.scrollBy(0,velocity);hover()}
-  },30);
- };
- card.addEventListener('touchstart',e=>{
-  if(e.target.closest('.deck-add-card')||e.touches.length!==1)return;
-  const t=e.touches[0];start={x:t.clientX,y:t.clientY};last={...start};
-  active=false;clearTimeout(hold);
-  hold=setTimeout(()=>{if(!start)return;active=true;suppressTap=true;card.classList.add('deck-touch-dragging');startScroll()},320);
+
+ // Direct swipe on the inventory artwork: a tiny movement starts dragging immediately.
+ // Other parts of each card still allow normal vertical page scrolling.
+ if(!artwork)return;
+ let origin=null,last=null,ghost=null,dragging=false,autoScroll=null,ignoreClickUntil=0;
+ function targetSlot(x,y){return document.elementFromPoint(x,y)?.closest('.deck-slot')||null}
+ function markSlot(x,y){
+  document.querySelectorAll('#cards-deck-slots .deck-slot.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  const slot=targetSlot(x,y);
+  if(slot)slot.classList.add('drag-over');
+  ghost?.classList.toggle('over-slot',Boolean(slot));
+  return slot;
+ }
+ function movePreview(x,y){
+  if(!ghost)return;
+  ghost.style.left=x+'px';ghost.style.top=y+'px';
+  markSlot(x,y);
+ }
+ function begin(x,y){
+  dragging=true;ghost=dragPreview(id);document.body.append(ghost);
+  card.classList.add('deck-touch-dragging');
+  movePreview(x,y);
+  autoScroll=setInterval(()=>{
+   if(!dragging||!last)return;
+   const edge=115;
+   const up=last.y<edge?Math.min(23,(edge-last.y)*.25):0;
+   const down=last.y>innerHeight-edge?Math.min(23,(last.y-(innerHeight-edge))*.25):0;
+   if(up||down){root.scrollBy(0,down-up);movePreview(last.x,last.y)}
+  },28);
+ }
+ function cleanup(){
+  clearInterval(autoScroll);autoScroll=null;
+  ghost?.remove();ghost=null;
+  document.querySelectorAll('#cards-deck-slots .deck-slot.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  card.classList.remove('deck-touch-dragging');
+  origin=null;last=null;dragging=false;
+ }
+ artwork.addEventListener('touchstart',e=>{
+  if(e.touches.length!==1)return;
+  const t=e.touches[0];origin={x:t.clientX,y:t.clientY};last={...origin};
  },{passive:true});
- card.addEventListener('touchmove',e=>{
-  if(!start||e.touches.length!==1)return;
+ artwork.addEventListener('touchmove',e=>{
+  if(!origin||e.touches.length!==1)return;
   const t=e.touches[0];last={x:t.clientX,y:t.clientY};
-  if(!active&&Math.hypot(t.clientX-start.x,t.clientY-start.y)>10){reset();return}
-  if(active){e.preventDefault();hover()}
+  if(!dragging&&Math.hypot(last.x-origin.x,last.y-origin.y)>=4)begin(last.x,last.y);
+  if(dragging){e.preventDefault();movePreview(last.x,last.y)}
  },{passive:false});
- card.addEventListener('touchend',e=>{
-  if(!start)return;
-  if(active){const t=e.changedTouches[0];last={x:t.clientX,y:t.clientY};const slot=hitSlot();if(slot)insert(id,Number(slot.dataset.slot));e.preventDefault()}
-  reset();
+ artwork.addEventListener('touchend',e=>{
+  if(!origin)return;
+  if(dragging){
+   const t=e.changedTouches[0],slot=targetSlot(t.clientX,t.clientY);
+   if(slot)insert(id,Number(slot.dataset.slot));
+   ignoreClickUntil=Date.now()+450;
+   e.preventDefault();
+  }
+  cleanup();
  },{passive:false});
- card.addEventListener('touchcancel',reset);
- // Don't accidentally select the champion after dropping its card into the deck.
- card.addEventListener('click',e=>{if(suppressTap){e.preventDefault();e.stopImmediatePropagation();suppressTap=false}},true);
+ artwork.addEventListener('touchcancel',cleanup);
+ // Suppress the card's 'select champion' handler after a drag, not after a tap.
+ card.addEventListener('click',e=>{
+  if(Date.now()<ignoreClickUntil){
+   e.preventDefault();e.stopImmediatePropagation();
+   ignoreClickUntil=0;
+  }
+ },true);
 }
 function refreshLabels(){
- document.querySelectorAll('.deck-add-card').forEach(button=>{
+ document.querySelectorAll('#hero-grid .deck-add-card').forEach(button=>{
   const id=button.closest('[data-card-id]')?.dataset.cardId;
-  if(id)button.textContent=deck.includes(id)?'✓ IN DECK':'+ DECK';
+  if(!id)return;
+  const inDeck=deck.includes(id);
+  button.textContent=inDeck?'− REMOVE FROM DECK':'+ ADD TO DECK';
+  button.classList.toggle('is-in-deck',inDeck);
+  button.setAttribute('aria-label',(inDeck?'Remove ':'Add ')+id+(inDeck?' from':' to')+' PvP deck');
  });
 }
 function renderCardControls(){
