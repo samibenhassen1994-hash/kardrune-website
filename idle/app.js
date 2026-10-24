@@ -109,6 +109,7 @@ function reveal(hero,stage,dupe,preview){
 function makeCard(hero,stage){
  const id=cardId(hero,stage),has=state.owned.includes(id),selected=state.active===id;
  const box=elem('article','hero-card card-stage-'+stage+(has?'':' locked'));
+ if(has)box.dataset.cardId=id;
  const image=elem('div','hero-image');const img=elem('img');img.src=cardImage(hero,stage);img.alt=hero.name+' Stage '+stage;img.loading='lazy';image.append(img);if(has)image.append(displayStats(stage,state.attacks[id],state.crits[id]));if(!has){const mystery=elem('span','mystery-mark','?');mystery.setAttribute('aria-hidden','true');image.append(mystery)}box.append(image);
  box.append(elem('div','rarity-tag','STAGE '+stage+' · '+hero.element.toUpperCase()),elem('h3','',hero.name));
  box.append(elem('p','',has?'ATK '+state.attacks[id]+' · CRIT '+state.crits[id]+'% · HP '+combat.hpForStage(stage):'NOT COLLECTED'));
@@ -138,6 +139,7 @@ function renderCards(){
  $('owned-count').innerHTML=owned+' <span>/ '+total+' CARDS</span>';
  $('collection-bar').style.width=(owned/total*100)+'%';
  $('stat-cards').textContent=owned;
+ window.IDLE_LIVE_PVP?.renderCardControls();
 }
 function renderRoster(){
  const grid=$('summon-roster-grid');if(!grid)return;grid.replaceChildren();
