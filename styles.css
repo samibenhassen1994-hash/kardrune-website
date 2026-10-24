@@ -3110,3 +3110,14 @@ footer {
 /* Idle is a separate page, not a section of the homepage. */
 .idle-mobile-nav{display:none!important}
 @media(max-width:767px){.site-header .nav-links .idle-mobile-nav{display:flex!important;align-items:center;gap:8px}.idle-mobile-nav span{color:#f4cd82}}
+
+
+/* Homepage: prominent direct access to the mobile mini-game and Google Play. */
+.page-home .home-top-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex:none}
+.page-home .home-top-link{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 14px;border-radius:11px;white-space:nowrap;font-size:11px;letter-spacing:.06em;font-weight:800;transition:transform .2s ease,filter .2s ease}
+.page-home .home-top-link:hover{transform:translateY(-2px);filter:brightness(1.08)}
+.page-home .home-top-idle{color:#f5d88e;border:1px solid #d7b66b88;background:#17253d}
+.page-home .home-top-app{color:#152034;border:1px solid #f6d48a;background:linear-gradient(180deg,#ffe2a0,#f1c15e)}
+@media(max-width:1120px){.page-home .site-header .home-top-actions{margin-left:auto;margin-right:62px}}
+@media(max-width:767px){.page-home .site-header .home-top-actions{margin-left:auto;margin-right:0;gap:7px}.page-home .home-top-link{min-height:35px;padding:0 9px;font-size:10px;border-radius:9px}.page-home .site-header{padding-right:12px}}
+@media(max-width:360px){.page-home .home-top-link{font-size:9px;padding:0 7px;min-height:32px}}
