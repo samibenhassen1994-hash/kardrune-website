@@ -6,10 +6,19 @@ const STORAGE='idle-kardrune-demo-v1';
 const AVATARS=Object.freeze({player:'Player',guard:'Guard',vassal:'Vassal',king:'King'});
 const avatarImage=id=>'./media/avatars/avatar_'+id+'.webp';
 const rules=window.IDLE_GAME_RULES;
+const combat=window.IDLE_COMBAT_RULES;
 const cardId=(hero,stage)=>hero.id+':'+stage;
 const cardImage=(hero,stage)=>'./media/cards/'+hero.stages[stage-1];
 const cardVideo=(hero,stage)=>hero.loops[stage-1]?'./media/animations/'+hero.loops[stage-1]:null;
-const initial=()=>({name:'Runebearer',avatar:'player',shards:1500,owned:['sam:1','lira:1','rhea:1'],active:'sam:1',duels:0,wins:0,pulls:0,practiceDaily:{day:'',count:0}});
+const initial=()=>({name:'Runebearer',avatar:'player',shards:1500,owned:['sam:1','lira:1','rhea:1'],active:'sam:1',duels:0,wins:0,pulls:0,practiceDaily:{day:'',count:0},attacks:{'sam:1':50,'lira:1':50,'rhea:1':50},pendingDuplicate:null});
+function normalizeAttacks(values,owned){
+ const obj=values&&typeof values==='object'&&!Array.isArray(values)?values:{};
+ return Object.fromEntries(owned.map(id=>[id,combat.isAttack(obj[id])?obj[id]:combat.legacyAttack(id)]));
+}
+function normalizePending(v,owned){
+ if(!v||typeof v!=='object'||!owned.includes(v.id)||!combat.isAttack(v.attack))return null;
+ return {id:v.id,attack:v.attack};
+}
 function migrate(v){
   const base=initial();if(!v||typeof v!=='object')return base;
   const ids=Array.isArray(v.owned)?v.owned.map(id=>String(id).includes(':')?String(id):String(id)+':1'):[];
@@ -17,14 +26,23 @@ function migrate(v){
   const active=String(v.active||base.active);const normalized=active.includes(':')?active:active+':1';
   const owned=[...new Set(valid.length?valid:base.owned)];
   return {name:typeof v.name==='string'?v.name.slice(0,20):base.name,avatar:Object.prototype.hasOwnProperty.call(AVATARS,v.avatar)?v.avatar:base.avatar,shards:Number.isFinite(v.shards)?Math.max(0,Math.floor(v.shards)):base.shards,
-    owned,active:owned.includes(normalized)?normalized:owned[0],duels:rules.safeCount(v.duels),wins:rules.safeCount(v.wins),pulls:rules.safeCount(v.pulls),practiceDaily:rules.dailyRewardState(v.practiceDaily)};
+    owned,active:owned.includes(normalized)?normalized:owned[0],duels:rules.safeCount(v.duels),wins:rules.safeCount(v.wins),pulls:rules.safeCount(v.pulls),practiceDaily:rules.dailyRewardState(v.practiceDaily),attacks:normalizeAttacks(v.attacks,owned),pendingDuplicate:normalizePending(v.pendingDuplicate,owned)};
 }
 function load(){try{return migrate(JSON.parse(localStorage.getItem(STORAGE)))}catch{return initial()}}
 let state=load(),filter='all',grouped=false,installEvent=null,pulling=false;
+let opponent=null,liveBattle=null,battleTimer=null,pendingDuplicate=state.pendingDuplicate?{...state.pendingDuplicate,...itemById(state.pendingDuplicate.id)}:null;
 function persist(){try{localStorage.setItem(STORAGE,JSON.stringify(state));return true}catch{notify('Local progress could not be saved');return false}}
 function notify(message){const el=$('toast');el.textContent=message;el.hidden=false;clearTimeout(notify.t);notify.t=setTimeout(()=>el.hidden=true,2800)}
 function ownedCards(){return heroes.flatMap(hero=>[1,2,3].filter(stage=>state.owned.includes(cardId(hero,stage))).map(stage=>({hero,stage})))}
 function itemById(id){const [key,level]=String(id).split(':');const hero=heroes.find(h=>h.id===key);return hero?{hero,stage:Math.max(1,Math.min(3,Number(level)||1))}:null}
+function displayStats(id,stage,attack){
+ const bar=elem('div','battle-card-stats');
+ const atk=elem('span','card-atk',String(attack));
+ atk.title='ATK '+attack;atk.setAttribute('aria-label','ATK '+attack);
+ const hp=elem('span','card-hp',String(combat.hpForStage(stage)));
+ hp.title='HP '+combat.hpForStage(stage);hp.setAttribute('aria-label','HP '+combat.hpForStage(stage));
+ bar.append(atk,hp);return bar;
+}
 function openDialog(node){
   const d=$('game-dialog');
   const isSummon=node.classList.contains('summon-reveal');
@@ -83,11 +101,11 @@ function reveal(hero,stage,dupe,preview){
 function makeCard(hero,stage){
  const id=cardId(hero,stage),has=state.owned.includes(id),selected=state.active===id;
  const box=elem('article','hero-card card-stage-'+stage+(has?'':' locked'));
- const image=elem('div','hero-image');const img=elem('img');img.src=cardImage(hero,stage);img.alt=hero.name+' Stage '+stage;img.loading='lazy';image.append(img);if(!has){const mystery=elem('span','mystery-mark','?');mystery.setAttribute('aria-hidden','true');image.append(mystery)}box.append(image);
+ const image=elem('div','hero-image');const img=elem('img');img.src=cardImage(hero,stage);img.alt=hero.name+' Stage '+stage;img.loading='lazy';image.append(img);if(has)image.append(displayStats(id,stage,state.attacks[id]));if(!has){const mystery=elem('span','mystery-mark','?');mystery.setAttribute('aria-hidden','true');image.append(mystery)}box.append(image);
  box.append(elem('div','rarity-tag','STAGE '+stage+' · '+hero.element.toUpperCase()),elem('h3','',hero.name));
- box.append(elem('p','',has?'POWER '+(hero.power+(stage-1)*18):'NOT COLLECTED'));
+ box.append(elem('p','',has?'ATK '+state.attacks[id]+' · HP '+combat.hpForStage(stage):'NOT COLLECTED'));
  if(selected)box.append(elem('span','hero-selected','✦ SELECTED CHAMPION'));
- if(has){box.tabIndex=0;box.role='button';box.title='Select '+hero.name+' Stage '+stage;const select=()=>{state.active=id;persist();render();notify(hero.name+' Stage '+stage+' selected')};box.addEventListener('click',select);box.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select()}})}
+ if(has){box.tabIndex=0;box.role='button';box.title='Select '+hero.name+' Stage '+stage;const select=()=>{if(liveBattle)return notify('Finish your duel first');state.active=id;opponent=null;persist();render();notify(hero.name+' Stage '+stage+' selected')};box.addEventListener('click',select);box.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select()}})}
  return box;
 }
 function renderCards(){
@@ -127,6 +145,10 @@ function render(){
  if(!owned.some(({hero,stage})=>cardId(hero,stage)===state.active))state.active=owned[0]?cardId(owned[0].hero,owned[0].stage):'sam:1';
  select.value=state.active;const current=itemById(state.active);
  $('duel-player-art').src=cardImage(current.hero,current.stage);$('duel-player-name').textContent=current.hero.name+' · S'+current.stage;
+ if(!liveBattle){renderOpponent();$('player-health-fill').style.width='100%'}
+ $('duel-player-attack').textContent=state.attacks[state.active];
+ $('duel-player-maxhp').textContent=combat.hpForStage(current.stage);
+ $('duel-player-hp').textContent=liveBattle?liveBattle.player.hp:combat.hpForStage(current.stage);
  renderCards();
 }
 function go(route){if(!['tournament','cards','summon','profile'].includes(route))route='tournament';document.querySelectorAll('.screen').forEach(el=>el.hidden=el.id!=='screen-'+route);document.querySelectorAll('[data-nav]').forEach(el=>{const a=el.dataset.nav===route;el.classList.toggle('active',a);if(a)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current')});if(location.hash!=='#'+route)history.replaceState(null,'','#'+route);scrollTo(0,0)}
@@ -135,8 +157,76 @@ addEventListener('hashchange',()=>go(location.hash.slice(1)));
 document.querySelectorAll('[data-filter]').forEach(el=>el.addEventListener('click',()=>{filter=el.dataset.filter;document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('active',b===el));renderCards()}));
 $('card-view-grid').addEventListener('click',()=>{grouped=false;$('card-view-grid').classList.add('active');$('card-view-heroes').classList.remove('active');renderCards()});
 $('card-view-heroes').addEventListener('click',()=>{grouped=true;$('card-view-heroes').classList.add('active');$('card-view-grid').classList.remove('active');renderCards()});
-$('active-hero-select').addEventListener('change',e=>{state.active=e.target.value;persist();render()});
-$('practice-button').addEventListener('click',()=>{const current=itemById(state.active);if(!current)return notify('Choose a champion');const result=rules.resolvePractice(state.practiceDaily,current.hero.power,current.stage,Math.random());state.duels++;if(result.win)state.wins++;state.shards+=result.reward;state.practiceDaily=result.daily;persist();render();const wrap=elem('div','');wrap.append(elem('h2','',result.win?'TRAINING VICTORY!':'TRAINING COMPLETE'),elem('p','',result.reward?current.hero.name+' earned '+result.reward+' demo Rune Shards.':'Daily reward limit reached. Keep practicing; Shards reset at local midnight.'));openDialog(wrap)});
+$('active-hero-select').addEventListener('change',e=>{if(liveBattle)return;state.active=e.target.value;opponent=null;persist();render()});
+function renderOpponent(){
+ if(!opponent)opponent=combat.pickEnemy(heroes,itemById(state.active).stage);
+ const hero=heroes.find(x=>x.id===opponent.id);
+ $('duel-enemy-art').src=cardImage(hero,opponent.stage);
+ $('duel-enemy-name').textContent=opponent.name+' · S'+opponent.stage;
+ $('duel-enemy-attack').textContent=opponent.attack;
+ $('duel-enemy-maxhp').textContent=opponent.maxHp;
+ $('duel-enemy-hp').textContent=liveBattle?liveBattle.enemy.hp:opponent.maxHp;
+ $('enemy-health-fill').style.width=((liveBattle?liveBattle.enemy.hp:opponent.maxHp)/opponent.maxHp*100)+'%';
+}
+function updateBattle(){
+ if(!liveBattle)return;
+ for(const side of ['player','enemy']){
+   const unit=liveBattle[side];
+   $('duel-'+side+'-hp').textContent=unit.hp;
+   $(side==='player'?'player-health-fill':'enemy-health-fill').style.width=(unit.hp/unit.maxHp*100)+'%';
+ }
+ const last=liveBattle.lastHit;
+ $('battle-live-status').textContent=last?(last.actor==='player'?'You hit':'Opponent hits')+' for '+last.damage+' damage': 'Battle in progress…';
+ $('battle-turn-counter').textContent=String(liveBattle.hits);
+}
+function endBattle(){
+ if(!liveBattle||liveBattle.status!=='finished')return;
+ const win=liveBattle.winner==='player';
+ state.duels++;if(win)state.wins++;
+ const daily=rules.dailyRewardState(state.practiceDaily);
+ const rewarded=daily.count<rules.DAILY_REWARD_LIMIT;
+ const reward=rewarded?(win?100:35):0;
+ if(rewarded)daily.count++;
+ state.practiceDaily=daily;state.shards+=reward;
+ persist();clearInterval(battleTimer);battleTimer=null;
+ $('practice-button').disabled=false;
+ $('reroll-enemy').disabled=false;
+ $('active-hero-select').disabled=false;
+ $('practice-button').textContent='⚔ START ANOTHER DUEL';
+ $('battle-live-status').textContent=(win?'VICTORY!':'DEFEAT!')+(reward?' · +'+reward+' Shards':' · Daily rewards exhausted');
+ const wrap=elem('div','');
+ wrap.append(elem('h2','',win?'TRAINING VICTORY!':'TRAINING DEFEAT'),elem('p','',reward?'Earned '+reward+' demo Rune Shards.':'Daily rewards exhausted; come back tomorrow for more.'));
+ liveBattle=null;
+ render();
+ openDialog(wrap);
+}
+function startPractice(){
+ if(liveBattle)return;
+ const current=itemById(state.active);
+ if(!current)return notify('Choose a champion');
+ if(!opponent)renderOpponent();
+ liveBattle=combat.newBattle({id:current.hero.id,name:current.hero.name,stage:current.stage,attack:state.attacks[state.active]},opponent);
+ $('practice-button').disabled=true;
+ $('reroll-enemy').disabled=true;
+ $('active-hero-select').disabled=true;
+ $('practice-button').textContent='DUEL IN PROGRESS…';
+ $('battle-live-status').textContent='Battle started — turns alternate automatically';
+ $('battle-turn-counter').textContent='0';
+ updateBattle();
+ battleTimer=setInterval(()=>{
+  liveBattle=combat.nextTurn(liveBattle);
+  updateBattle();
+  if(liveBattle.status==='finished')endBattle();
+ },combat.TURN_MS);
+}
+$('practice-button').addEventListener('click',startPractice);
+$('reroll-enemy').addEventListener('click',()=>{
+ if(liveBattle)return;
+ opponent=combat.pickEnemy(heroes,itemById(state.active).stage);
+ renderOpponent();
+ $('battle-live-status').textContent='New random opponent ready';
+});
+
 function summon(featured){
  if(pulling)return;const cost=featured?600:300;
  if(state.shards<cost){notify('Not enough Rune Shards');return}
@@ -146,8 +236,39 @@ function summon(featured){
  if(!hero){pulling=false;return}
  state.shards-=cost;state.pulls++;
  const id=cardId(hero,stage),duplicate=state.owned.includes(id);
- if(duplicate)state.shards+=100;else state.owned.push(id);
- persist();render();reveal(hero,stage,duplicate,false);pulling=false;
+ const attack=combat.rollAttack();
+ if(duplicate){
+   pendingDuplicate={id,attack,hero,stage};
+   state.pendingDuplicate={id,attack};
+   persist();render();showDuplicate();
+ }else{
+   state.owned.push(id);state.attacks[id]=attack;
+   persist();render();reveal(hero,stage,false,false);
+ }
+ pulling=false;
+}
+function showDuplicate(){
+ if(!pendingDuplicate)return;
+ const {id,attack,hero,stage}=pendingDuplicate;
+ const wrap=elem('div','duplicate-compare');
+ wrap.append(elem('h2','','DUPLICATE FOUND'),elem('p','',hero.name+' · Stage '+stage+' · HP '+combat.hpForStage(stage)));
+ const row=elem('div','duplicate-stats');
+ row.append(elem('div','', 'CURRENT ATK: '+state.attacks[id]),elem('div','', 'NEW ATK: '+attack));
+ wrap.append(row);
+ const actions=elem('div','duplicate-actions');
+ for(const [caption,replace] of [['KEEP OLD',false],['REPLACE ATK',true]]){
+  const button=elem('button',replace?'gold-button':'dark-button',caption);button.type='button';
+  button.addEventListener('click',()=>{
+   if(!pendingDuplicate)return;
+   if(replace)state.attacks[id]=attack;
+   else state.shards+=100;
+   pendingDuplicate=null;state.pendingDuplicate=null;persist();render();$('game-dialog').close();
+   notify(replace?'New ATK saved':'Old ATK kept · +100 demo Shards');
+  });actions.append(button);
+ }
+ wrap.append(actions,elem('p','micro-note','Replacing changes only this card\'s ATK. HP stays fixed.'));
+ openDialog(wrap);
+ $('dialog-done').hidden=true;
 }
 $('summon-standard').addEventListener('click',()=>summon(false));
 $('summon-featured').addEventListener('click',()=>summon(true));
@@ -161,14 +282,16 @@ document.querySelectorAll('[data-avatar]').forEach(button=>button.addEventListen
 }));
 $('name-form').addEventListener('submit',e=>{e.preventDefault();const value=$('name-input').value.trim().replace(/\s+/g,' ');if(value.length<2)return notify('Name needs at least two characters');state.name=value.slice(0,20);persist();render();notify('Name saved on this device')});
 $('reset-button').addEventListener('click',()=>{if(!confirm('Reset all local Idle KardRune progress on this device?'))return;state=initial();persist();filter='all';document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('active',b.dataset.filter==='all'));render();go('profile');notify('Local demo reset')});
-$('dialog-close').addEventListener('click',()=>$('game-dialog').close());
-$('dialog-done').addEventListener('click',()=>$('game-dialog').close());
-$('game-dialog').addEventListener('click',e=>{if(e.target===$('game-dialog'))e.target.close()});
-$('game-dialog').addEventListener('close',()=>{for(const v of $('dialog-content').querySelectorAll('video')){v.pause();v.removeAttribute('src');v.load()}});
+$('dialog-close').addEventListener('click',()=>{if(pendingDuplicate)return notify('Choose KEEP or REPLACE');$('game-dialog').close()});
+$('dialog-done').addEventListener('click',()=>{if(pendingDuplicate)return;$('game-dialog').close()});
+$('game-dialog').addEventListener('click',e=>{if(e.target===$('game-dialog')&&!pendingDuplicate)e.target.close()});
+$('game-dialog').addEventListener('cancel',e=>{if(pendingDuplicate)e.preventDefault()});
+$('game-dialog').addEventListener('close',()=>{$('dialog-done').hidden=false;if(pendingDuplicate){notify('Choose KEEP or REPLACE to finish the pull');setTimeout(showDuplicate,0)}for(const v of $('dialog-content').querySelectorAll('video')){v.pause();v.removeAttribute('src');v.load()}});
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvent=e;$('install-help').textContent='Ready to add to your home screen.'});
 $('install-button').addEventListener('click',async()=>{if(installEvent){installEvent.prompt();await installEvent.userChoice;installEvent=null}else notify('Use Safari Share or Chrome menu → Add to Home Screen')});
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 renderRoster();render();go(location.hash.slice(1)||'tournament');
+if(pendingDuplicate)showDuplicate();
 const param=new URLSearchParams(location.search).get('install');
 if(param==='ios'||param==='android'){const wrap=elem('div');wrap.append(elem('h2','','INSTALL IDLE KARDRUNE'),elem('p','',param==='ios'?'In Safari tap Share → Add to Home Screen.':'In Chrome tap ⋮ → Install app or Add to Home Screen.'));openDialog(wrap);history.replaceState(null,'',location.pathname+(location.hash||''))}
 })();
