@@ -213,3 +213,27 @@
 .live-battle-replay{max-height:220px;overflow:auto;background:#09152b;border-radius:8px;padding:10px;margin-top:9px}
 .live-hit{padding:3px 0;font-size:11px;color:#d8e9ff;border-bottom:1px solid #ffffff12}
 .live-pvp-box h3{font-size:13px;color:#f4ddad;margin-top:16px}
+
+/* Nine-slot PvP loadout, always at top of Cards. */
+.deck-builder{margin:12px 0 19px;padding:14px 11px 12px;border-radius:14px;border:1px solid #e0bd77a6;background:linear-gradient(160deg,#16243a,#101c32 65%,#211d2a);box-shadow:inset 0 1px 0 #f8d89a24,0 8px 30px #0004}
+.deck-builder-header,.deck-builder-footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.deck-builder-header h2{font-family:Cinzel,serif;color:#f6d998;font-size:20px;margin:3px 0}
+.deck-builder-header strong{font-family:Cinzel,serif;color:#f8dd9a;font-size:17px;white-space:nowrap}
+.deck-builder-eyebrow{font-size:9px;letter-spacing:.16em;color:#c9b6df;font-weight:800}
+.deck-builder-help{font-size:10px;color:#b9c9df;line-height:1.5;margin:5px 0 11px}
+.deck-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.deck-slot{position:relative;min-width:0;aspect-ratio:3/3.7;border:1px dashed #b3a78691;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#1b2b48,#091629);color:#d7c18a;padding:4px;overflow:hidden}
+.deck-slot.filled{border:1px solid #d3b06f;background:#192940;cursor:pointer}
+.deck-slot.drag-over{outline:2px solid #f9d67c;outline-offset:0;filter:brightness(1.3)}
+.deck-slot img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.deck-slot-number{position:absolute;top:4px;left:6px;font-size:10px;font-weight:800;color:#f6d492;text-shadow:0 1px 4px #000;z-index:1}
+.deck-slot-name{position:absolute;bottom:3px;left:3px;right:3px;background:#07111dbb;border-radius:4px;padding:2px 3px;font-size:9px;color:#f7e2bc;line-height:1.2;z-index:1}
+.deck-slot-remove{position:absolute;right:5px;top:3px;font-size:17px;color:#fff2d3;text-shadow:0 1px 4px #000;z-index:1}
+.deck-slot-plus{font-size:29px;opacity:.34;font-weight:300}
+.deck-builder-footer{align-items:flex-end;margin-top:12px}
+.deck-builder-status{font-size:10px;color:#c8d2e5;line-height:1.35;min-width:0;flex:1}
+.deck-builder-footer .gold-button{font-size:10px;min-width:115px;max-width:130px;min-height:39px;padding:8px}
+.hero-card{position:relative}
+.hero-card .deck-add-card{display:block;width:calc(100% - 10px);margin:6px 5px 9px;min-height:31px;padding:5px;font-size:10px;font-weight:800;letter-spacing:.07em;color:#f4d9a6;background:linear-gradient(120deg,#29334d,#151e34);border:1px solid #bd9c61;border-radius:7px;touch-action:manipulation}
+.hero-card.deck-touch-dragging{outline:2px solid #f4ce84;opacity:.8}
+@media(min-width:500px){.deck-slots{grid-template-columns:repeat(9,minmax(0,1fr));gap:5px}.deck-slot{aspect-ratio:2/3}.deck-slot-name{font-size:8px}}
