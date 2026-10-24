@@ -34,4 +34,16 @@ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEven
 $('install-button').addEventListener('click',async()=>{if(installEvent){installEvent.prompt();await installEvent.userChoice;installEvent=null;}else{notify('Use your browser Share or menu → Add to Home Screen');}});
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 render();go(location.hash.slice(1)||'tournament');
+
+// Installation guidance must run ON the actual game URL, not the website landing.
+const params=new URLSearchParams(location.search);
+const installPlatform=params.get('install');
+if(installPlatform==='ios'||installPlatform==='android'){
+  const msg=installPlatform==='ios'
+    ? 'You are now inside Idle KardRune. In Safari tap Share → Add to Home Screen → Add. The installed icon opens this game directly.'
+    : 'You are now inside Idle KardRune. In Chrome tap ⋮ → Install app (or Add to Home screen). The installed icon opens this game directly.';
+  result('INSTALL IDLE KARDRUNE',msg,null,'↓');
+  history.replaceState(null,'',location.pathname+(location.hash||''));
+}
+
 })();
