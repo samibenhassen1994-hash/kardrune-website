@@ -113,9 +113,31 @@
         <h1 id="profile-heading">PLAYER <span class="gold-text">PROFILE</span></h1>
         <p class="screen-intro">Your local adventurer profile. Online accounts will be introduced before real PvP.</p>
         <div class="profile-panel">
-          <div class="profile-avatar"><img src="https://kardrune.com/assets/young_sam_stage_1.webp" alt="Sam hero avatar"></div>
+          <div class="profile-avatar"><img id="profile-avatar-image" src="./media/avatars/avatar_player.webp" alt="Player avatar"></div>
           <span class="profile-label">RUNE ADVENTURER</span><h2 id="profile-display-name">Runebearer</h2>
           <span class="chip chip-blue">LOCAL ACCOUNT · LEVEL 1</span>
+        </div>
+        <div class="avatar-chooser" aria-labelledby="avatar-chooser-label">
+          <h3 id="avatar-chooser-label">CHOOSE YOUR AVATAR</h3>
+          <div class="avatar-options" role="group" aria-label="Choose a profile avatar">
+            <button class="avatar-option selected" type="button" data-avatar="player" aria-label="Select player avatar" aria-pressed="true">
+              <img src="./media/avatars/avatar_player.webp" alt="" loading="lazy">
+              <span>PLAYER</span>
+            </button>
+            <button class="avatar-option" type="button" data-avatar="guard" aria-label="Select guard avatar" aria-pressed="false">
+              <img src="./media/avatars/avatar_guard.webp" alt="" loading="lazy">
+              <span>GUARD</span>
+            </button>
+            <button class="avatar-option" type="button" data-avatar="vassal" aria-label="Select vassal avatar" aria-pressed="false">
+              <img src="./media/avatars/avatar_vassal.webp" alt="" loading="lazy">
+              <span>VASSAL</span>
+            </button>
+            <button class="avatar-option" type="button" data-avatar="king" aria-label="Select king avatar" aria-pressed="false">
+              <img src="./media/avatars/avatar_king.webp" alt="" loading="lazy">
+              <span>KING</span>
+            </button>
+          </div>
+          <p class="micro-note">Your avatar choice is saved on this device.</p>
         </div>
         <form id="name-form" class="profile-form"><label class="select-label" for="name-input">DISPLAY NAME</label><div class="name-row"><input id="name-input" class="field" name="nickname" minlength="2" maxlength="20" autocomplete="nickname" required><button class="dark-button" type="submit">SAVE</button></div></form>
         <div class="stats-grid">

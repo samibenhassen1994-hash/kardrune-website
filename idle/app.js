@@ -3,18 +3,20 @@
 const $=id=>document.getElementById(id);
 const heroes=window.IDLE_HERO_CATALOG||[];
 const STORAGE='idle-kardrune-demo-v1';
+const AVATARS=Object.freeze({player:'Player',guard:'Guard',vassal:'Vassal',king:'King'});
+const avatarImage=id=>'./media/avatars/avatar_'+id+'.webp';
 const rules=window.IDLE_GAME_RULES;
 const cardId=(hero,stage)=>hero.id+':'+stage;
 const cardImage=(hero,stage)=>'./media/cards/'+hero.stages[stage-1];
 const cardVideo=(hero,stage)=>hero.loops[stage-1]?'./media/animations/'+hero.loops[stage-1]:null;
-const initial=()=>({name:'Runebearer',shards:1500,owned:['sam:1','lira:1','rhea:1'],active:'sam:1',duels:0,wins:0,pulls:0,practiceDaily:{day:'',count:0}});
+const initial=()=>({name:'Runebearer',avatar:'player',shards:1500,owned:['sam:1','lira:1','rhea:1'],active:'sam:1',duels:0,wins:0,pulls:0,practiceDaily:{day:'',count:0}});
 function migrate(v){
   const base=initial();if(!v||typeof v!=='object')return base;
   const ids=Array.isArray(v.owned)?v.owned.map(id=>String(id).includes(':')?String(id):String(id)+':1'):[];
   const valid=ids.filter(id=>{const [h,s]=id.split(':');return heroes.some(hero=>hero.id===h)&&Number(s)>=1&&Number(s)<=3;});
   const active=String(v.active||base.active);const normalized=active.includes(':')?active:active+':1';
   const owned=[...new Set(valid.length?valid:base.owned)];
-  return {name:typeof v.name==='string'?v.name.slice(0,20):base.name,shards:Number.isFinite(v.shards)?Math.max(0,Math.floor(v.shards)):base.shards,
+  return {name:typeof v.name==='string'?v.name.slice(0,20):base.name,avatar:Object.prototype.hasOwnProperty.call(AVATARS,v.avatar)?v.avatar:base.avatar,shards:Number.isFinite(v.shards)?Math.max(0,Math.floor(v.shards)):base.shards,
     owned,active:owned.includes(normalized)?normalized:owned[0],duels:rules.safeCount(v.duels),wins:rules.safeCount(v.wins),pulls:rules.safeCount(v.pulls),practiceDaily:rules.dailyRewardState(v.practiceDaily)};
 }
 function load(){try{return migrate(JSON.parse(localStorage.getItem(STORAGE)))}catch{return initial()}}
@@ -113,6 +115,13 @@ function render(){
  state.practiceDaily=rules.dailyRewardState(state.practiceDaily);
  $('practice-rewards-left').textContent=String(rules.DAILY_REWARD_LIMIT-state.practiceDaily.count);
  $('profile-display-name').textContent=state.name;$('name-input').value=state.name;
+ $('profile-avatar-image').src=avatarImage(state.avatar);
+ $('profile-avatar-image').alt=AVATARS[state.avatar]+' avatar';
+ document.querySelectorAll('[data-avatar]').forEach(button=>{
+   const selected=button.dataset.avatar===state.avatar;
+   button.classList.toggle('selected',selected);
+   button.setAttribute('aria-pressed',String(selected));
+ });
  const owned=ownedCards(),select=$('active-hero-select');select.replaceChildren();
  owned.forEach(({hero,stage})=>{const op=elem('option','',hero.name+' · Stage '+stage);op.value=cardId(hero,stage);select.append(op)});
  if(!owned.some(({hero,stage})=>cardId(hero,stage)===state.active))state.active=owned[0]?cardId(owned[0].hero,owned[0].stage):'sam:1';
@@ -142,6 +151,14 @@ function summon(featured){
 }
 $('summon-standard').addEventListener('click',()=>summon(false));
 $('summon-featured').addEventListener('click',()=>summon(true));
+document.querySelectorAll('[data-avatar]').forEach(button=>button.addEventListener('click',()=>{
+ const id=button.dataset.avatar;
+ if(!Object.prototype.hasOwnProperty.call(AVATARS,id)||id===state.avatar)return;
+ state.avatar=id;
+ persist();
+ render();
+ notify(AVATARS[id]+' avatar selected');
+}));
 $('name-form').addEventListener('submit',e=>{e.preventDefault();const value=$('name-input').value.trim().replace(/\s+/g,' ');if(value.length<2)return notify('Name needs at least two characters');state.name=value.slice(0,20);persist();render();notify('Name saved on this device')});
 $('reset-button').addEventListener('click',()=>{if(!confirm('Reset all local Idle KardRune progress on this device?'))return;state=initial();persist();filter='all';document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('active',b.dataset.filter==='all'));render();go('profile');notify('Local demo reset')});
 $('dialog-close').addEventListener('click',()=>$('game-dialog').close());

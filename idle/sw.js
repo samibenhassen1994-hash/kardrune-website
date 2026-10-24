@@ -1,4 +1,4 @@
-const CACHE='idle-kardrune-shell-v7';
+const CACHE='idle-kardrune-shell-v8';
 const CORE=['./','./index.html','./styles.css','./app.js','./game-rules.js','./catalog.js','./icon.svg','./manifest.webmanifest'];
 const IMAGES=[
  "./media/cards/young_sam/young_sam_stage_1.webp",
@@ -27,7 +27,11 @@ const IMAGES=[
  "./media/cards/neris/neris_stage_3.webp",
  "./media/cards/nyra/nyra_stage_1.webp",
  "./media/cards/nyra/nyra_stage_2.webp",
- "./media/cards/nyra/nyra_stage_3.webp"
+ "./media/cards/nyra/nyra_stage_3.webp",
+ "./media/avatars/avatar_player.webp",
+ "./media/avatars/avatar_guard.webp",
+ "./media/avatars/avatar_vassal.webp",
+ "./media/avatars/avatar_king.webp"
 ];
 const OWN_PREFIX='idle-kardrune-';
 const allowed = url => url.origin===self.location.origin && url.pathname.startsWith(new URL('./',self.registration.scope).pathname);
