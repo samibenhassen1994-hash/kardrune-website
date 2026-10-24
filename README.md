@@ -43,3 +43,11 @@ The site loads Google's `<model-viewer>` component from a public CDN. The suppli
 The website includes seven SEO-friendly pages: `playground.html`, `dice-roller.html`, `gacha-calculator.html`, `card-creator.html`, `battle-simulator.html`, `loot-generator.html`, and `heroes-wiki.html`. Each page has a canonical URL, meta description, static explanatory content and internal links. Tools share `playground.css` and `playground.js`, require no server or build, and reuse the existing `assets/` image catalog. User-uploaded card pictures stay in the browser. Browser simulators are illustrative and never affect player accounts or in-game balances.
 
 To preview: `python -m http.server 8080` then navigate to `http://localhost:8080/playground.html`.
+
+## Playground 2 — Shared game art (2026-10-24)
+
+The game art library includes 289 optimized artwork previews, deduplicated into seven tiled WebP atlases (`assets/playground/atlas-*.webp`). All image paths and atlas coordinates are indexed in `game-assets.json`. Every public Playground tool uses the shared `playground-experience.js` to show different appropriate assets, including hero stage selector, gacha reveals, custom card presets, loot icons, the turn-based battle simulator, and the searchable Art Library (`art-library.html`).
+
+The D20 animation uses the user's actual `dice_comparison/kr_v2` frame sheets: `d20-spin.webp` (6x5 = 30 frames) and `d20-settle_01.webp … d20-settle_20.webp` (6x4 = 24 frames each), with official face outcomes from secure browser RNG when available. D4/D6/D8/D10/D12/D100 remain numeric.
+
+Audio and cinematic videos are intentionally excluded from the site to avoid ~130 MB in unnecessary downloads. Those remain in the Flutter game and are summarized in `game-media-inventory.json` (local pipeline only). The public site is free/static and requires no backend.

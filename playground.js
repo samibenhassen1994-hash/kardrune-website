@@ -19,43 +19,6 @@
   const percent = n => `${(n * 100).toLocaleString('en-US', { maximumFractionDigits: 4 })}%`;
   const setText = (id, value) => { const node = $(id); if (node) node.textContent = String(value); };
 
-  if (page === 'dice') {
-    const history = [];
-    const mode = $('dice-mode');
-    function toggleMode() {
-      const usable = +$('dice-type').value === 20 && +$('dice-count').value === 1;
-      if (!usable) mode.value = 'normal';
-      mode.disabled = !usable;
-      mode.title = usable ? '' : 'Advantage requires exactly one D20';
-    }
-    $('dice-type').addEventListener('change', toggleMode);
-    $('dice-count').addEventListener('input', toggleMode);
-    $('dice-form').addEventListener('submit', event => {
-      event.preventDefault();
-      if (!$('dice-form').reportValidity()) return;
-      const sides = Number($('dice-type').value);
-      const count = cap(Math.trunc(Number($('dice-count').value)), 1, 20);
-      const modifier = cap(Math.trunc(Number($('dice-modifier').value)), -100, 100);
-      const special = sides === 20 && count === 1 ? mode.value : 'normal';
-      const faces = Array.from({ length: special === 'normal' ? count : 2 }, () => randInt(sides) + 1);
-      const rolls = special === 'advantage' ? [Math.max(...faces)] : special === 'disadvantage' ? [Math.min(...faces)] : faces;
-      const total = rolls.reduce((a, b) => a + b, 0) + modifier;
-      const expression = `${count}d${sides}${modifier ? (modifier < 0 ? ` − ${Math.abs(modifier)}` : ` + ${modifier}`) : ''}${special !== 'normal' ? ` · ${special}` : ''}`;
-      setText('dice-total', total);
-      setText('dice-expression', expression);
-      const faceWrap = $('dice-faces');
-      faceWrap.replaceChildren();
-      faces.forEach(f => { const span = document.createElement('span'); span.textContent = String(f); faceWrap.appendChild(span); });
-      history.unshift(`${expression}: ${faces.join(', ')} → ${total}`);
-      history.splice(12);
-      const list = $('dice-history'); list.replaceChildren();
-      history.forEach(x => { const li = document.createElement('li'); li.textContent = x; list.appendChild(li); });
-      $('dice-total').animate?.([{ transform: 'scale(.8)', opacity: .4 }, { transform: 'scale(1)', opacity: 1 }], { duration: 260 });
-    });
-    $('dice-clear').addEventListener('click', () => { history.length = 0; $('dice-history').replaceChildren(); setText('dice-expression', 'History cleared'); });
-    toggleMode();
-  }
-
   if (page === 'gacha') {
     const form = $('gacha-form');
     $('gacha-preset').addEventListener('change', () => {
@@ -116,6 +79,10 @@
     sourceImage.onload = draw;
     sourceImage.onerror = () => setText('card-message', 'Could not load the selected image.');
     sourceImage.src = oldSrc;
+    document.addEventListener('kardrune-card-preset', event => {
+      if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
+      sourceImage.src = event.detail.src;
+    });
     function roundedRect(x, y, w, h, r) {
       ctx.beginPath(); ctx.roundRect(x, y, w, h, r);
     }
@@ -214,78 +181,6 @@
     draw();
   }
 
-  if (page === 'battle') {
-    const heroes = {
-      sam: { name: 'Sam', art: 'young_sam_stage_1.webp', stages: ['young_sam_stage_1.webp', 'sam_of_aster_stage_2.webp', 'Sam_Last_Guardian_stage_3.webp'], hp: 40, atk: 5, def: 13 },
-      lira: { name: 'Lira', art: 'lira_act_2.webp', hp: 32, atk: 5, def: 12 },
-      rhea: { name: 'Rhea', art: 'rhea_act_2.webp', hp: 36, atk: 6, def: 12 },
-      dren: { name: 'Dren', art: 'dren_act_2.webp', hp: 33, atk: 7, def: 11 },
-      tor: { name: 'Tor', art: 'tor_act_2(1).webp', hp: 46, atk: 5, def: 14 },
-      aria: { name: 'Aria', art: 'aria_act_2.webp', hp: 31, atk: 7, def: 11 }
-    };
-    const enemies = {
-      husk: { name: 'Runic Husk', art: 'runic_husk.webp', hp: 33, atk: 4, def: 11 },
-      crow: { name: 'Dusk Crow', art: 'dusk_crow.webp', hp: 28, atk: 6, def: 12 },
-      wraith: { name: 'Rune Wraith', art: 'rune_wraith.webp', hp: 42, atk: 6, def: 13 },
-      sentinel: { name: 'Corrupted Sentinel', art: 'corrupted_sentinel.webp', hp: 50, atk: 5, def: 15 }
-    };
-    let player = null, enemy = null, finished = false, turn = 0;
-    function entry(text) {
-      const li = document.createElement('li'); li.textContent = text;
-      $('battle-log').prepend(li);
-      while ($('battle-log').children.length > 20) $('battle-log').lastChild.remove();
-    }
-    function show() {
-      for (const [side, actor] of [['player', player], ['enemy', enemy]]) {
-        const prefix = side === 'player' ? 'battle-player' : 'battle-enemy';
-        setText(prefix + '-name', actor.name);
-        setText(prefix + '-hp', `${actor.hp} / ${actor.maxHp} HP`);
-        $(prefix + '-bar').style.width = `${Math.round(100 * actor.hp / actor.maxHp)}%`;
-      }
-    }
-    function perform(from, to) {
-      const die = 1 + randInt(20);
-      const hit = die === 20 || (die !== 1 && die + from.atk >= to.def);
-      const damage = hit ? Math.max(1, 2 + Math.ceil(die / 4) + Math.floor(from.atk / 2)) * (die === 20 ? 2 : 1) : 0;
-      to.hp = Math.max(0, to.hp - damage);
-      entry(`${from.name} rolled ${die} + ${from.atk} vs DEF ${to.def}: ${hit ? `${die === 20 ? 'CRITICAL! ' : ''}${damage} damage` : 'MISS'}.`);
-      if (hit) {
-        const elt = to === player ? $('battle-player') : $('battle-opponent');
-        elt.classList.remove('hit'); void elt.offsetWidth; elt.classList.add('hit');
-      }
-      return hit;
-    }
-    function start() {
-      const hero = heroes[$('battle-hero').value];
-      const monster = enemies[$('battle-enemy').value];
-      const stage = Number($('battle-stage').value);
-      player = { ...hero, hp: hero.hp + 7 * (stage - 1), maxHp: hero.hp + 7 * (stage - 1), atk: hero.atk + stage - 1, def: hero.def + stage - 1 };
-      enemy = { ...monster, hp: monster.hp, maxHp: monster.hp };
-      $('battle-player-image').src = `assets/${hero.stages ? hero.stages[stage - 1] : hero.art}`;
-      $('battle-player-image').alt = `${hero.name} illustration`;
-      $('battle-enemy-image').src = `assets/${monster.art}`;
-      $('battle-enemy-image').alt = monster.name;
-      $('battle-log').replaceChildren();
-      turn = 0; finished = false; $('battle-attack').disabled = false;
-      setText('battle-status', 'Battle ready. Roll the D20 to attack!');
-      entry('Demo stats are illustrative and not your in-game character stats.');
-      show();
-    }
-    $('battle-start').addEventListener('click', start);
-    $('battle-attack').addEventListener('click', () => {
-      if (!player || !enemy || finished) return;
-      turn++; perform(player, enemy);
-      if (enemy.hp > 0) perform(enemy, player);
-      show();
-      if (enemy.hp <= 0 || player.hp <= 0) {
-        finished = true; $('battle-attack').disabled = true;
-        const result = enemy.hp <= 0 ? 'Victory! The enemy has fallen.' : 'Defeat! Try another duel.';
-        setText('battle-status', result); entry(result);
-      } else setText('battle-status', `Round ${turn} complete. Roll again to attack.`);
-    });
-    start();
-  }
-
   if (page === 'loot') {
     const bases = ['Potion of Dawn', 'Moonlit Dagger', 'Traveler’s Cloak', 'Sunsteel Sword', 'Rune-carved Amulet', 'Crystal Lantern', 'Guardian Shield', 'Arcane Scroll', 'Ancient Compass', 'Phoenix Feather', 'Enchanted Ring', 'Warden Helm', 'Silverthorn Bow', 'Celestial Rune'];
     const modifiers = ['Forgotten', 'Whispering', 'Gilded', 'Frostbound', 'Echoing', 'Starlit', 'Ancient', 'Restored', 'Runic', 'Radiant'];
@@ -318,21 +213,4 @@
     form.requestSubmit();
   }
 
-  if (page === 'wiki') {
-    const items = [...document.querySelectorAll('.wiki-entry')];
-    const apply = () => {
-      const query = $('wiki-search').value.trim().toLowerCase();
-      const kind = $('wiki-kind').value;
-      let visible = 0;
-      items.forEach(item => {
-        const match = (kind === 'all' || item.dataset.kind === kind) && (!query || item.dataset.search.includes(query));
-        item.hidden = !match;
-        if (match) visible++;
-      });
-      $('wiki-empty').hidden = visible > 0;
-    };
-    $('wiki-search').addEventListener('input', apply);
-    $('wiki-kind').addEventListener('change', apply);
-    apply();
-  }
 })();
