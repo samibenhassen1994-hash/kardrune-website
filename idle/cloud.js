@@ -35,8 +35,18 @@ async function request(path,method='GET',payload){
   method,headers:{authorization:'Bearer '+token,...(payload?{'content-type':'application/json'}:{})},
   body:payload?JSON.stringify(payload):undefined,cache:'no-store'
  });
- const result=await response.json().catch(()=>({error:'Invalid response'}));
- if(!response.ok){const error=new Error(result.error||'Cloud request failed ('+response.status+')');error.status=response.status;throw error}
+ const raw=await response.text();
+ let result=null;try{result=raw?JSON.parse(raw):null}catch{}
+ if(!response.ok){
+  let explanation=result?.error||'';
+  if(!explanation){
+   if(response.status>=500)explanation='Server unavailable. If saving a deck, check the Cloudflare D1 deck table and Pages Functions deployment.';
+   else if(response.status===401)explanation='Please sign in again.';
+   else explanation='Cloud request failed ('+response.status+').';
+  }
+  const error=new Error(explanation);error.status=response.status;throw error;
+ }
+ if(!result||typeof result!=='object')throw Error('Cloud server returned an unexpected response. Check Pages Functions deployment.');
  return result;
 }
 function activate(uid,revision,data,info){
