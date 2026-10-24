@@ -199,3 +199,17 @@
 #pvp-online-result{margin-top:13px;padding:11px;border:1px solid #c4a56b55;border-radius:9px}
 #pvp-online-result h3{color:#f2d18d;font-size:14px}
 .pvp-replay{white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow-y:auto;font:11px/1.6 Inter,monospace;color:#d4e6f9;background:#09162a;border-radius:8px;padding:9px}
+
+/* Real-time cards: reuse original art and styling, viewport-friendly selection. */
+.live-pvp-box{border-color:#d8a668aa}.live-deck-header{display:flex;justify-content:space-between;color:#f1d69a;margin:10px 0;font-size:12px}
+.live-deck-editor{display:grid;grid-template-columns:1fr 1fr;gap:7px;max-height:250px;overflow:auto;padding:4px}
+.live-deck-choice{display:flex;align-items:center;gap:6px;background:#10223e;border:1px solid #a49c7770;border-radius:8px;padding:5px;font-size:9px;min-width:0}
+.live-deck-choice img{width:35px;height:50px;object-fit:contain}
+.live-deck-choice input{accent-color:#d8a65c}.live-deck-choice span{overflow-wrap:anywhere}
+.live-hand{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0}
+.live-pvp-card{min-width:0;min-height:0;background:#111e36;border:1px solid #bd995e;border-radius:9px;padding:4px;color:#f5db9e}
+.live-pvp-card img{width:100%;aspect-ratio:3/4;object-fit:contain}.live-pvp-card span{display:block;font-size:9px;line-height:1.35}
+.live-pvp-card:disabled{opacity:.65}.live-round-heading{font-weight:800;color:#f3cf8b}
+.live-battle-replay{max-height:220px;overflow:auto;background:#09152b;border-radius:8px;padding:10px;margin-top:9px}
+.live-hit{padding:3px 0;font-size:11px;color:#d8e9ff;border-bottom:1px solid #ffffff12}
+.live-pvp-box h3{font-size:13px;color:#f4ddad;margin-top:16px}

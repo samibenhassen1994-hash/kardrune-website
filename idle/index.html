@@ -24,6 +24,7 @@
   <script src="./cloud-sync-rules.js" defer></script>
   <script src="./cloud.js" defer></script>
   <script src="./pvp.js" defer></script>
+  <script src="./live-pvp.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -91,6 +92,24 @@
         <select id="active-hero-select" class="field"></select>
         <button type="button" class="gold-button" id="practice-button">⚔ START PRACTICE DUEL <svg><use href="#i-chevron"></use></svg></button>
         <p class="micro-note">Turn-based battles play automatically in real time against randomized demo opponents. Rewarded duels remaining today: <strong id="practice-rewards-left">10</strong>/10 (local midnight reset). You can still practice afterward. Real PvP requires a separate online server.</p>
+        <section class="pvp-online-box live-pvp-box" aria-labelledby="live-pvp-heading">
+          <div class="section-heading"><div><span class="mini-label">REAL-TIME PVP · DECK BATTLE</span><h2 id="live-pvp-heading">Live Card Duel</h2></div><span class="chip chip-blue">BETA</span></div>
+          <p class="micro-note">Build a deck of up to 9 owned cards. Each round draw 3, play one, and watch both cards duel in real time. Friendly mode · no ranked rewards.</p>
+          <p id="live-pvp-auth-hint" class="micro-note">Sign in from your Profile to prepare a PvP deck.</p>
+          <div id="live-pvp-content" hidden>
+            <div class="live-deck-header"><strong>YOUR DECK</strong><span id="live-deck-count">0 / 9</span></div>
+            <div id="live-deck-editor" class="live-deck-editor"></div>
+            <button class="dark-button" id="live-deck-save" type="button">SAVE DECK</button>
+            <p class="battle-live-status" id="live-pvp-state" role="status">Ready to connect</p>
+            <button class="gold-button" id="live-pvp-connect" type="button">⚔ FIND LIVE MATCH</button>
+            <button class="dark-button" id="live-pvp-disconnect" type="button">DISCONNECT</button>
+            <h3 id="live-hand-title">YOUR HAND</h3>
+            <div id="live-hand" class="live-hand"></div>
+            <div id="live-round-cards" class="live-hand"></div>
+            <div id="live-battle-replay" class="live-battle-replay" aria-live="polite"></div>
+            <p class="micro-note">SCORE: <span id="live-score">0 - 0</span></p>
+          </div>
+        </section>
         <section class="pvp-online-box">
           <div class="section-heading"><div><span class="mini-label">ONLINE FRIENDLY · NO RANKED REWARDS</span><h2>Challenge another player</h2></div></div>
           <p id="pvp-sign-in-hint" class="micro-note">Sign in with Google or email under Profile to find another player online.</p>

@@ -58,6 +58,7 @@ async function refresh(){
  $('cloud-save-info').textContent=currentRemote?'Cloud backup available · revision '+remoteRevision:'No cloud save yet';
  status('Signed in');
  root.IDLE_PVP?.setSession({uid},request);
+ root.IDLE_LIVE_PVP?.setSession({uid},request);
  stopAuto();
  const local=snapshot(),remote=currentRemote===null?null:JSON.stringify(currentRemote);
  const link=readLink(uid);
@@ -114,7 +115,7 @@ async function init({getSave,setSave,onState}={}){
    currentUser=user;currentRemote=null;remoteRevision=0;
    if(!user){
     $('cloud-signed-in').hidden=true;$('cloud-auth-form').hidden=false;$('cloud-admin').hidden=true;
-    status('Local');root.IDLE_PVP?.setSession(null,null);return;
+    status('Local');root.IDLE_PVP?.setSession(null,null);root.IDLE_LIVE_PVP?.setSession(null,null);return;
    }
    await run(refresh);
   });
@@ -204,5 +205,5 @@ function actions(){
  }));
  root.addEventListener('online',()=>{if(autoEnabled&&currentUser&&readLink(currentUser.uid)?.snapshot!==snapshot())schedule()});
 }
-root.IDLE_CLOUD={init,actions,onLocalChange};
+root.IDLE_CLOUD={init,actions,onLocalChange,getSave:()=>getLocal()};
 })(window);

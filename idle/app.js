@@ -398,6 +398,7 @@ if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWor
 i18n.init();
 renderRoster();render();go(location.hash.slice(1)||'tournament');
 window.IDLE_PVP.setup();
+window.IDLE_LIVE_PVP.setup();
 window.IDLE_CLOUD.actions();
 window.IDLE_CLOUD.init({
  getSave:()=>JSON.parse(JSON.stringify(state)),
