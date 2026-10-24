@@ -130,7 +130,7 @@ function renderCards(){
  }
  if(!all.length)grid.append(elem('p','micro-note','No cards in this filter.'));
  $('cards-pagination').hidden=totalPages<=1;
- $('cards-page-label').textContent=totalPages?'PAGE '+(cardsPage+1)+' / '+totalPages:'NO CARDS';
+ $('cards-page-label').textContent=!totalPages?'NO CARDS':grouped?heroes.find(hero=>hero.id===groupNames[cardsPage]).name.toUpperCase()+' · '+(cardsPage+1)+' / '+totalPages:'PAGE '+(cardsPage+1)+' / '+totalPages;
  $('cards-prev').disabled=cardsPage===0;
  $('cards-next').disabled=cardsPage>=totalPages-1;
  const owned=ownedCards().length,total=heroes.length*3;
@@ -188,8 +188,6 @@ function showSummonRoster(){
  const title=elem('h2','','ALL SUMMONABLE HEROES');title.id='dialog-title';
  wrap.append(title,elem('p','','Preview any hero and its three stages.'));
  const grid=elem('div','summon-roster-grid');
- const existing=$('summon-roster-grid');
- if(existing)grid.replaceChildren(...[...existing.children].map(node=>node.cloneNode(true)));
  for(const hero of heroes){
   const button=elem('button','summon-roster-card');
   button.type='button';
