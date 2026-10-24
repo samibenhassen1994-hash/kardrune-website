@@ -35,12 +35,14 @@ export class PvpLobby {
   const pair=new WebSocketPair(),client=pair[0],server=pair[1];
   server.accept();
   const old=this.sockets.get(uid);if(old){try{old.ws.close(4000,'Reconnected')}catch{};this.drop(old)}
+  for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]]}
   const player={uid,name,deck,ws:server,used:[],chosen:null,match:null};
   this.sockets.set(uid,player);
   server.addEventListener('message',event=>{
    try{
     const data=JSON.parse(event.data);
     if(data?.type==='play'&&typeof data.id==='string')this.play(player,data.id);
+    if(data?.type==='ready')this.ready(player);
    }catch{send(server,{type:'error',message:'Invalid action'})}
   });
   server.addEventListener('close',()=>this.drop(player));
@@ -95,6 +97,11 @@ export class PvpLobby {
   // Client confirms animation completed before advancing, to allow full hit display.
   match.awaiting=new Set([a.uid,b.uid]);
   for(const p of [a,b])p.chosen=null;
+ }
+ ready(player){
+  const match=player.match;if(!match||!match.awaiting)return;
+  match.awaiting.delete(player.uid);
+  if(match.awaiting.size===0){match.awaiting=null;this.next(match)}
  }
  end(match){
   if(!this.matches.has(match.id))return;
