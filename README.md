@@ -37,3 +37,9 @@ Connect the GitHub repository to Cloudflare Pages and every push can redeploy th
 ## Note on the 3D D20
 
 The site loads Google's `<model-viewer>` component from a public CDN. The supplied `d20.glb` is included locally. If the CDN is unavailable, the section still retains the supplied dice artwork as a visual fallback.
+
+## KardRune Playground (static browser tools)
+
+The website includes seven SEO-friendly pages: `playground.html`, `dice-roller.html`, `gacha-calculator.html`, `card-creator.html`, `battle-simulator.html`, `loot-generator.html`, and `heroes-wiki.html`. Each page has a canonical URL, meta description, static explanatory content and internal links. Tools share `playground.css` and `playground.js`, require no server or build, and reuse the existing `assets/` image catalog. User-uploaded card pictures stay in the browser. Browser simulators are illustrative and never affect player accounts or in-game balances.
+
+To preview: `python -m http.server 8080` then navigate to `http://localhost:8080/playground.html`.

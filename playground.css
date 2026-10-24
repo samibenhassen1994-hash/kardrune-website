@@ -1,0 +1,114 @@
+/* KardRune Playground: reusable responsive tool layouts */
+.page-tools{background:radial-gradient(ellipse at 84% 8%,rgba(29,85,159,.27),transparent 36%),radial-gradient(ellipse at 15% 22%,rgba(176,120,36,.11),transparent 32%),#040813}
+.page-tools .nav-links{gap:clamp(10px,1.4vw,23px)}
+.page-tools .site-header{gap:12px}
+.page-tools .nav-cta{padding-inline:17px;white-space:nowrap}
+.tool-hero{position:relative;overflow:hidden;background:linear-gradient(120deg,rgba(8,18,44,.98),rgba(7,29,57,.8)),url('assets/AdventureHome_background.webp') center/cover;border-bottom:1px solid rgba(240,194,93,.15);padding:78px 0 65px}
+.tool-hero-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(180px,.65fr);align-items:center;gap:36px}
+.tool-hero h1{margin:8px 0 18px;color:#fff;font:800 clamp(36px,5.8vw,72px)/1.07 Cinzel,serif;letter-spacing:-.02em}
+.tool-hero h1 span,.tool-directory h2 span,.play-explore h2 span{color:#ffd474}
+.tool-intro{font-size:clamp(15px,1.8vw,19px);color:#c6d5eb;max-width:780px;line-height:1.75;margin:0 0 24px}
+.tool-hero-art{width:min(100%,300px);height:238px;object-fit:contain;justify-self:center;filter:drop-shadow(0 12px 30px rgba(249,199,91,.18))}
+.tool-hero-home{padding:94px 0 82px}
+.tool-back{display:inline-block;margin-bottom:20px;color:#d4e6ff;font-size:13px;text-decoration:underline;text-underline-offset:4px}
+.tool-directory{padding:80px 0 48px}
+.tool-directory h2,.play-explore h2{font:800 clamp(29px,4vw,51px)/1.18 Cinzel,serif;margin:6px 0 28px}
+.tool-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.tool-card{display:block;background:linear-gradient(145deg,rgba(14,33,69,.95),rgba(6,15,34,.97));border:1px solid rgba(154,193,245,.21);border-radius:24px;overflow:hidden;box-shadow:0 16px 37px rgba(0,0,0,.18);transition:transform .2s,border .2s,box-shadow .2s}
+.tool-card:hover{transform:translateY(-5px);border-color:rgba(255,207,112,.6);box-shadow:0 22px 44px rgba(0,0,0,.35)}
+.tool-card-art{height:205px;display:flex;justify-content:center;align-items:center;position:relative;background:radial-gradient(ellipse,rgba(38,110,183,.23),transparent 70%),linear-gradient(160deg,#122752,#091529);overflow:hidden}
+.tool-card-art img{height:90%;max-width:85%;object-fit:contain;filter:drop-shadow(0 12px 12px rgba(0,0,0,.36))}
+.tool-card-symbol{position:absolute;top:12px;right:18px;color:#ffe09b;font-size:26px}
+.tool-card-body{padding:24px}
+.tool-card h3{font:700 clamp(19px,2vw,24px)/1.22 Cinzel,serif;margin:0 0 11px;color:#fff}
+.tool-card p{min-height:65px;font-size:14px;line-height:1.65;color:#b9c7e1;margin:0 0 18px}
+.tool-card-link{font-size:12px;letter-spacing:.12em;color:#ffdc8c;font-weight:800}
+.tool-workbench{padding:54px 0 28px}
+.work-panel{padding:clamp(14px,2.4vw,30px);border-radius:28px;background:linear-gradient(145deg,rgba(11,28,55,.96),rgba(4,13,30,.98));border:1px solid rgba(111,212,255,.24);box-shadow:0 22px 60px rgba(0,0,0,.29)}
+.work-grid{display:grid;grid-template-columns:minmax(265px,.9fr) minmax(0,1.1fr);gap:26px}
+.tool-form{display:flex;flex-direction:column;gap:11px;min-width:0}
+.tool-form h2{color:#ffde9c;font:700 clamp(22px,2.5vw,30px) Cinzel,serif;margin:0 0 12px}
+.tool-form label,.battle-controls label,.wiki-searchbar label{font-weight:700;font-size:13px;color:#dfe8fb}
+.tool-form :is(input,select,textarea),.battle-controls select,.wiki-searchbar :is(input,select){width:100%;min-height:46px;padding:10px 13px;border:1px solid #344c73;border-radius:12px;background:#09172d;color:#fff;outline:none}
+.tool-form input[type=file]{padding:9px;font-size:12px;min-width:0}
+.tool-form :is(input,select,textarea):focus-visible,.battle-controls select:focus-visible,.wiki-searchbar :is(input,select):focus-visible{border-color:#ffda7e;box-shadow:0 0 0 3px rgba(255,217,126,.12)}
+.tool-form textarea{resize:vertical}
+.tool-form>.button{margin-top:10px;cursor:pointer}
+.tool-actions{display:flex;gap:11px;flex-wrap:wrap;margin-top:14px}
+.tool-actions .button{flex:1;min-width:min(100%,180px);padding:12px 15px;cursor:pointer}
+button:disabled{opacity:.48;cursor:not-allowed!important}
+.result-panel,.dice-result-panel,.card-preview-panel{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;padding:22px;border:1px solid rgba(255,206,125,.2);border-radius:22px;background:radial-gradient(ellipse at top,rgba(33,68,111,.4),rgba(5,13,29,.75) 63%)}
+.result-number{font:800 clamp(62px,12vw,116px) Cinzel,serif;line-height:1.2;color:#ffe09b;text-shadow:0 2px 22px rgba(247,184,80,.24)}
+.result-large{font:800 clamp(48px,7vw,76px) Cinzel,serif;color:#ffe09b;line-height:1.3}
+.dice-result-art{width:130px;height:116px;object-fit:contain;opacity:.95}
+.result-ornament{width:min(250px,60%);height:162px;object-fit:contain}
+.result-note,.result-label,.tool-fineprint{font-size:13px;color:#a8bbd9;line-height:1.7}
+.result-note{margin:10px 0}
+.dice-faces{margin-top:15px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.dice-faces span{border:1px solid rgba(255,211,120,.36);background:rgba(255,207,101,.1);color:#ffdb96;padding:8px 12px;border-radius:9px;font-weight:800}
+.dice-result-panel h3{align-self:stretch;text-align:left;font:700 16px Cinzel,serif;margin:30px 0 10px}
+.roll-history{width:100%;text-align:left;max-height:190px;overflow:auto;line-height:1.9;color:#cbd6e8;margin:0;padding-left:20px}
+.text-action{align-self:flex-start;color:#ffe09b;border:0;background:none;padding:12px 0;text-decoration:underline;cursor:pointer}
+.chance-meter{width:min(440px,100%);height:13px;background:#0b1930;border:1px solid #2f476a;border-radius:999px;overflow:hidden;margin:16px 0 5px}
+.chance-meter span{display:block;height:100%;width:0;background:linear-gradient(90deg,#53bceb,#ffe19b);transition:width .22s}
+.gacha-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;width:100%;margin-top:22px}
+.gacha-stats>div{padding:13px 8px;border:1px solid rgba(131,167,217,.16);border-radius:10px;background:rgba(9,25,51,.7)}
+.gacha-stats span{font-size:11px;color:#acc0df;display:block;min-height:34px}
+.gacha-stats strong{color:#ffde96;font-size:22px}
+.card-preview-panel{justify-content:center;gap:13px}
+#card-canvas{width:min(100%,420px);height:auto;aspect-ratio:5/7;border-radius:14px;box-shadow:0 20px 40px rgba(0,0,0,.45)}
+.battle-workbench{display:flex;flex-direction:column;gap:20px}
+.battle-controls{display:flex;align-items:end;flex-wrap:wrap;gap:12px}
+.battle-controls label{display:block;margin-bottom:4px}
+.battle-controls select{max-width:185px}
+.battle-controls .button{cursor:pointer;min-height:46px}
+.battle-arena{display:grid;grid-template-columns:minmax(0,1fr) 95px minmax(0,1fr);align-items:center;gap:6px;padding:20px;background:radial-gradient(ellipse at center,rgba(46,96,154,.28),rgba(6,18,40,.84)),url('assets/AdventureHome_background.webp') center/cover;border-radius:18px;border:1px solid #254065}
+.battle-fighter{text-align:center;min-width:0}
+.battle-fighter img{height:270px;width:100%;object-fit:contain;filter:drop-shadow(0 13px 12px rgba(0,0,0,.5))}
+.battle-fighter strong,.battle-fighter span{display:block}
+.battle-fighter strong{font:700 20px Cinzel,serif;color:#ffdc99}
+.battle-fighter span{font-size:13px;color:#e2e9f6;margin:5px}
+.battle-versus{text-align:center;color:#ffe49f;font:900 38px Cinzel,serif}
+.battle-versus small{font-size:13px;display:block;color:#9fcfff}
+.hp-track{margin:5px auto 0;width:min(90%,250px);height:10px;border-radius:999px;overflow:hidden;background:#371c32;border:1px solid rgba(255,255,255,.16)}
+.hp-track span{display:block;width:100%;height:100%;background:linear-gradient(90deg,#48bd86,#9bf3bf);margin:0;transition:width .25s}
+.battle-bottom{display:flex;align-items:center;flex-direction:column;gap:12px}
+.battle-bottom .button{cursor:pointer}
+.battle-log{max-height:200px;width:min(820px,100%);overflow:auto;padding:15px 16px 15px 37px;margin:0;color:#ced9eb;background:#08162b;border:1px solid #274363;border-radius:12px;text-align:left}
+.battle-log li{padding-bottom:7px;color:#d1ddef}
+.battle-fighter.hit img{animation:monster-hit .32s}
+@keyframes monster-hit{25%{transform:translateX(-7px);filter:brightness(1.6)}70%{transform:translateX(5px)}100%{transform:translateX(0)}}
+.loot-results{width:100%;text-align:left;list-style:none;padding:0;margin:9px 0}
+.loot-results li{color:#e6ecfa;padding:12px 14px;border:1px solid rgba(255,217,127,.14);border-radius:11px;background:rgba(10,28,56,.64);margin-bottom:9px}
+.loot-results .loot-rank{float:right;color:#ffe09b;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.tool-info{padding:56px 0 76px;max-width:1000px}
+.tool-info h2,.tool-faq h2{font:700 clamp(22px,3vw,31px) Cinzel,serif;color:#ffdb93;margin:0 0 18px}
+.tool-info>p{color:#b8c8df;line-height:1.9;max-width:840px}
+.tool-faq{margin-top:40px}
+.tool-faq details{padding:17px 19px;border:1px solid rgba(118,174,240,.2);border-radius:14px;background:rgba(12,27,52,.65);margin:10px 0}
+.tool-faq summary{cursor:pointer;font-weight:700;color:#e4efff}
+.tool-faq details p{color:#b6c8e3;margin-bottom:0}
+.play-explore{padding:38px 0 95px}
+.tool-mini-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.tool-mini-grid a{padding:17px 18px;border:1px solid #30466c;border-radius:12px;color:#eaf3ff;background:#0a1932;font-size:14px;font-weight:700;display:flex;justify-content:space-between;gap:8px}
+.tool-mini-grid a:hover{border-color:#e6b963}
+.wiki-searchbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:25px}
+.wiki-searchbar input{flex:1;min-width:200px}
+.wiki-searchbar select{width:180px}
+.wiki-searchbar label{width:100%;margin-bottom:-5px}
+.wiki-searchbar label[for=wiki-kind]{width:auto;margin:0 8px 10px 0}
+.wiki-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.wiki-entry{display:grid;grid-template-columns:120px minmax(0,1fr);gap:18px;min-width:0;align-items:center;padding:17px;background:linear-gradient(135deg,#11254a,#091529);border:1px solid rgba(130,192,239,.22);border-radius:20px;scroll-margin-top:100px}
+.wiki-entry img{width:120px;height:200px;object-fit:contain}
+.wiki-entry h2{font:700 25px Cinzel,serif;color:#f8d589;margin:5px 0 12px}
+.wiki-entry p{color:#b8c8df;font-size:13px;line-height:1.6;margin:5px 0}
+.wiki-entry .wiki-eyebrow{font-size:11px;color:#81d6ff;font-weight:800;letter-spacing:.1em}
+.wiki-entry .wiki-meta{color:#ffe1aa;font-weight:700}
+.wiki-link{color:#e9cb83;text-decoration:underline;font-size:12px;font-weight:700;display:inline-block;margin-top:9px}
+@media(max-width:1100px){.page-tools .nav-cta{display:none}.tool-grid{gap:16px}.tool-card-art{height:165px}.tool-card-body{padding:18px}}
+@media(max-width:850px){.tool-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tool-hero-grid{grid-template-columns:1fr 155px}.tool-hero-art{height:180px}.work-grid{grid-template-columns:1fr}.wiki-list{grid-template-columns:1fr}.battle-fighter img{height:220px}}
+@media(max-width:767px){.tool-hero{padding:50px 0 44px}.tool-hero-grid{grid-template-columns:1fr}.tool-hero-art{width:125px;height:115px;position:absolute;right:3%;top:12%;opacity:.28;pointer-events:none}.tool-hero-grid>div{position:relative;z-index:1}.tool-hero h1{font-size:clamp(30px,8vw,48px)}.tool-intro{font-size:15px;max-width:520px}.tool-directory{padding:45px 0 20px}.tool-grid{grid-template-columns:1fr;gap:14px}.tool-card{display:grid;grid-template-columns:115px 1fr;min-height:150px}.tool-card-art{height:100%;min-height:151px}.tool-card-art img{width:110px;max-width:100%;height:138px}.tool-card-symbol{font-size:18px;right:8px;top:7px}.tool-card-body{padding:16px}.tool-card h3{font-size:19px}.tool-card p{min-height:0;font-size:12px;margin-bottom:9px}.tool-card-link{font-size:10px}.tool-workbench{padding-top:22px}.work-panel{border-radius:18px;padding:14px}.result-panel,.dice-result-panel,.card-preview-panel{padding:15px}.tool-mini-grid{grid-template-columns:1fr 1fr}.tool-mini-grid a{font-size:12px;padding:12px}.tool-info{padding:35px 0 55px}.gacha-stats span{font-size:10px}.battle-controls select{max-width:100%;width:100%}.battle-controls label{width:100%;margin-bottom:-5px}.battle-controls .button{width:100%}.battle-arena{grid-template-columns:minmax(0,1fr) 43px minmax(0,1fr);padding:9px;gap:2px}.battle-fighter img{height:165px}.battle-fighter strong{font-size:13px}.battle-versus{font-size:21px}.battle-versus small{font-size:9px}.wiki-entry{grid-template-columns:95px minmax(0,1fr);padding:10px;gap:11px}.wiki-entry img{width:95px;height:155px}.wiki-entry h2{font-size:21px}.wiki-entry p{font-size:12px}.tool-hero-home .button{width:100%}}
+@media(max-width:380px){.tool-card{grid-template-columns:98px 1fr}.battle-fighter img{height:125px}.battle-versus{font-size:18px}.wiki-entry{grid-template-columns:82px minmax(0,1fr)}.wiki-entry img{width:82px}}
+@media(prefers-reduced-motion:reduce){.tool-card,.chance-meter span,.hp-track span{transition:none}.battle-fighter.hit img{animation:none}}
+
+.wiki-entry[hidden]{display:none!important}
