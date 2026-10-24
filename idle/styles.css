@@ -54,3 +54,10 @@
 .summon-reveal p{margin-bottom:0}
 .summon-reveal .dark-button{margin:18px auto 0}
 @media(max-width:380px){.summon-roster-grid{gap:7px}.summon-roster-card img{height:94px}.hero-grid{gap:9px}.hero-card{padding:6px 6px 10px}.hero-card h3{font-size:12px}}
+
+
+/* Original three-stage card frames; source art is kept within Idle. */
+.hero-card .hero-image::before{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background:url('./media/cards/frame/card_frame.webp') center/100% 100% no-repeat}
+.hero-card.card-stage-2 .hero-image::before{background-image:url('./media/cards/frame/frame_stage_2.webp')}
+.hero-card.card-stage-3 .hero-image::before{background-image:url('./media/cards/frame/frame_stage_3.webp')}
+.hero-card.locked .hero-image::after{z-index:3;filter:drop-shadow(0 2px 5px #000)}
