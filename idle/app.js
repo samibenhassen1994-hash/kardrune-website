@@ -3,10 +3,11 @@
 const $=id=>document.getElementById(id);
 const heroes=window.IDLE_HERO_CATALOG||[];
 const STORAGE='idle-kardrune-demo-v1';
+const rules=window.IDLE_GAME_RULES;
 const cardId=(hero,stage)=>hero.id+':'+stage;
 const cardImage=(hero,stage)=>'./media/cards/'+hero.stages[stage-1];
 const cardVideo=(hero,stage)=>hero.loops[stage-1]?'./media/animations/'+hero.loops[stage-1]:null;
-const initial=()=>({name:'Runebearer',shards:1500,owned:['sam:1','lira:1','rhea:1'],active:'sam:1',duels:0,wins:0,pulls:0});
+const initial=()=>({name:'Runebearer',shards:1500,owned:['sam:1','lira:1','rhea:1'],active:'sam:1',duels:0,wins:0,pulls:0,practiceDaily:{day:'',count:0}});
 function migrate(v){
   const base=initial();if(!v||typeof v!=='object')return base;
   const ids=Array.isArray(v.owned)?v.owned.map(id=>String(id).includes(':')?String(id):String(id)+':1'):[];
@@ -14,11 +15,11 @@ function migrate(v){
   const active=String(v.active||base.active);const normalized=active.includes(':')?active:active+':1';
   const owned=[...new Set(valid.length?valid:base.owned)];
   return {name:typeof v.name==='string'?v.name.slice(0,20):base.name,shards:Number.isFinite(v.shards)?Math.max(0,Math.floor(v.shards)):base.shards,
-    owned,active:owned.includes(normalized)?normalized:owned[0],duels:v.duels||0,wins:v.wins||0,pulls:v.pulls||0};
+    owned,active:owned.includes(normalized)?normalized:owned[0],duels:rules.safeCount(v.duels),wins:rules.safeCount(v.wins),pulls:rules.safeCount(v.pulls),practiceDaily:rules.dailyRewardState(v.practiceDaily)};
 }
 function load(){try{return migrate(JSON.parse(localStorage.getItem(STORAGE)))}catch{return initial()}}
 let state=load(),filter='all',grouped=false,installEvent=null,pulling=false;
-function persist(){try{localStorage.setItem(STORAGE,JSON.stringify(state))}catch{notify('Local progress could not be saved')}}
+function persist(){try{localStorage.setItem(STORAGE,JSON.stringify(state));return true}catch{notify('Local progress could not be saved');return false}}
 function notify(message){const el=$('toast');el.textContent=message;el.hidden=false;clearTimeout(notify.t);notify.t=setTimeout(()=>el.hidden=true,2800)}
 function ownedCards(){return heroes.flatMap(hero=>[1,2,3].filter(stage=>state.owned.includes(cardId(hero,stage))).map(stage=>({hero,stage})))}
 function itemById(id){const [key,level]=String(id).split(':');const hero=heroes.find(h=>h.id===key);return hero?{hero,stage:Math.max(1,Math.min(3,Number(level)||1))}:null}
@@ -39,7 +40,7 @@ function reveal(hero,stage,dupe,preview){
 function makeCard(hero,stage){
  const id=cardId(hero,stage),has=state.owned.includes(id),selected=state.active===id;
  const box=elem('article','hero-card card-stage-'+stage+(has?'':' locked'));
- const image=elem('div','hero-image');const img=elem('img');img.src=cardImage(hero,stage);img.alt=hero.name+' Stage '+stage;img.loading='lazy';image.append(img);box.append(image);
+ const image=elem('div','hero-image');const img=elem('img');img.src=cardImage(hero,stage);img.alt=hero.name+' Stage '+stage;img.loading='lazy';image.append(img);if(!has){const mystery=elem('span','mystery-mark','?');mystery.setAttribute('aria-hidden','true');image.append(mystery)}box.append(image);
  box.append(elem('div','rarity-tag','STAGE '+stage+' · '+hero.element.toUpperCase()),elem('h3','',hero.name));
  box.append(elem('p','',has?'POWER '+(hero.power+(stage-1)*18):'NOT COLLECTED'));
  if(selected)box.append(elem('span','hero-selected','✦ SELECTED CHAMPION'));
@@ -68,6 +69,8 @@ function previewHero(hero){
 function render(){
  $('wallet-shards').textContent=state.shards.toLocaleString('en-US');
  $('stat-duels').textContent=state.duels;$('stat-wins').textContent=state.wins;$('stat-pulls').textContent=state.pulls;
+ state.practiceDaily=rules.dailyRewardState(state.practiceDaily);
+ $('practice-rewards-left').textContent=String(rules.DAILY_REWARD_LIMIT-state.practiceDaily.count);
  $('profile-display-name').textContent=state.name;$('name-input').value=state.name;
  const owned=ownedCards(),select=$('active-hero-select');select.replaceChildren();
  owned.forEach(({hero,stage})=>{const op=elem('option','',hero.name+' · Stage '+stage);op.value=cardId(hero,stage);select.append(op)});
@@ -83,7 +86,7 @@ document.querySelectorAll('[data-filter]').forEach(el=>el.addEventListener('clic
 $('card-view-grid').addEventListener('click',()=>{grouped=false;$('card-view-grid').classList.add('active');$('card-view-heroes').classList.remove('active');renderCards()});
 $('card-view-heroes').addEventListener('click',()=>{grouped=true;$('card-view-heroes').classList.add('active');$('card-view-grid').classList.remove('active');renderCards()});
 $('active-hero-select').addEventListener('change',e=>{state.active=e.target.value;persist();render()});
-$('practice-button').addEventListener('click',()=>{const current=itemById(state.active);const chance=.43+(current.hero.power+(current.stage-1)*18)/200;const win=Math.random()<chance,reward=win?100:35;state.duels++;if(win)state.wins++;state.shards+=reward;persist();render();const wrap=elem('div','');wrap.append(elem('h2','',win?'TRAINING VICTORY!':'TRAINING COMPLETE'),elem('p','',current.hero.name+' earned '+reward+' demo Rune Shards.'));openDialog(wrap)});
+$('practice-button').addEventListener('click',()=>{const current=itemById(state.active);if(!current)return notify('Choose a champion');const result=rules.resolvePractice(state.practiceDaily,current.hero.power,current.stage,Math.random());state.duels++;if(result.win)state.wins++;state.shards+=result.reward;state.practiceDaily=result.daily;persist();render();const wrap=elem('div','');wrap.append(elem('h2','',result.win?'TRAINING VICTORY!':'TRAINING COMPLETE'),elem('p','',result.reward?current.hero.name+' earned '+result.reward+' demo Rune Shards.':'Daily reward limit reached. Keep practicing; Shards reset at local midnight.'));openDialog(wrap)});
 function summon(featured){
  if(pulling)return;const cost=featured?600:300;
  if(state.shards<cost){notify('Not enough Rune Shards');return}
