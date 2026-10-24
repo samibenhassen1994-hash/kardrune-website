@@ -257,3 +257,10 @@
 .deck-owned-card img{display:block;width:100%;height:66px;object-fit:contain;pointer-events:none}
 .deck-owned-card span{display:block;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .deck-owned-card.deck-touch-dragging{border-color:#f5cf76;box-shadow:0 0 0 2px #f5cf76b8;opacity:.8;touch-action:none}
+
+/* Inventory-only deck loading: compact sticky drop targets stay reachable while scrolling cards. */
+#screen-cards .deck-builder{position:sticky;top:0;z-index:20;box-shadow:0 9px 24px #0009;background:#111e35}
+#screen-cards .deck-slots{grid-template-columns:repeat(9,minmax(0,1fr))}
+#screen-cards .deck-slot{touch-action:manipulation}
+#screen-cards .hero-card[data-card-id]{-webkit-user-select:none;user-select:none}
+#screen-cards .hero-card.deck-touch-dragging{opacity:.65;outline:2px solid #ffcf75}
