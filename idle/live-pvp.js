@@ -99,7 +99,8 @@ async function begin(){
   socket.onopen=()=>status('Connected. Finding another live player…');
   socket.onclose=()=>{$('live-pvp-connect').disabled=false;roundActive=false;status('Connection closed. Reconnect to try again.')};
   socket.onerror=()=>status('Connection error. Please reconnect.');
-  socket.onmessage=e=>{try{handle(JSON.parse(e.data))}catch{status('Match message error')}};
+  root.IDLE_PVP_ARENA?.attach(socket);
+  socket.onmessage=e=>{try{const msg=JSON.parse(e.data);if(msg.type==='hand'){root.IDLE_PVP_ARENA?.open(msg.opponent)}if(['hand','round_result','finished','locked','opponent_locked','ping'].includes(msg.type))return;handle(msg)}catch{status('Match message error')}};
  }catch(e){status(e.message);$('live-pvp-connect').disabled=false}
 }
 function play(id){
@@ -155,6 +156,7 @@ function setup(){
   }catch(e){setDraft();deckStatus('Deck saved on this device only. Cloud: '+e.message)}
  });
  $('live-deck-edit').addEventListener('click',()=>{document.querySelector('[data-nav="cards"]')?.click();setTimeout(()=>$('deck-builder').scrollIntoView({block:'start',behavior:'smooth'}),50)});
+ root.IDLE_PVP_ARENA?.setup();
  $('live-pvp-connect').addEventListener('click',begin);
  $('live-pvp-disconnect').addEventListener('click',()=>{if(socket)socket.close();socket=null;$('live-pvp-connect').disabled=false;status('Disconnected')});
 }
