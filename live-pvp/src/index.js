@@ -1,5 +1,5 @@
 import {buildHand,resolveDuel,pickWinner} from './rules.js';
-const CHOOSE_MS=10000;
+const CHOOSE_MS=30000;
 const PONG_GRACE_MS=18000;
 const send=(ws,obj)=>{try{if(ws.readyState===1)ws.send(JSON.stringify(obj))}catch{}};
 export default {
@@ -90,8 +90,8 @@ export class PvpLobby {
   if(!handA.length||!handB.length){this.finish(match,'completed');return}
   match.awaiting=null;match.round++;a.chosen=null;b.chosen=null;
   const deadline=Date.now()+CHOOSE_MS;
-  send(a.ws,{type:'hand',round:match.round,opponent:b.name,score:match.scores,hand:handA,durationMs:CHOOSE_MS,deadline,matchId:match.id});
-  send(b.ws,{type:'hand',round:match.round,opponent:a.name,score:[...match.scores].reverse(),hand:handB,durationMs:CHOOSE_MS,deadline,matchId:match.id});
+  send(a.ws,{type:'hand',round:match.round,opponent:b.name,score:match.scores,hand:handA,deckSize:a.deck.length,usedCount:a.used.length,durationMs:CHOOSE_MS,deadline,matchId:match.id});
+  send(b.ws,{type:'hand',round:match.round,opponent:a.name,score:[...match.scores].reverse(),hand:handB,deckSize:b.deck.length,usedCount:b.used.length,durationMs:CHOOSE_MS,deadline,matchId:match.id});
   match.selectTimer=setTimeout(()=>{
    if(!this.matches.has(match.id)||match.awaiting)return;
    for(const p of match.players){
@@ -123,7 +123,7 @@ export class PvpLobby {
   send(b.ws,{...event,cards:[b.chosen,a.chosen],winner:result.winner==='draw'?'draw':1-result.winner,log:result.log.map(hit=>({...hit,actor:1-hit.actor})),score:[...match.scores].reverse()});
   match.readyTimer=setTimeout(()=>{if(!this.matches.has(match.id)||!match.awaiting)return;
    const late=[...match.awaiting];this.finish(match,'replay_timeout',late.length===1?late[0]:null)
-  },60000);
+  },180000);
   a.chosen=null;b.chosen=null;
  }
  ready(player){

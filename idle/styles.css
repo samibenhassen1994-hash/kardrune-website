@@ -351,3 +351,35 @@ body.pvp-battle-open{overflow:hidden}
 .pvp-hand-card{user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
 .pvp-hand-card img{pointer-events:none;-webkit-user-drag:none}
 @media(prefers-reduced-motion:reduce){.pvp-battle-view .pvp-battle-card,.pvp-battle-view .pvp-hit-effect{animation-duration:.01ms!important}}
+
+/* Live duel v30: clear draw and discard stacks alongside the clash. */
+.pvp-arena-piles{position:absolute;inset:0;display:flex;justify-content:space-between;align-items:center;pointer-events:none;padding:0 5px;z-index:1}
+.pvp-side-pile{display:flex;flex-direction:column;align-items:center;gap:6px;width:52px;font:800 10px Cinzel;color:#f0d3a0;text-shadow:0 2px 3px #091022}
+.pvp-side-pile strong{font:900 15px Cinzel;color:#fff4c4}
+.pvp-deck-stack{display:grid;place-items:center;width:38px;height:58px;border:2px solid #e6bf70;border-radius:5px;color:#f8d681;font:900 25px Cinzel;background:linear-gradient(135deg,#3e3165,#111b39);box-shadow:-3px 3px 0 #182446,-5px 5px 0 #0d162d}
+.pvp-deck-stack.dealing{animation:pvp-stack-draw 1.55s ease-in-out}
+.pvp-used-preview{position:relative;display:flex;align-items:center;width:45px;height:65px}
+.pvp-used-preview img{position:absolute;width:36px;height:56px;object-fit:cover;border:1px solid #caa869;border-radius:4px;box-shadow:0 2px 6px #0008}
+.pvp-used-preview img:nth-child(1){transform:rotate(-12deg) translateX(-3px)}
+.pvp-used-preview img:nth-child(2){transform:rotate(2deg) translateX(1px)}
+.pvp-used-preview img:nth-child(3){transform:rotate(12deg) translateX(4px)}
+.pvp-fighter-row{position:relative;z-index:2;width:calc(100% - 94px);max-width:450px}
+.pvp-arena-fighter{width:min(34%,120px)}
+.pvp-arena-versus{font-size:19px}
+.pvp-hand-card{animation:pvp-card-dealt 1s cubic-bezier(.2,.75,.3,1.05) both}
+.pvp-hand-card:nth-child(1){animation-delay:0ms!important}
+.pvp-hand-card:nth-child(2){animation-delay:430ms!important}
+.pvp-hand-card:nth-child(3){animation-delay:860ms!important}
+.pvp-fighter.strike-up{animation:pvp-charge-up 1.05s cubic-bezier(.2,.75,.3,1) both}
+.pvp-fighter.strike-down{animation:pvp-charge-down 1.05s cubic-bezier(.2,.75,.3,1) both}
+.pvp-fighter.damaged{animation:pvp-damage-long 1.05s ease-in-out both}
+.pvp-fighter.crit-damaged{animation:pvp-crit-long 1.5s ease-in-out both}
+.pvp-hit-effect{animation:pvp-impact 1.05s ease-out both;line-height:1.35;font-size:clamp(14px,3.5vw,23px);max-width:100%;padding:0 8px}
+.pvp-hit-effect.crit{font-size:clamp(17px,4vw,26px)}
+@keyframes pvp-card-dealt{0%{opacity:0;transform:translate(175px,-160px) rotate(32deg) scale(.35)}55%{opacity:1;transform:translate(10px,-15px) rotate(-5deg) scale(1.07)}80%{transform:translate(-4px,3px) rotate(2deg)}100%{opacity:1;transform:none}}
+@keyframes pvp-stack-draw{20%{filter:brightness(1.7)}40%{transform:rotate(3deg)}60%{filter:brightness(2)}100%{filter:none;transform:none}}
+@keyframes pvp-charge-up{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-40px) scale(1.12)}62%{transform:translateY(-15px) scale(1.05)}100%{transform:none}}
+@keyframes pvp-charge-down{0%{transform:translateY(0) scale(1)}35%{transform:translateY(40px) scale(1.12)}62%{transform:translateY(15px) scale(1.05)}100%{transform:none}}
+@keyframes pvp-damage-long{15%{filter:brightness(2.2)}30%{transform:translateX(-10px)}45%{transform:translateX(9px)}60%{transform:translateX(-5px)}85%{filter:brightness(1.3)}100%{transform:none;filter:none}}
+@keyframes pvp-crit-long{12%{transform:scale(1.15);filter:brightness(3) drop-shadow(0 0 18px gold)}30%{transform:translateX(-16px) rotate(-8deg)}48%{transform:translateX(15px) rotate(7deg)}70%{transform:translateX(-7px)}100%{transform:none;filter:none}}
+@media(max-width:380px){.pvp-side-pile{width:39px}.pvp-fighter-row{width:calc(100% - 76px)}.pvp-deck-stack{width:31px;height:47px}.pvp-used-preview{width:32px;height:52px}.pvp-used-preview img{width:27px;height:45px}}
