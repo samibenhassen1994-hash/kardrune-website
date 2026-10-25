@@ -296,3 +296,51 @@
 #screen-cards .hero-image,#screen-cards .hero-image img{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
 .deck-custom-ghost{position:fixed!important;z-index:2147483647;pointer-events:none;width:112px;height:146px;background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;transform:translate(-50%,-65%);transition:width .1s,height .1s}
 .deck-custom-ghost img{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;background:transparent!important;border:0!important;box-shadow:none!important}
+
+/* Fullscreen live PvP view: rival above, arena center, player hand below. */
+.pvp-battle-view{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;max-width:720px;margin:0 auto;background:radial-gradient(ellipse at 50% 40%,#28415e,#071123 70%);color:#f7e7c1;padding:env(safe-area-inset-top) 10px env(safe-area-inset-bottom);overflow:hidden}
+.pvp-battle-view[hidden],.pvp-round-popup[hidden],.pvp-match-finish[hidden]{display:none!important}
+body.pvp-battle-open{overflow:hidden}
+.pvp-battle-header{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;border-bottom:1px solid #d5ad694a;font:800 12px Cinzel}
+.pvp-battle-header button{border:1px solid #d4b576;background:#1a2741;color:#f5d9ac;border-radius:7px;width:35px;height:35px}
+.pvp-rival-zone{min-height:110px;flex:0 0 auto;padding:10px;background:#391d2c44;border-radius:12px;margin-top:6px}
+.pvp-battle-name{display:flex;justify-content:space-between;align-items:center;font:800 13px Cinzel;color:#f3d59b}
+.pvp-face-down{text-align:center;font-size:11px;letter-spacing:.12em;padding:20px;color:#a999ae}
+.pvp-arena-zone{position:relative;min-height:160px;flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;margin:8px 0;border:1px solid #d6b36a6a;border-radius:15px;background:radial-gradient(ellipse at center,#30496388,transparent 65%),linear-gradient(#1f2f43,#0c1727)}
+.pvp-arena-heading{position:absolute;top:11px;font:800 12px Cinzel;letter-spacing:.1em}.pvp-arena-heading span{margin-left:18px;color:#f9d084}
+.pvp-fighter-row{width:100%;display:flex;align-items:center;justify-content:space-around;padding-top:25px}
+.pvp-arena-fighter{width:min(28%,112px);min-height:125px;display:grid;place-items:center}
+.pvp-arena-versus{font:800 24px Cinzel;color:#dfbf79}
+.pvp-battle-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid #d9b66c;border-radius:10px;background:#0d1b32d9;min-width:0;overflow:hidden}
+.pvp-battle-card img{display:block;width:100%;height:100%;object-fit:contain}
+.pvp-battle-card span{font-size:9px;color:#f8e4ae;background:#111b30ea;position:absolute;bottom:0;left:0;right:0;text-align:center}
+.pvp-fighter{width:100%;aspect-ratio:3/4;box-shadow:0 0 18px #f2be704d}
+.pvp-fighter.rival{border-color:#d77d90}
+.pvp-arena-effects{position:absolute;top:42%;left:0;right:0;text-align:center;pointer-events:none}
+.pvp-hit-effect{display:inline-block;color:#fff4e7;font:900 28px Cinzel;text-shadow:0 0 12px #f36240;animation:pvp-impact .47s ease-out both}
+.pvp-hit-effect.crit{color:#ffe776;font-size:32px;text-shadow:0 0 15px #f9b338,0 0 28px #f44a7f}
+.pvp-fighter.strike{animation:pvp-strike .45s ease-in-out}
+.pvp-fighter.damaged{animation:pvp-damage .5s ease-in-out}
+.pvp-fighter.crit-damaged{animation:pvp-crit .7s ease-in-out}
+.pvp-phase{text-align:center;font-size:11px;color:#bdd4ec;margin:12px}
+.pvp-player-zone{flex:0 0 auto;min-height:210px;border:1px solid #a89f6c66;border-radius:12px;background:#111d33;padding:10px}
+.pvp-hand-top{display:flex;justify-content:space-between;align-items:center;font-size:10px;margin:9px 0;color:#ead18d}
+#pvp-timer{display:grid;place-items:center;border:2px solid #e4bc75;border-radius:50%;font:900 19px Cinzel;width:44px;height:44px}
+#pvp-timer.urgent{border-color:#fa5f5f;color:#ff7575;animation:pvp-pulse .5s alternate infinite}
+.pvp-hand-row{display:flex;justify-content:center;gap:7px;min-height:133px}
+.pvp-hand-card{width:min(31%,115px);aspect-ratio:3/4;cursor:grab;touch-action:none;animation:pvp-draw .5s ease-out both}
+.pvp-hand-card.unselected{opacity:.35}
+.pvp-round-popup{position:absolute;z-index:10;top:40%;left:5%;width:90%;text-align:center;pointer-events:none;padding:17px;background:#09152bee;border:2px solid #e9c174;border-radius:13px;box-shadow:0 0 35px #000d;animation:pvp-toast .2s ease-out}
+.pvp-round-popup strong{display:block;font:900 24px Cinzel;color:#ffe29a}
+.pvp-round-popup span{display:block;font-size:12px;margin-top:8px}
+.pvp-round-popup.critical{border-color:#ffb35c}
+.pvp-match-finish{position:absolute;inset:0;z-index:11;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#081323e9;padding:30px}
+.pvp-match-finish h2{font:900 42px Cinzel;color:#ffdc8f}
+@keyframes pvp-draw{from{opacity:0;transform:translateY(90px) rotate(9deg) scale(.75)}to{opacity:1;transform:none}}
+@keyframes pvp-strike{50%{transform:translateY(-26px) scale(1.12)}}
+@keyframes pvp-damage{25%,75%{transform:translateX(-9px);filter:brightness(1.8)}50%{transform:translateX(8px)}}
+@keyframes pvp-crit{25%{transform:translateX(-14px) rotate(-6deg);filter:brightness(2.5) drop-shadow(0 0 15px gold)}60%{transform:translateX(12px) rotate(5deg)}}
+@keyframes pvp-impact{from{opacity:0;transform:scale(2)}to{opacity:1;transform:scale(1)}}
+@keyframes pvp-pulse{to{transform:scale(1.08)}}
+@keyframes pvp-toast{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+@media(max-height:630px){.pvp-rival-zone{min-height:60px}.pvp-face-down{padding:6px}.pvp-player-zone{min-height:165px}.pvp-hand-row{min-height:95px}.pvp-hand-card{max-width:80px}.pvp-arena-fighter{min-height:75px}}
