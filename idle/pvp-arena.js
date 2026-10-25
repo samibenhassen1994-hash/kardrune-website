@@ -30,9 +30,10 @@ function showHand(msg){
  hand.forEach((c,i)=>{
   const item=cardNode(c,'pvp-hand-card');item.style.animationDelay=(i*190)+'ms';item.tabIndex=0;item.role='button';
   item.setAttribute('aria-label','Play '+c.id);
-  item.addEventListener('click',()=>play(c.id));
+  // Tap fallback is handled by the capturing click listener below.
   item.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();play(c.id)}});
-  let drag=null;
+  let drag=null,ignoreClick=false;
+  item.addEventListener('click',e=>{if(ignoreClick){e.preventDefault();e.stopImmediatePropagation();ignoreClick=false}else play(c.id)},true);
   item.addEventListener('pointerdown',e=>{
    if(!allowed||e.button!==0)return;
    e.preventDefault();item.setPointerCapture?.(e.pointerId);
@@ -53,6 +54,7 @@ function showHand(msg){
    if(!drag||drag.pointerId!==e.pointerId)return;
    const wasDragging=drag.moved;
    drag.ghost?.remove();drag=null;
+   if(wasDragging){ignoreClick=true;setTimeout(()=>ignoreClick=false,400)}
    if(!wasDragging)return;
    const bounds=$('pvp-arena-drop').getBoundingClientRect();
    if(e.clientX>=bounds.left&&e.clientX<=bounds.right&&e.clientY>=bounds.top&&e.clientY<=bounds.bottom)play(c.id);
@@ -88,7 +90,7 @@ async function replay(msg){
   attacker.classList.remove('strike');target.classList.remove('damaged','crit-damaged');void attacker.offsetWidth;
   attacker.classList.add('strike');target.classList.add(hit.critical?'crit-damaged':'damaged');
   const effect=document.createElement('div');effect.className='pvp-hit-effect'+(hit.critical?' crit':'');
-  effect.textContent=(hit.critical?'CRITICAL!  ':'')+'−'+hit.damage;
+  effect.textContent=(hit.actor===0?'YOU HIT RIVAL · ':'RIVAL HITS YOU · ')+(hit.critical?'CRITICAL!  ':'')+'−'+hit.damage;
   $('pvp-arena-effects').replaceChildren(effect);
   hp[1-hit.actor]=hit.hp;
   text('pvp-own-hp','HP '+hp[0]);text('pvp-rival-hp','HP '+hp[1]);
