@@ -23,10 +23,11 @@ function cardNode(card,css=''){
 function stopTimer(){clearInterval(tick);text('pvp-timer','--');$('pvp-timer').classList.remove('urgent')}
 function showHand(msg){
  const token=++roundToken;allowed=false;chosen=null;hand=msg.hand||[];stopTimer();
- open(msg.opponent);
+ if(view().hidden)open(msg.opponent);else text('pvp-rival-name',msg.opponent||'Rival');
  text('pvp-round-number','ROUND '+msg.round);text('pvp-score',msg.score.join(' : '));
  $('pvp-own-fighter').replaceChildren();$('pvp-rival-fighter').replaceChildren();
  const list=$('pvp-hand');list.replaceChildren();phase('Drawing your hand…');
+ if(msg.round>1)popup('ROUND '+msg.round,'Three new cards · choose one');
  hand.forEach((c,i)=>{
   const item=cardNode(c,'pvp-hand-card');item.style.animationDelay=(i*190)+'ms';item.tabIndex=0;item.role='button';
   item.setAttribute('aria-label','Play '+c.id);
