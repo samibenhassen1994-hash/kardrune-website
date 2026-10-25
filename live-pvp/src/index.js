@@ -90,8 +90,8 @@ export class PvpLobby {
   if(!handA.length||!handB.length){this.finish(match,'completed');return}
   match.awaiting=null;match.round++;a.chosen=null;b.chosen=null;
   const deadline=Date.now()+CHOOSE_MS;
-  send(a.ws,{type:'hand',round:match.round,opponent:b.name,score:match.scores,hand:handA,durationMs:CHOOSE_MS,deadline,matchId:match.id});
-  send(b.ws,{type:'hand',round:match.round,opponent:a.name,score:[...match.scores].reverse(),hand:handB,durationMs:CHOOSE_MS,deadline,matchId:match.id});
+  send(a.ws,{type:'hand',round:match.round,opponent:b.name,score:match.scores,hand:handA,deckSize:a.deck.length,usedCount:a.used.length,durationMs:CHOOSE_MS,deadline,matchId:match.id});
+  send(b.ws,{type:'hand',round:match.round,opponent:a.name,score:[...match.scores].reverse(),hand:handB,deckSize:b.deck.length,usedCount:b.used.length,durationMs:CHOOSE_MS,deadline,matchId:match.id});
   match.selectTimer=setTimeout(()=>{
    if(!this.matches.has(match.id)||match.awaiting)return;
    for(const p of match.players){
