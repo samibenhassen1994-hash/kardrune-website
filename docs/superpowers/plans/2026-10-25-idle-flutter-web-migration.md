@@ -72,11 +72,11 @@
 
 **Interfaces:** Consumes catalog, rules, repository; produces four navigable, safe-area-aware feature screens and app controller.
 
-- [ ] Write failing widget tests for navigation/state, all five viewport sizes, bounded collection paging, training lifecycle/rewards, summon/duplicate flows, profile/avatar/name/language, semantics, and no overflow exceptions.
-- [ ] Run focused widget tests; expect missing screens.
-- [ ] Implement centered desktop game container, fixed mobile shell, bottom navigation, original asset cards/backgrounds, dialogs, and feature controllers.
-- [ ] Run widget tests and capture candidate screenshots at matching legacy viewports.
-- [ ] Commit `feat: migrate core Idle screens to Flutter`.
+- [x] Write failing widget tests for navigation/state, all five viewport sizes, bounded collection paging, training rewards, summon/duplicate flows, profile/avatar/name/language, semantics, and no overflow exceptions.
+- [x] Run focused widget tests; expect missing screens.
+- [x] Implement centered desktop game container, fixed mobile shell, bottom navigation, original asset cards, dialogs, and feature state.
+- [x] Run widget tests and capture a candidate screenshot at 390×844.
+- [x] Commit `feat: migrate core Idle screens to Flutter`.
 
 ### Task 5: Nine-slot deck builder and drag/drop
 

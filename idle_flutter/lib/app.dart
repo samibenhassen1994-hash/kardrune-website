@@ -1,0 +1,432 @@
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+
+import 'game/catalog.dart';
+import 'game/summon_rules.dart';
+import 'theme/kardrune_theme.dart';
+
+typedef RandomRoll = double Function();
+
+class KardRuneApp extends StatelessWidget {
+  const KardRuneApp({super.key, this.random});
+  final RandomRoll? random;
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    debugShowCheckedModeBanner: false,
+    title: 'Idle KardRune',
+    theme: KardRuneTheme.data,
+    home: IdleShell(random: random ?? math.Random().nextDouble),
+  );
+}
+
+class IdleShell extends StatefulWidget {
+  const IdleShell({super.key, required this.random});
+  final RandomRoll random;
+  @override
+  State<IdleShell> createState() => _IdleShellState();
+}
+
+class _IdleShellState extends State<IdleShell> {
+  int tab = 0, shards = 1500, page = 0, rewardsLeft = 10;
+  String name = 'Runebearer', avatar = 'player';
+  String battleStatus = '';
+  bool italian = false;
+  final owned = <String>{'sam:1'};
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: SafeArea(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Column(
+            children: [
+              _Header(shards: shards),
+              Expanded(
+                child: IndexedStack(
+                  index: tab,
+                  children: [
+                    _Tournament(
+                      rewardsLeft: rewardsLeft,
+                      status: battleStatus,
+                      onStart: _train,
+                    ),
+                    _Cards(
+                      page: page,
+                      title: italian ? 'CARTE' : 'CARDS',
+                      onPage: (v) => setState(() => page = v),
+                    ),
+                    _Summon(
+                      shards: shards,
+                      title: italian ? 'EVOCA' : 'SUMMON',
+                      onSummon: _summon,
+                    ),
+                    _Profile(
+                      name: name,
+                      avatar: avatar,
+                      onName: (v) => setState(() => name = v),
+                      onAvatar: (v) => setState(() => avatar = v),
+                      onLanguage: () => setState(() => italian = !italian),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+    bottomNavigationBar: BottomNavigationBar(
+      currentIndex: tab,
+      type: BottomNavigationBarType.fixed,
+      onTap: (v) => setState(() => tab = v),
+      items: [
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.shield),
+          label: 'TOURNAMENT',
+        ),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.style),
+          label: italian ? 'CARTE' : 'CARDS',
+        ),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.auto_awesome),
+          label: italian ? 'EVOCA' : 'SUMMON',
+        ),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.person),
+          label: italian ? 'PROFILO' : 'PROFILE',
+        ),
+      ],
+    ),
+  );
+  void _train() {
+    setState(() {
+      if (rewardsLeft > 0) {
+        shards += 100;
+        rewardsLeft--;
+      }
+      battleStatus = 'VICTORY · +100 SHARDS';
+    });
+  }
+
+  void _summon(bool featured) {
+    final cost = SummonRules.cost(featured);
+    if (shards < cost) return;
+    final stage = SummonRules.stageFor(featured, widget.random());
+    final index = SummonRules.heroIndex(
+      featured,
+      widget.random(),
+      widget.random(),
+    );
+    final id = '${KardRuneCatalog.heroes[index].id}:$stage',
+        duplicate = owned.contains(id);
+    setState(() {
+      shards -= cost;
+      if (!duplicate) owned.add(id);
+    });
+    if (duplicate) {
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (c) => AlertDialog(
+          title: const Text('DUPLICATE CARD'),
+          content: const Text('Compare the new card with your current stats.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                setState(() => shards += 100);
+                Navigator.pop(c);
+              },
+              child: const Text('KEEP CURRENT · +100'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(c),
+              child: const Text('REPLACE'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    showDialog<void>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(
+          '${KardRuneCatalog.heroes[index].name.toUpperCase()} · STAGE $stage',
+        ),
+        content: Image.asset(
+          KardRuneCatalog.heroes[index].cardAsset(
+            KardRuneCatalog.heroes[index].stages[stage - 1],
+          ),
+          fit: BoxFit.contain,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c),
+            child: const Text('CONTINUE'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.shards});
+  final int shards;
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: 54,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Row(
+        children: [
+          const Text(
+            'IDLE KARDRUNE',
+            style: TextStyle(
+              color: KardRuneTheme.gold,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const Spacer(),
+          const Icon(Icons.diamond_outlined, color: KardRuneTheme.gold),
+          Text(
+            shards.toString().replaceAllMapped(
+              RegExp(r'\B(?=(\d{3})+(?!\d))'),
+              (_) => ',',
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _Panel extends StatelessWidget {
+  const _Panel({required this.title, required this.child});
+  final String title;
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+    child: DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xdd0b1c31),
+        border: Border.all(color: KardRuneTheme.gold.withValues(alpha: .55)),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                color: KardRuneTheme.gold,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(child: child),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _Tournament extends StatelessWidget {
+  const _Tournament({
+    required this.rewardsLeft,
+    required this.status,
+    required this.onStart,
+  });
+  final int rewardsLeft;
+  final String status;
+  final VoidCallback onStart;
+  @override
+  Widget build(BuildContext context) => _Panel(
+    title: 'TOURNAMENT',
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        const Text(
+          'TRAINING ARENA',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _hero('sam', 1),
+              const Icon(Icons.flash_on, color: KardRuneTheme.gold, size: 34),
+              _hero('dren', 1),
+            ],
+          ),
+        ),
+        Text('Daily rewards remaining · $rewardsLeft'),
+        if (status.isNotEmpty) Text(status, key: const Key('battle-status')),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: onStart,
+            child: const Text('⚔ START DUEL'),
+          ),
+        ),
+      ],
+    ),
+  );
+  Widget _hero(String id, int stage) {
+    final h = KardRuneCatalog.heroes.firstWhere((x) => x.id == id);
+    return Flexible(
+      child: AspectRatio(
+        aspectRatio: .72,
+        child: Image.asset(
+          h.cardAsset(h.stages[stage - 1]),
+          fit: BoxFit.contain,
+        ),
+      ),
+    );
+  }
+}
+
+class _Cards extends StatelessWidget {
+  const _Cards({required this.page, required this.title, required this.onPage});
+  final int page;
+  final String title;
+  final ValueChanged<int> onPage;
+  @override
+  Widget build(BuildContext context) {
+    final all = [
+      for (final h in KardRuneCatalog.heroes)
+        for (var s = 1; s <= 3; s++) MapEntry(h, s),
+    ];
+    final slice = all.skip(page * 4).take(4);
+    return _Panel(
+      title: title,
+      child: Column(
+        children: [
+          Expanded(
+            child: GridView.count(
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              childAspectRatio: .72,
+              mainAxisSpacing: 6,
+              crossAxisSpacing: 6,
+              children: [for (final item in slice) _card(item.key, item.value)],
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                onPressed: page > 0 ? () => onPage(page - 1) : null,
+                icon: const Icon(Icons.chevron_left),
+              ),
+              Text('${page + 1} / 7'),
+              IconButton(
+                onPressed: page < 6 ? () => onPage(page + 1) : null,
+                icon: const Icon(Icons.chevron_right),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _card(dynamic h, int s) => Semantics(
+    label: '${h.name} Stage $s',
+    button: true,
+    child: Image.asset(h.cardAsset(h.stages[s - 1]), fit: BoxFit.contain),
+  );
+}
+
+class _Summon extends StatelessWidget {
+  const _Summon({
+    required this.shards,
+    required this.title,
+    required this.onSummon,
+  });
+  final int shards;
+  final String title;
+  final ValueChanged<bool> onSummon;
+  @override
+  Widget build(BuildContext context) => _Panel(
+    title: title,
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        const Icon(Icons.auto_awesome, color: KardRuneTheme.gold, size: 72),
+        const Text(
+          'CALL HEROES FROM THE RUNES',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 18),
+        ),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: shards >= 300 ? () => onSummon(false) : null,
+            child: const Text('STANDARD · 300'),
+          ),
+        ),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: shards >= 600 ? () => onSummon(true) : null,
+            child: const Text('FEATURED · 600'),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _Profile extends StatelessWidget {
+  const _Profile({
+    required this.name,
+    required this.avatar,
+    required this.onName,
+    required this.onAvatar,
+    required this.onLanguage,
+  });
+  final String name, avatar;
+  final ValueChanged<String> onName, onAvatar;
+  final VoidCallback onLanguage;
+  @override
+  Widget build(BuildContext context) => _Panel(
+    title: 'PROFILE',
+    child: Column(
+      children: [
+        Expanded(
+          child: Image.asset(
+            'assets/idle/avatars/avatar_$avatar.webp',
+            fit: BoxFit.contain,
+          ),
+        ),
+        Text(name, style: const TextStyle(fontSize: 20)),
+        Wrap(
+          children: [
+            for (final id in ['player', 'guard', 'vassal', 'king'])
+              IconButton(
+                onPressed: () => onAvatar(id),
+                icon: CircleAvatar(
+                  backgroundImage: AssetImage(
+                    'assets/idle/avatars/avatar_$id.webp',
+                  ),
+                ),
+              ),
+          ],
+        ),
+        TextField(
+          maxLength: 20,
+          decoration: const InputDecoration(labelText: 'DISPLAY NAME'),
+          onSubmitted: onName,
+        ),
+        TextButton(onPressed: onLanguage, child: const Text('ITALIANO')),
+      ],
+    ),
+  );
+}

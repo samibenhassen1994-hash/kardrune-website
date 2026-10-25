@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+import 'app.dart' as app;
+export 'app.dart';
+
 void main() {
-  runApp(const KardRuneApp());
+  runApp(const app.KardRuneApp());
 }
 
-class KardRuneApp extends StatelessWidget {
-  const KardRuneApp({super.key});
+class PlaceholderApp extends StatelessWidget {
+  const PlaceholderApp({super.key});
 
   // This widget is the root of your application.
   @override
@@ -28,7 +31,10 @@ class KardRuneApp extends StatelessWidget {
         //
         // This works for code too, not just values: Most code changes can be
         // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: const Color(0xffd8ad55), brightness: Brightness.dark),
+        colorScheme: .fromSeed(
+          seedColor: const Color(0xffd8ad55),
+          brightness: Brightness.dark,
+        ),
       ),
       home: const MyHomePage(title: 'IDLE KARDRUNE'),
     );

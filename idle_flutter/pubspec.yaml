@@ -61,7 +61,16 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - assets/idle/cards/
+    - assets/idle/cards/aria/
+    - assets/idle/cards/dren/
+    - assets/idle/cards/frame/
+    - assets/idle/cards/kael/
+    - assets/idle/cards/lira/
+    - assets/idle/cards/neris/
+    - assets/idle/cards/nyra/
+    - assets/idle/cards/rhea/
+    - assets/idle/cards/tor/
+    - assets/idle/cards/young_sam/
     - assets/idle/animations/
     - assets/idle/avatars/
 

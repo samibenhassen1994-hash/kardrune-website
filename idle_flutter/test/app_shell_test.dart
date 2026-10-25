@@ -1,0 +1,32 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:idle_kardrune/app.dart';
+
+void main(){
+  for(final size in const [Size(320,568),Size(375,667),Size(390,844),Size(393,852),Size(430,932)]){
+    testWidgets('main screens fit ${size.width.toInt()}x${size.height.toInt()} without overflow',(tester)async{
+      tester.view.physicalSize=size;tester.view.devicePixelRatio=1;addTearDown(tester.view.resetPhysicalSize);addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(const KardRuneApp());await tester.pump();
+      expect(find.text('TOURNAMENT'),findsWidgets);expect(find.byType(BottomNavigationBar),findsOneWidget);expect(tester.takeException(),isNull);
+      for(final label in ['CARDS','SUMMON','PROFILE']){await tester.tap(find.text(label).last);await tester.pump();expect(find.text(label),findsWidgets);expect(tester.takeException(),isNull);}
+    });
+  }
+  testWidgets('cards are paginated and summon updates the wallet',(tester)async{
+    tester.view.physicalSize=const Size(390,844);tester.view.devicePixelRatio=1;addTearDown(tester.view.resetPhysicalSize);addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(KardRuneApp(random:()=>0));await tester.tap(find.text('CARDS').last);await tester.pump();expect(find.text('1 / 7'),findsOneWidget);
+    await tester.tap(find.text('SUMMON').last);await tester.pump();expect(find.text('1,500'),findsOneWidget);await tester.tap(find.text('STANDARD · 300'));await tester.pump();expect(find.text('1,200'),findsOneWidget);
+  });
+  testWidgets('training resolves a duel and grants the exact win reward',(tester)async{
+    tester.view.physicalSize=const Size(390,844);tester.view.devicePixelRatio=1;addTearDown(tester.view.resetPhysicalSize);addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(KardRuneApp(random:()=>0));await tester.tap(find.text('⚔ START DUEL'));await tester.pump();
+    expect(find.text('VICTORY · +100 SHARDS'),findsOneWidget);expect(find.text('1,600'),findsOneWidget);expect(find.text('Daily rewards remaining · 9'),findsOneWidget);
+  });
+  testWidgets('duplicate pull requires keep or replace and keep refunds 100',(tester)async{
+    tester.view.physicalSize=const Size(390,844);tester.view.devicePixelRatio=1;addTearDown(tester.view.resetPhysicalSize);addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(KardRuneApp(random:()=>0));await tester.tap(find.text('SUMMON').last);await tester.pump();await tester.tap(find.text('STANDARD · 300'));await tester.pump();
+    expect(find.text('DUPLICATE CARD'),findsOneWidget);await tester.tap(find.text('KEEP CURRENT · +100'));await tester.pump();expect(find.text('1,300'),findsOneWidget);
+  });
+  testWidgets('profile language toggle exposes Italian navigation',(tester)async{
+    await tester.pumpWidget(const KardRuneApp());await tester.tap(find.text('PROFILE').last);await tester.pump();await tester.tap(find.text('ITALIANO'));await tester.pump();expect(find.text('CARTE'),findsOneWidget);
+  });
+}
