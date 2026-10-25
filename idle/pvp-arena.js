@@ -2,7 +2,7 @@
 'use strict';
 const $=id=>document.getElementById(id),wait=ms=>new Promise(r=>setTimeout(r,ms));
 const asset=id=>{const [name,stage]=id.split(':'),hero=(root.IDLE_HERO_CATALOG||[]).find(h=>h.id===name);return hero?'./media/cards/'+hero.stages[Number(stage)-1]:''};
-let ws=null,roundToken=0,tick=null,toastTimer=null,hand=[],allowed=false,chosen=null,connected=false;
+let ws=null,roundToken=0,tick=null,toastTimer=null,hand=[],allowed=false,chosen=null,connected=false,deckTotal=0,usedCards=[];
 const view=()=>$('pvp-battle-view');
 function text(id,value){$(id).textContent=value}
 function popup(title,description='',crit=false){
@@ -12,7 +12,11 @@ function popup(title,description='',crit=false){
  toastTimer=setTimeout(()=>el.hidden=true,2000);
 }
 function phase(str){text('pvp-phase',str)}
-function open(name){view().hidden=false;document.body.classList.add('pvp-battle-open');text('pvp-rival-name',name||'Rival');phase('Entering the arena…');popup('OPPONENT FOUND','Prepare your hand');}
+function resetArena(){
+ stopTimer();clearTimeout(toastTimer);$('pvp-round-popup').hidden=true;$('pvp-arena-effects').replaceChildren();$('pvp-own-fighter').replaceChildren();$('pvp-rival-fighter').replaceChildren();$('pvp-hand').replaceChildren();$('pvp-finish').hidden=true;usedCards=[];deckTotal=0;drawPiles();text('pvp-own-hp','HP —');text('pvp-rival-hp','HP —');text('pvp-score','0 : 0');
+}
+function drawPiles(){const remaining=Math.max(0,deckTotal-usedCards.length);text('pvp-deck-remaining',String(remaining));text('pvp-used-count',String(usedCards.length));const used=$('pvp-used-preview');used.replaceChildren();for(const id of usedCards.slice(-3)){const img=document.createElement('img');img.src=asset(id);img.alt=id;used.append(img)}}
+function open(name){if(view().hidden)resetArena();view().hidden=false;document.body.classList.add('pvp-battle-open');text('pvp-rival-name',name||'Rival');phase('Entering the arena…');popup('OPPONENT FOUND','Prepare your hand');}
 function close(){view().hidden=true;document.body.classList.remove('pvp-battle-open');clearInterval(tick);roundToken++}
 function cardNode(card,css=''){
  const el=document.createElement('div');el.className='pvp-battle-card '+css;el.dataset.id=card.id;
@@ -22,14 +26,16 @@ function cardNode(card,css=''){
 }
 function stopTimer(){clearInterval(tick);text('pvp-timer','--');$('pvp-timer').classList.remove('urgent')}
 function showHand(msg){
- const token=++roundToken;allowed=false;chosen=null;hand=msg.hand||[];stopTimer();
+ const token=++roundToken;allowed=false;chosen=null;hand=msg.hand||[];stopTimer();$('pvp-arena-effects').replaceChildren();text('pvp-own-hp','HP —');text('pvp-rival-hp','HP —');
+ if(msg.round===1){usedCards=[];deckTotal=Number(msg.deckSize)||Math.max(hand.length,9)}drawPiles();
  if(view().hidden)open(msg.opponent);else text('pvp-rival-name',msg.opponent||'Rival');
  text('pvp-round-number','ROUND '+msg.round);text('pvp-score',msg.score.join(' : '));
  $('pvp-own-fighter').replaceChildren();$('pvp-rival-fighter').replaceChildren();
  const list=$('pvp-hand');list.replaceChildren();phase('Drawing your hand…');
+ const stack=$('pvp-deck-stack');stack.classList.remove('dealing');void stack.offsetWidth;stack.classList.add('dealing');
  if(msg.round>1)popup('ROUND '+msg.round,'Three new cards · choose one');
  hand.forEach((c,i)=>{
-  const item=cardNode(c,'pvp-hand-card');item.style.animationDelay=(i*190)+'ms';item.tabIndex=0;item.role='button';
+  const item=cardNode(c,'pvp-hand-card');item.style.animationDelay=(i*430)+'ms';item.tabIndex=0;item.role='button';
   item.setAttribute('aria-label','Play '+c.id);
   // Tap fallback is handled by the capturing click listener below.
   item.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();play(c.id)}});
@@ -65,10 +71,10 @@ function showHand(msg){
  });
  setTimeout(()=>{
   if(token!==roundToken)return;allowed=true;phase('Choose a card · drag upward or tap');
-  const deadline=Number(msg.deadline)||Date.now()+10000;
+  const deadline=Number(msg.deadline)||Date.now()+30000;
   const update=()=>{const remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));text('pvp-timer',String(remaining));$('pvp-timer').classList.toggle('urgent',remaining<=3);if(!remaining){clearInterval(tick);allowed=false;phase('Time expired · server choosing a random card')}};
   update();tick=setInterval(update,120);
- },750);
+ },1500);
 }
 function play(id){
  if(!allowed||!hand.some(c=>c.id===id)||ws?.readyState!==WebSocket.OPEN)return;
@@ -79,25 +85,27 @@ function play(id){
  phase('Card locked · waiting for opponent…');
 }
 async function replay(msg){
- const token=++roundToken;allowed=false;stopTimer();$('pvp-hand').replaceChildren();
+ const token=++roundToken;allowed=false;stopTimer();$('pvp-hand').replaceChildren();$('pvp-arena-effects').replaceChildren();
  const own=cardNode(msg.cards[0],'pvp-fighter'),rival=cardNode(msg.cards[1],'pvp-fighter rival');
  $('pvp-own-fighter').replaceChildren(own);$('pvp-rival-fighter').replaceChildren(rival);
  popup('CARDS REVEALED',msg.cards[0].id+' VS '+msg.cards[1].id);
- phase('Battle in progress');await wait(650);
+ phase('Battle in progress');await wait(1100);
  const hp=[ [0,240,340,430][msg.cards[0].stage], [0,240,340,430][msg.cards[1].stage] ];
  for(const hit of msg.log||[]){
   if(token!==roundToken)return;
   const attacker=hit.actor===0?own:rival,target=hit.actor===0?rival:own;
-  attacker.classList.remove('strike');target.classList.remove('damaged','crit-damaged');void attacker.offsetWidth;
-  attacker.classList.add('strike');target.classList.add(hit.critical?'crit-damaged':'damaged');
+  attacker.classList.remove('strike','strike-up','strike-down');target.classList.remove('damaged','crit-damaged');void attacker.offsetWidth;
+  attacker.classList.add(hit.actor===0?'strike-up':'strike-down');target.classList.add(hit.critical?'crit-damaged':'damaged');
   const effect=document.createElement('div');effect.className='pvp-hit-effect'+(hit.critical?' crit':'');
   effect.textContent=(hit.actor===0?'YOU HIT RIVAL · ':'RIVAL HITS YOU · ')+(hit.critical?'CRITICAL!  ':'')+'−'+hit.damage;
   $('pvp-arena-effects').replaceChildren(effect);
   hp[1-hit.actor]=hit.hp;
   text('pvp-own-hp','HP '+hp[0]);text('pvp-rival-hp','HP '+hp[1]);
-  await wait(hit.critical?800:480);
+  await wait(hit.critical?1550:1100);
  }
  if(token!==roundToken)return;
+ $('pvp-arena-effects').replaceChildren();
+ if(!usedCards.includes(msg.cards[0].id))usedCards.push(msg.cards[0].id);drawPiles();
  text('pvp-score',msg.score.join(' : '));
  const won=msg.winner===0,draw=msg.winner==='draw';
  popup(draw?'ROUND DRAW':won?'ROUND WON':'ROUND LOST',draw?'Both heroes fought to a draw':won?'Your card defeated the rival':'The rival card won the clash');
@@ -124,7 +132,7 @@ function onMessage(msg){
  if(msg.type==='error')popup('MATCH ERROR',msg.message);
 }
 function attach(socket){
- ws=socket;connected=true;$('pvp-finish').hidden=true;
+ roundToken++;resetArena();ws=socket;connected=true;$('pvp-finish').hidden=true;
  $('pvp-own-hp').textContent='HP —';$('pvp-rival-hp').textContent='HP —';
  socket.addEventListener('message',e=>{let msg;try{msg=JSON.parse(e.data)}catch{return}onMessage(msg)});
  socket.addEventListener('close',()=>{
