@@ -108,11 +108,11 @@
 
 **Interfaces:** Consumes typed server events; produces full-screen arena, draw/select/replay/result sequences, and `ready` after replay.
 
-- [ ] Write failing tests for three-card physical deal, 30-second deadline display, drag/tap/automatic lock, attack sequence, critical treatment, two-second popup, adaptive replay timing, disconnect result, and complete two-match reset.
-- [ ] Run focused tests; expect missing arena.
-- [ ] Implement layered `Stack` arena with isolated controllers/custom painters, safe-area layout, server-authoritative HP/log replay, and cancellation tokens.
-- [ ] Run focused tests across all viewports and full suite.
-- [ ] Commit `feat: build animated Flutter realtime PvP arena`.
+- [x] Write failing tests for three-card physical deal, 30-second deadline display, drag/tap/automatic lock, attack sequence, critical treatment, two-second popup, adaptive replay timing, disconnect result, and complete two-match reset.
+- [x] Run focused tests; expect missing arena.
+- [x] Implement layered `Stack` arena with isolated controllers/custom painters, safe-area layout, server-authoritative HP/log replay, and cancellation tokens.
+- [x] Run focused tests across all viewports and full suite.
+- [x] Commit `feat: build animated Flutter realtime PvP arena`.
 
 ### Task 8: PWA, performance, validation, and release documentation
 
