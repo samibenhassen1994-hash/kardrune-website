@@ -60,11 +60,11 @@
 
 **Interfaces:** Consumes `PlayerSave`; produces `SaveRepository.load`, `saveLocal`, `sync`, authenticated `/api/*` calls, and revision conflict states.
 
-- [ ] Write failing tests for legacy storage import, snapshot adoption/upload/download/review decisions, revision 409, account switch, retry state, and unchanged JSON compatibility.
-- [ ] Run focused tests; expect missing services.
-- [ ] Implement injected storage/auth/HTTP boundaries and exact `/api/config`, `/api/me`, `/api/save`, `/api/pvp/*` contracts.
-- [ ] Run focused tests and full Flutter suite.
-- [ ] Commit `feat: add compatible local and cloud saves`.
+- [x] Write failing tests for legacy storage import, snapshot adoption/upload/download/review decisions, revision 409, account switch, retry state, and unchanged JSON compatibility.
+- [x] Run focused tests; expect missing services.
+- [x] Implement injected storage/auth/HTTP boundaries and exact `/api/config`, `/api/me`, `/api/save`, `/api/pvp/*` contracts.
+- [x] Run focused tests and full Flutter suite.
+- [x] Commit `feat: add compatible local and cloud saves`.
 
 ### Task 4: Responsive shell, Tournament, Cards, Summon, Profile
 
