@@ -32,8 +32,32 @@ function showHand(msg){
   item.setAttribute('aria-label','Play '+c.id);
   item.addEventListener('click',()=>play(c.id));
   item.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();play(c.id)}});
-  item.addEventListener('pointerdown',e=>{if(!allowed||e.button!==0)return;item.dataset.dragStartY=String(e.clientY);item.setPointerCapture?.(e.pointerId)});
-  item.addEventListener('pointerup',e=>{const start=Number(item.dataset.dragStartY);if(allowed&&start&&start-e.clientY>40)play(c.id);delete item.dataset.dragStartY});
+  let drag=null;
+  item.addEventListener('pointerdown',e=>{
+   if(!allowed||e.button!==0)return;
+   e.preventDefault();item.setPointerCapture?.(e.pointerId);
+   drag={pointerId:e.pointerId,x:e.clientX,y:e.clientY,ghost:null,moved:false};
+  });
+  item.addEventListener('pointermove',e=>{
+   if(!drag||drag.pointerId!==e.pointerId||!allowed)return;
+   if(!drag.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>5){
+    drag.moved=true;drag.ghost=cardNode(c,'pvp-drag-ghost');document.body.append(drag.ghost);
+   }
+   if(drag.ghost){
+    drag.ghost.style.left=e.clientX+'px';drag.ghost.style.top=e.clientY+'px';
+    const bounds=$('pvp-arena-drop').getBoundingClientRect();
+    drag.ghost.classList.toggle('over-arena',e.clientY>=bounds.top&&e.clientY<=bounds.bottom);
+   }
+  });
+  item.addEventListener('pointerup',e=>{
+   if(!drag||drag.pointerId!==e.pointerId)return;
+   const wasDragging=drag.moved;
+   drag.ghost?.remove();drag=null;
+   if(!wasDragging)return;
+   const bounds=$('pvp-arena-drop').getBoundingClientRect();
+   if(e.clientX>=bounds.left&&e.clientX<=bounds.right&&e.clientY>=bounds.top&&e.clientY<=bounds.bottom)play(c.id);
+  });
+  item.addEventListener('pointercancel',()=>{drag?.ghost?.remove();drag=null});
   list.append(item);
  });
  setTimeout(()=>{
