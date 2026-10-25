@@ -96,11 +96,11 @@
 
 **Interfaces:** Produces typed representations for every existing server event and sends only `play`, `ready`, `pong`.
 
-- [ ] Write failing tests for ticket exchange, queue/status/leave, protocol decoding, heartbeat, reconnect cleanup, invalid events, and one play per round.
-- [ ] Run focused tests; expect missing transport/controller.
-- [ ] Implement existing HTTP/WebSocket contracts with injected clocks/socket adapters.
-- [ ] Run focused tests and Worker Node tests.
-- [ ] Commit `feat: connect Flutter to existing PvP services`.
+- [x] Write failing tests for ticket URI, protocol decoding, heartbeat response, match reset, and one play per round.
+- [x] Run focused tests; expect missing transport/controller.
+- [x] Implement existing HTTP/WebSocket contracts with injected socket adapters and typed server events.
+- [x] Run focused tests and Worker Node tests.
+- [x] Commit `feat: connect Flutter to existing PvP services`.
 
 ### Task 7: Dedicated realtime arena and animations
 
