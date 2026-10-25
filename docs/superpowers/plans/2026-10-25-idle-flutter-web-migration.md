@@ -35,11 +35,11 @@
 
 **Interfaces:** Produces `HeroDefinition`, `KardRuneCatalog.heroes`, shared asset paths, theme tokens, and the JS→Dart feature matrix.
 
-- [ ] Write a failing catalog test asserting all nine heroes, stages, loops, powers, and asset paths from `idle/catalog.js`.
-- [ ] Run `flutter test test/catalog_test.dart`; expect missing catalog failures.
-- [ ] Scaffold Flutter Web, implement the catalog/theme, copy original game assets into `idle_flutter/assets/idle/`, and document the feature matrix.
-- [ ] Run catalog test and `flutter analyze`; expect zero failures/errors.
-- [ ] Commit `feat: scaffold Idle KardRune Flutter app`.
+- [x] Write a failing catalog test asserting all nine heroes, stages, loops, powers, and asset paths from `idle/catalog.js`.
+- [x] Run `flutter test test/catalog_test.dart`; expect missing catalog failures.
+- [x] Scaffold Flutter Web, implement the catalog/theme, copy original game assets into `idle_flutter/assets/idle/`, and document the feature matrix.
+- [x] Run catalog test and `flutter analyze`; expect zero failures/errors.
+- [x] Commit `feat: scaffold Idle KardRune Flutter app`.
 
 ### Task 2: Pure rules and save migration parity
 
@@ -47,12 +47,12 @@
 
 **Interfaces:** Produces deterministic random-source APIs, `PlayerSave.fromJson/toJson`, `CombatState`, `SummonResult`, and nine-slot deck operations.
 
-- [ ] Write failing Dart tests with literal outputs matching all existing JS rule tests plus summon thresholds/costs, duplicate keep/replace, initial save, legacy IDs/stats, and invalid values.
-- [ ] Run the focused tests; expect missing symbols.
-- [ ] Implement minimal pure Dart rules and models using exact JS semantics and JSON names.
-- [ ] Generate shared fixture inputs and compare Node and Dart JSON outputs for parity.
-- [ ] Run focused tests and JS suites; expect all pass.
-- [ ] Commit `feat: port Idle game rules and saves to Dart`.
+- [x] Write failing Dart tests with literal outputs matching all existing JS rule tests plus summon thresholds/costs, duplicate keep/replace, initial save, legacy IDs/stats, and invalid values.
+- [x] Run the focused tests; expect missing symbols.
+- [x] Implement minimal pure Dart rules and models using exact JS semantics and JSON names.
+- [x] Generate shared fixture inputs and compare Node and Dart JSON outputs for parity.
+- [x] Run focused tests and JS suites; expect all pass except the documented pre-existing legacy CRIT test defect.
+- [x] Commit `feat: port Idle game rules and saves to Dart`.
 
 ### Task 3: Local/cloud persistence and authentication
 
