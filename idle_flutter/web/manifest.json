@@ -1,11 +1,12 @@
 {
-    "name": "idle_kardrune",
-    "short_name": "idle_kardrune",
+    "name": "Idle KardRune",
+    "short_name": "KardRune",
     "start_url": ".",
+    "scope": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#090D19",
+    "theme_color": "#090D19",
+    "description": "Collect, train and battle with KardRune heroes.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

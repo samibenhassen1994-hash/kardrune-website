@@ -120,10 +120,10 @@
 
 **Interfaces:** Produces a `/idle/`-base build artifact and documented preview/cutover/rollback process; does not deploy.
 
-- [ ] Write failing checks for base href, manifest/icon metadata, service-worker namespace, lazy asset loading, focus/semantics, and production API paths.
-- [ ] Implement PWA/update deferral during matches, build scripts, Cloudflare preview instructions, cache separation, and safe replacement plan.
-- [ ] Run `flutter analyze`, `flutter test`, `flutter build web --release --base-href /idle/`, existing Node tests, and available browser/mobile smoke checks; record exact evidence and manual gaps.
-- [ ] Compare Flutter and legacy screenshots; fix only demonstrated regressions through RED→GREEN tests.
-- [ ] Commit `chore: validate Flutter Web release candidate`.
+- [x] Write failing checks for base href, manifest/icon metadata, service-worker namespace, lazy asset loading, focus/semantics, and production API paths.
+- [x] Implement PWA/update deferral during matches, build scripts, Cloudflare preview instructions, cache separation, and safe replacement plan.
+- [x] Run `flutter analyze`, `flutter test`, `flutter build web --release --base-href /idle/`, existing Node tests, and available browser/mobile smoke checks; record exact evidence and manual gaps.
+- [x] Compare Flutter and legacy screenshots; fix only demonstrated regressions through RED→GREEN tests.
+- [x] Commit `chore: validate Flutter Web release candidate`.
 - [ ] Perform whole-branch review, push the feature branch, and open a PR without merging or deploying.
 
