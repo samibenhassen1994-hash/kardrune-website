@@ -1,7 +1,7 @@
 /* Non-disruptive installed PWA update notice. User chooses when to reload. */
 (function(root){
 'use strict';
-const BUILD='idle-kardrune-shell-v29';
+const BUILD='idle-kardrune-shell-v30';
 const banner=document.getElementById('idle-update-banner');
 const button=document.getElementById('idle-update-action');
 let checking=false;
