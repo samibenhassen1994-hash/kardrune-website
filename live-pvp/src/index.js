@@ -121,7 +121,9 @@ export class PvpLobby {
   match.awaiting=new Set([a.uid,b.uid]);
   send(a.ws,event);
   send(b.ws,{...event,cards:[b.chosen,a.chosen],winner:result.winner==='draw'?'draw':1-result.winner,log:result.log.map(hit=>({...hit,actor:1-hit.actor})),score:[...match.scores].reverse()});
-  match.readyTimer=setTimeout(()=>{if(this.matches.has(match.id)&&match.awaiting)this.finish(match,'replay_timeout')},60000);
+  match.readyTimer=setTimeout(()=>{if(!this.matches.has(match.id)||!match.awaiting)return;
+   const late=[...match.awaiting];this.finish(match,'replay_timeout',late.length===1?late[0]:null)
+  },60000);
   a.chosen=null;b.chosen=null;
  }
  ready(player){
