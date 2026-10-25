@@ -75,12 +75,12 @@ export class PvpLobby {
   const [a,b]=match.players;
   const handA=buildHand(a.deck,a.used),handB=buildHand(b.deck,b.used);
   if(!handA.length||!handB.length){this.end(match);return}
-  match.round++;a.chosen=null;b.chosen=null;
+  match.awaiting=null;match.round++;a.chosen=null;b.chosen=null;
   send(a.ws,{type:'hand',round:match.round,opponent:b.name,score:match.scores,hand:handA});
   send(b.ws,{type:'hand',round:match.round,opponent:a.name,score:[...match.scores].reverse(),hand:handB});
  }
  play(player,id){
-  const match=player.match;if(!match||player.chosen)return;
+  const match=player.match;if(!match||match.awaiting||player.chosen)return;
   const options=buildHand(player.deck,player.used);
   const card=options.find(c=>c.id===id);if(!card){send(player.ws,{type:'error',message:'Card not in your hand'});return}
   player.chosen=card;
