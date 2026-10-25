@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'game/catalog.dart';
 import 'game/summon_rules.dart';
+import 'features/cards/deck_builder.dart';
 import 'theme/kardrune_theme.dart';
 
 typedef RandomRoll = double Function();
@@ -54,6 +55,7 @@ class _IdleShellState extends State<IdleShell> {
                     _Cards(
                       page: page,
                       title: italian ? 'CARTE' : 'CARDS',
+                      owned: owned.toList(),
                       onPage: (v) => setState(() => page = v),
                     ),
                     _Summon(
@@ -293,9 +295,15 @@ class _Tournament extends StatelessWidget {
 }
 
 class _Cards extends StatelessWidget {
-  const _Cards({required this.page, required this.title, required this.onPage});
+  const _Cards({
+    required this.page,
+    required this.title,
+    required this.owned,
+    required this.onPage,
+  });
   final int page;
   final String title;
+  final List<String> owned;
   final ValueChanged<int> onPage;
   @override
   Widget build(BuildContext context) {
@@ -331,6 +339,26 @@ class _Cards extends StatelessWidget {
                 icon: const Icon(Icons.chevron_right),
               ),
             ],
+          ),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (dialogContext) => Dialog(
+                  child: SizedBox(
+                    width: 430,
+                    height: 650,
+                    child: DeckBuilder(
+                      owned: owned,
+                      initial: const [],
+                      onSave: (_) => Navigator.pop(dialogContext),
+                    ),
+                  ),
+                ),
+              ),
+              child: const Text('DECK BUILDER'),
+            ),
           ),
         ],
       ),

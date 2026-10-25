@@ -29,4 +29,8 @@ void main(){
   testWidgets('profile language toggle exposes Italian navigation',(tester)async{
     await tester.pumpWidget(const KardRuneApp());await tester.tap(find.text('PROFILE').last);await tester.pump();await tester.tap(find.text('ITALIANO'));await tester.pump();expect(find.text('CARTE'),findsOneWidget);
   });
+  testWidgets('Cards opens the integrated nine-slot deck builder',(tester)async{
+    tester.view.physicalSize=const Size(390,844);tester.view.devicePixelRatio=1;addTearDown(tester.view.resetPhysicalSize);addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const KardRuneApp());await tester.tap(find.text('CARDS').last);await tester.pump();await tester.tap(find.text('DECK BUILDER'));await tester.pump();expect(find.byKey(const Key('deck-slot')),findsNWidgets(9));
+  });
 }

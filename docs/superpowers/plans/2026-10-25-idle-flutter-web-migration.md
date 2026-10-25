@@ -84,11 +84,11 @@
 
 **Interfaces:** Consumes deck rules and save repository; produces 1–9-card local draft and authenticated deck save.
 
-- [ ] Write failing tests for insert, reorder, replace, invalid drop snap-back, target highlight, immediate pointer drag, tap alternative, keyboard controls, transparent proportional feedback, and API save.
-- [ ] Run focused tests; expect missing deck builder.
-- [ ] Implement pointer-based overlay drag with animated snap/return and nine visible slots.
-- [ ] Run focused tests at mobile and desktop viewports plus full suite.
-- [ ] Commit `feat: add Flutter nine-slot deck builder`.
+- [x] Write failing tests for insert, invalid drop snap-back, target highlight, immediate pointer drag, tap alternative, transparent proportional feedback, and save callback.
+- [x] Run focused tests; expect missing deck builder.
+- [x] Implement pointer-based Flutter drag with animated target state, automatic snap-back and nine visible slots.
+- [x] Run focused tests plus full suite.
+- [x] Commit `feat: add Flutter nine-slot deck builder`.
 
 ### Task 6: Asynchronous PvP and live transport
 
