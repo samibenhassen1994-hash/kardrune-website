@@ -1,0 +1,129 @@
+# Idle KardRune Flutter Web Migration Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Deliver the complete Idle KardRune game as a production-ready Flutter Web app in `idle_flutter/` without changing the running legacy game or backend contracts.
+
+**Architecture:** Port deterministic rules and JSON contracts first, then repository/services, then responsive feature screens and realtime PvP. Animation controllers remain local to animated widgets so state changes do not rebuild the whole application.
+
+**Tech Stack:** Flutter/Dart, Material widgets with custom KardRune theme, `http`, Firebase Auth for Flutter Web, WebSocket, browser storage interop, Flutter test.
+
+**Spec:** `docs/superpowers/specs/2026-10-25-idle-flutter-web-migration-design.md`
+
+## Global Constraints
+
+- Work only on `feature/idle-flutter-web-migration`; preserve `idle/`, main site, Playground, SEO, database, and backend behavior.
+- New application lives only in `idle_flutter/`; no production deploy or merge.
+- Preserve all source values, probabilities, rewards, formulas, schema keys, API paths, and WebSocket messages.
+- Main screens have no page-level vertical scroll and respect safe areas at all five required mobile viewports.
+- Use original assets and maintain Italian/English, accessibility, keyboard/touch/mouse operation, and PWA installability.
+- Every behavior change follows RED→GREEN; commit each task independently.
+
+## Review Focus
+
+- A malformed or legacy local save must normalize without losing a valid owned card or inventing progress (Task 2 tests).
+- A newer cloud revision and locally modified snapshot must stop automatic upload and require review (Task 3 tests).
+- Reconnecting or starting a second match must cancel timers/animations and clear every prior match visual (Task 7 tests).
+- 320×568 with browser text scaling must keep navigation and primary actions reachable without overflow (Tasks 4–7 widget tests).
+- WebSocket messages arriving late or duplicated must not submit a second card or advance replay twice (Task 7 tests).
+
+---
+
+### Task 1: Flutter foundation and parity harness
+
+**Files:** Create `idle_flutter/` Flutter project, `idle_flutter/lib/theme/`, `idle_flutter/lib/models/hero.dart`, `idle_flutter/lib/game/catalog.dart`, `idle_flutter/test/catalog_test.dart`; create `docs/IDLE_FLUTTER_AUDIT.md`.
+
+**Interfaces:** Produces `HeroDefinition`, `KardRuneCatalog.heroes`, shared asset paths, theme tokens, and the JS→Dart feature matrix.
+
+- [ ] Write a failing catalog test asserting all nine heroes, stages, loops, powers, and asset paths from `idle/catalog.js`.
+- [ ] Run `flutter test test/catalog_test.dart`; expect missing catalog failures.
+- [ ] Scaffold Flutter Web, implement the catalog/theme, copy original game assets into `idle_flutter/assets/idle/`, and document the feature matrix.
+- [ ] Run catalog test and `flutter analyze`; expect zero failures/errors.
+- [ ] Commit `feat: scaffold Idle KardRune Flutter app`.
+
+### Task 2: Pure rules and save migration parity
+
+**Files:** Create `lib/game/game_rules.dart`, `combat_rules.dart`, `summon_rules.dart`, `deck_rules.dart`, `lib/models/player_save.dart`; tests `game_rules_test.dart`, `combat_rules_test.dart`, `summon_rules_test.dart`, `deck_rules_test.dart`, `player_save_test.dart`; parity fixtures under `test/fixtures/`.
+
+**Interfaces:** Produces deterministic random-source APIs, `PlayerSave.fromJson/toJson`, `CombatState`, `SummonResult`, and nine-slot deck operations.
+
+- [ ] Write failing Dart tests with literal outputs matching all existing JS rule tests plus summon thresholds/costs, duplicate keep/replace, initial save, legacy IDs/stats, and invalid values.
+- [ ] Run the focused tests; expect missing symbols.
+- [ ] Implement minimal pure Dart rules and models using exact JS semantics and JSON names.
+- [ ] Generate shared fixture inputs and compare Node and Dart JSON outputs for parity.
+- [ ] Run focused tests and JS suites; expect all pass.
+- [ ] Commit `feat: port Idle game rules and saves to Dart`.
+
+### Task 3: Local/cloud persistence and authentication
+
+**Files:** Create `lib/services/local_save_service.dart`, `firebase_auth_service.dart`, `api_client.dart`, `lib/repositories/save_repository.dart`, tests for serialization/reconciliation/API payloads.
+
+**Interfaces:** Consumes `PlayerSave`; produces `SaveRepository.load`, `saveLocal`, `sync`, authenticated `/api/*` calls, and revision conflict states.
+
+- [ ] Write failing tests for legacy storage import, snapshot adoption/upload/download/review decisions, revision 409, account switch, retry state, and unchanged JSON compatibility.
+- [ ] Run focused tests; expect missing services.
+- [ ] Implement injected storage/auth/HTTP boundaries and exact `/api/config`, `/api/me`, `/api/save`, `/api/pvp/*` contracts.
+- [ ] Run focused tests and full Flutter suite.
+- [ ] Commit `feat: add compatible local and cloud saves`.
+
+### Task 4: Responsive shell, Tournament, Cards, Summon, Profile
+
+**Files:** Create feature folders and common responsive widgets; create viewport/widget tests and golden candidates.
+
+**Interfaces:** Consumes catalog, rules, repository; produces four navigable, safe-area-aware feature screens and app controller.
+
+- [ ] Write failing widget tests for navigation/state, all five viewport sizes, bounded collection paging, training lifecycle/rewards, summon/duplicate flows, profile/avatar/name/language, semantics, and no overflow exceptions.
+- [ ] Run focused widget tests; expect missing screens.
+- [ ] Implement centered desktop game container, fixed mobile shell, bottom navigation, original asset cards/backgrounds, dialogs, and feature controllers.
+- [ ] Run widget tests and capture candidate screenshots at matching legacy viewports.
+- [ ] Commit `feat: migrate core Idle screens to Flutter`.
+
+### Task 5: Nine-slot deck builder and drag/drop
+
+**Files:** Create `features/cards/deck_builder.dart`, `widgets/card_drag_avatar.dart`, `animations/snap_back.dart`; tests for drag/tap/keyboard behavior.
+
+**Interfaces:** Consumes deck rules and save repository; produces 1–9-card local draft and authenticated deck save.
+
+- [ ] Write failing tests for insert, reorder, replace, invalid drop snap-back, target highlight, immediate pointer drag, tap alternative, keyboard controls, transparent proportional feedback, and API save.
+- [ ] Run focused tests; expect missing deck builder.
+- [ ] Implement pointer-based overlay drag with animated snap/return and nine visible slots.
+- [ ] Run focused tests at mobile and desktop viewports plus full suite.
+- [ ] Commit `feat: add Flutter nine-slot deck builder`.
+
+### Task 6: Asynchronous PvP and live transport
+
+**Files:** Create `services/live_pvp_socket.dart`, `repositories/pvp_repository.dart`, `features/pvp/pvp_controller.dart`; protocol/transport tests.
+
+**Interfaces:** Produces typed representations for every existing server event and sends only `play`, `ready`, `pong`.
+
+- [ ] Write failing tests for ticket exchange, queue/status/leave, protocol decoding, heartbeat, reconnect cleanup, invalid events, and one play per round.
+- [ ] Run focused tests; expect missing transport/controller.
+- [ ] Implement existing HTTP/WebSocket contracts with injected clocks/socket adapters.
+- [ ] Run focused tests and Worker Node tests.
+- [ ] Commit `feat: connect Flutter to existing PvP services`.
+
+### Task 7: Dedicated realtime arena and animations
+
+**Files:** Create `features/pvp/live_pvp_arena.dart`, arena widgets, `animations/card_deal.dart`, `combat_replay.dart`, `battle_effects.dart`; widget/controller tests.
+
+**Interfaces:** Consumes typed server events; produces full-screen arena, draw/select/replay/result sequences, and `ready` after replay.
+
+- [ ] Write failing tests for three-card physical deal, 30-second deadline display, drag/tap/automatic lock, attack sequence, critical treatment, two-second popup, adaptive replay timing, disconnect result, and complete two-match reset.
+- [ ] Run focused tests; expect missing arena.
+- [ ] Implement layered `Stack` arena with isolated controllers/custom painters, safe-area layout, server-authoritative HP/log replay, and cancellation tokens.
+- [ ] Run focused tests across all viewports and full suite.
+- [ ] Commit `feat: build animated Flutter realtime PvP arena`.
+
+### Task 8: PWA, performance, validation, and release documentation
+
+**Files:** Modify Flutter web manifest/bootstrap/build config; create deployment/runbook docs and comparison screenshots; add end-to-end smoke tests where supported.
+
+**Interfaces:** Produces a `/idle/`-base build artifact and documented preview/cutover/rollback process; does not deploy.
+
+- [ ] Write failing checks for base href, manifest/icon metadata, service-worker namespace, lazy asset loading, focus/semantics, and production API paths.
+- [ ] Implement PWA/update deferral during matches, build scripts, Cloudflare preview instructions, cache separation, and safe replacement plan.
+- [ ] Run `flutter analyze`, `flutter test`, `flutter build web --release --base-href /idle/`, existing Node tests, and available browser/mobile smoke checks; record exact evidence and manual gaps.
+- [ ] Compare Flutter and legacy screenshots; fix only demonstrated regressions through RED→GREEN tests.
+- [ ] Commit `chore: validate Flutter Web release candidate`.
+- [ ] Perform whole-branch review, push the feature branch, and open a PR without merging or deploying.
+
