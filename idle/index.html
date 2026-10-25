@@ -27,6 +27,7 @@
   <script src="./deck-layout.js" defer></script>
   <script src="./deck-drag.js" defer></script>
   <script src="./live-pvp.js" defer></script>
+  <script src="./pvp-arena.js" defer></script>
   <script src="./app.js" defer></script>
   <script src="./update.js" defer></script>
 </head>
@@ -246,6 +247,17 @@
       </section>
     </main>
   </div>
+  <section id="pvp-battle-view" class="pvp-battle-view" hidden aria-label="Live PvP battle">
+    <header class="pvp-battle-header"><strong>⚔ LIVE ARENA</strong><span id="pvp-round-number">ROUND 1</span><button id="pvp-exit-battle" type="button" aria-label="Leave match">✕</button></header>
+    <div class="pvp-rival-zone"><div class="pvp-battle-name">⚔ <strong id="pvp-rival-name">Rival</strong><span id="pvp-rival-hp">HP —</span></div><div class="pvp-face-down" aria-hidden="true">✦ RIVAL HAND ✦</div></div>
+    <div class="pvp-arena-zone" id="pvp-arena-drop"><div class="pvp-arena-heading">RUNE CLASH <span id="pvp-score">0 : 0</span></div>
+      <div class="pvp-fighter-row"><div id="pvp-rival-fighter" class="pvp-arena-fighter"></div><div class="pvp-arena-versus">VS</div><div id="pvp-own-fighter" class="pvp-arena-fighter"></div></div>
+      <div id="pvp-arena-effects" class="pvp-arena-effects" aria-live="off"></div>
+      <p id="pvp-phase" class="pvp-phase">Preparing arena…</p></div>
+    <div class="pvp-player-zone"><div class="pvp-battle-name">✦ YOU <span id="pvp-own-hp">HP —</span></div><div class="pvp-hand-top"><strong>YOUR HAND · DRAG A CARD UP</strong><span id="pvp-timer">10</span></div><div id="pvp-hand" class="pvp-hand-row"></div></div>
+    <div id="pvp-round-popup" class="pvp-round-popup" hidden role="status"><strong id="pvp-popup-title"></strong><span id="pvp-popup-description"></span></div>
+    <div id="pvp-finish" class="pvp-match-finish" hidden><h2 id="pvp-final-result">VICTORY</h2><button type="button" id="pvp-finish-back" class="gold-button">BACK TO TOURNAMENT</button></div>
+  </section>
   <nav class="bottom-nav" id="bottom-nav" aria-label="Game sections">
     <button type="button" class="nav-tab active" data-nav="tournament" aria-current="page"><svg><use href="#i-trophy"></use></svg><span>Tournament</span></button>
     <button type="button" class="nav-tab" data-nav="cards"><svg><use href="#i-cards"></use></svg><span>Cards</span></button>

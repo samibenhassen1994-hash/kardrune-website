@@ -1,5 +1,7 @@
 import {buildHand,resolveDuel,pickWinner} from './rules.js';
-const send=(ws,obj)=>{try{ws.send(JSON.stringify(obj))}catch{}};
+const CHOOSE_MS=10000;
+const PONG_GRACE_MS=18000;
+const send=(ws,obj)=>{try{if(ws.readyState===1)ws.send(JSON.stringify(obj))}catch{}};
 export default {
  async fetch(request,env){
   const url=new URL(request.url);
@@ -20,7 +22,8 @@ export default {
   const deck=[];
   for(const id of ids){
    const [hero,stageText]=id.split(':'),stage=Number(stageText),attack=save.attacks?.[id],crit=save.crits?.[id];
-   if(!save.owned?.includes(id)||!['sam','lira','rhea','dren','tor','aria','kael','neris','nyra'].includes(hero)||![1,2,3].includes(stage)||!Number.isInteger(attack)||attack<1||attack>100||!Number.isInteger(crit)||crit<0||crit>25)return new Response('Invalid card', {status:400});
+   if(!save.owned?.includes(id)||!['sam','lira','rhea','dren','tor','aria','kael','neris','nyra'].includes(hero)||![1,2,3].includes(stage)||!Number.isInteger(attack)||attack<1||attack>100||!Number.isInteger(crit)||crit<0||crit>25)
+    return new Response('Invalid card',{status:400});
    deck.push({id,hero,stage,attack,crit});
   }
   const id=env.LOBBY.idFromName('friendly-global-v1');
@@ -28,85 +31,121 @@ export default {
  }
 };
 export class PvpLobby {
- constructor(state,env){this.env=env;this.waiting=null;this.matches=new Map();this.sockets=new Map()}
+ constructor(state,env){
+  this.state=state;this.env=env;this.waiting=null;this.matches=new Map();this.sockets=new Map();
+  this.heartbeat=setInterval(()=>this.checkConnections(),5000);
+ }
  async fetch(request){
-  if(request.headers.get('Upgrade')!=='websocket')return new Response('WebSocket required',{status:426});
+  if(request.headers.get('Upgrade')?.toLowerCase()!=='websocket')return new Response('WebSocket required',{status:426});
   const uid=request.headers.get('X-Player'),name=request.headers.get('X-Name'),deck=JSON.parse(request.headers.get('X-Deck')||'[]');
-  const pair=new WebSocketPair(),client=pair[0],server=pair[1];
-  server.accept();
-  const old=this.sockets.get(uid);if(old){try{old.ws.close(4000,'Reconnected')}catch{};this.drop(old)}
+  if(!uid||!deck.length||deck.length>9)return new Response('Invalid match participant',{status:400});
+  const pair=new WebSocketPair(),client=pair[0],server=pair[1];server.accept();
+  const previous=this.sockets.get(uid);
+  if(previous){this.drop(previous);try{previous.ws.close(4000,'Reconnected')}catch{}}
   for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]]}
-  const player={uid,name,deck,ws:server,used:[],chosen:null,match:null};
+  const player={uid,name,deck,ws:server,used:[],chosen:null,match:null,lastSeen:Date.now()};
   this.sockets.set(uid,player);
   server.addEventListener('message',event=>{
+   if(this.sockets.get(uid)!==player)return;
+   player.lastSeen=Date.now();
    try{
+    if(typeof event.data!=='string'||event.data.length>500)return;
     const data=JSON.parse(event.data);
     if(data?.type==='play'&&typeof data.id==='string')this.play(player,data.id);
-    if(data?.type==='ready')this.ready(player);
+    else if(data?.type==='ready')this.ready(player);
+    else if(data?.type==='pong'){} // Heartbeat acknowledgement.
    }catch{send(server,{type:'error',message:'Invalid action'})}
   });
   server.addEventListener('close',()=>this.drop(player));
   server.addEventListener('error',()=>this.drop(player));
   const waiting=this.waiting;this.waiting=null;
   if(waiting&&waiting.uid!==uid&&this.sockets.get(waiting.uid)===waiting){
-   const match={id:crypto.randomUUID(),players:[waiting,player],round:0,scores:[0,0]};
+   const match={id:crypto.randomUUID(),players:[waiting,player],round:0,scores:[0,0],selectTimer:null,readyTimer:null,awaiting:null};
    waiting.match=match;player.match=match;this.matches.set(match.id,match);
    this.next(match);
-  }else{
-   this.waiting=player;send(server,{type:'waiting'});
-  }
+  }else{this.waiting=player;send(server,{type:'waiting'})}
   return new Response(null,{status:101,webSocket:client});
  }
+ checkConnections(){
+  const now=Date.now();
+  for(const player of this.sockets.values()){
+   if(now-player.lastSeen>PONG_GRACE_MS){
+    this.drop(player);try{player.ws.close(4001,'Connection lost')}catch{}
+   }else send(player.ws,{type:'ping'});
+  }
+ }
+ clearTimers(match){clearTimeout(match.selectTimer);clearTimeout(match.readyTimer);match.selectTimer=null;match.readyTimer=null}
  drop(player){
   if(this.sockets.get(player.uid)!==player)return;
   this.sockets.delete(player.uid);
   if(this.waiting===player)this.waiting=null;
-  if(player.match){
-   const match=player.match;this.matches.delete(match.id);
-   const other=match.players.find(p=>p!==player);
-   if(other&&this.sockets.get(other.uid)===other){
-    other.match=null;other.chosen=null;other.used=[];
-    send(other.ws,{type:'opponent_left'});
-    this.waiting=other;
-   }
-  }
+  const match=player.match;if(!match||!this.matches.has(match.id))return;
+  this.finish(match,'opponent_disconnected',player.uid);
  }
  next(match){
+  if(!this.matches.has(match.id))return;
+  this.clearTimers(match);
   const [a,b]=match.players;
   const handA=buildHand(a.deck,a.used),handB=buildHand(b.deck,b.used);
-  if(!handA.length||!handB.length){this.end(match);return}
+  if(!handA.length||!handB.length){this.finish(match,'completed');return}
   match.awaiting=null;match.round++;a.chosen=null;b.chosen=null;
-  send(a.ws,{type:'hand',round:match.round,opponent:b.name,score:match.scores,hand:handA});
-  send(b.ws,{type:'hand',round:match.round,opponent:a.name,score:[...match.scores].reverse(),hand:handB});
+  const deadline=Date.now()+CHOOSE_MS;
+  send(a.ws,{type:'hand',round:match.round,opponent:b.name,score:match.scores,hand:handA,durationMs:CHOOSE_MS,deadline,matchId:match.id});
+  send(b.ws,{type:'hand',round:match.round,opponent:a.name,score:[...match.scores].reverse(),hand:handB,durationMs:CHOOSE_MS,deadline,matchId:match.id});
+  match.selectTimer=setTimeout(()=>{
+   if(!this.matches.has(match.id)||match.awaiting)return;
+   for(const p of match.players){
+    if(p.chosen)continue;
+    const options=buildHand(p.deck,p.used);
+    if(options.length)this.play(p,options[Math.floor(Math.random()*options.length)].id,true);
+   }
+  },CHOOSE_MS);
  }
- play(player,id){
-  const match=player.match;if(!match||match.awaiting||player.chosen)return;
-  const options=buildHand(player.deck,player.used);
-  const card=options.find(c=>c.id===id);if(!card){send(player.ws,{type:'error',message:'Card not in your hand'});return}
+ play(player,id,automatic=false){
+  const match=player.match;
+  if(!match||!this.matches.has(match.id)||match.awaiting||player.chosen)return;
+  const card=buildHand(player.deck,player.used).find(c=>c.id===id);
+  if(!card){send(player.ws,{type:'error',message:'Card not in your hand'});return}
   player.chosen=card;
-  send(player.ws,{type:'locked',card:id});
+  send(player.ws,{type:'locked',card:id,automatic});
+  const other=match.players.find(p=>p!==player);
+  send(other.ws,{type:'opponent_locked'});
+  if(!match.players.every(p=>p.chosen))return;
+  this.clearTimers(match);
   const [a,b]=match.players;
-  if(!a.chosen||!b.chosen)return;
   a.used.push(a.chosen.id);b.used.push(b.chosen.id);
   const result=resolveDuel(a.chosen,b.chosen);
   if(result.winner===0)match.scores[0]++;
   if(result.winner===1)match.scores[1]++;
   const event={type:'round_result',round:match.round,cards:[a.chosen,b.chosen],winner:result.winner,log:result.log,score:match.scores};
+  match.awaiting=new Set([a.uid,b.uid]);
   send(a.ws,event);
   send(b.ws,{...event,cards:[b.chosen,a.chosen],winner:result.winner==='draw'?'draw':1-result.winner,log:result.log.map(hit=>({...hit,actor:1-hit.actor})),score:[...match.scores].reverse()});
-  // Client confirms animation completed before advancing, to allow full hit display.
-  match.awaiting=new Set([a.uid,b.uid]);
-  for(const p of [a,b])p.chosen=null;
+  match.readyTimer=setTimeout(()=>{if(!this.matches.has(match.id)||!match.awaiting)return;
+   const late=[...match.awaiting];this.finish(match,'replay_timeout',late.length===1?late[0]:null)
+  },60000);
+  a.chosen=null;b.chosen=null;
  }
  ready(player){
-  const match=player.match;if(!match||!match.awaiting)return;
+  const match=player.match;
+  if(!match||!this.matches.has(match.id)||!match.awaiting)return;
   match.awaiting.delete(player.uid);
-  if(match.awaiting.size===0){match.awaiting=null;this.next(match)}
+  if(match.awaiting.size===0)this.next(match);
  }
- end(match){
+ finish(match,reason,leaverUid=null){
   if(!this.matches.has(match.id))return;
-  this.matches.delete(match.id);
-  const winner=pickWinner(match.scores);
-  match.players.forEach((p,i)=>{p.match=null;send(p.ws,{type:'finished',winner:winner==='draw'?'draw':winner===i?'you':'opponent',score:i===0?match.scores:[...match.scores].reverse()})});
+  this.clearTimers(match);this.matches.delete(match.id);
+  const winner=leaverUid?match.players.find(p=>p.uid!==leaverUid)?.uid:null;
+  const winning=winner||(reason==='completed'&&pickWinner(match.scores)!=='draw'?match.players[pickWinner(match.scores)].uid:null);
+  match.players.forEach((p,i)=>{
+   p.match=null;p.chosen=null;
+   if(this.sockets.get(p.uid)!==p)return;
+   send(p.ws,{type:'finished',reason,winner:winning===null?'draw':winning===p.uid?'you':'opponent',
+    score:i===0?match.scores:[...match.scores].reverse()});
+  });
+  const [a,b]=match.players;
+  const job=this.env.DB.prepare('INSERT INTO pvp_live_history(id,player_a,player_b,score_a,score_b,winner_uid,completed_at) VALUES(?,?,?,?,?,?,?)')
+   .bind(match.id,a.uid,b.uid,match.scores[0],match.scores[1],winning,Date.now()).run().catch(()=>{});
+  if(typeof this.state.waitUntil==='function')this.state.waitUntil(job);
  }
 }
