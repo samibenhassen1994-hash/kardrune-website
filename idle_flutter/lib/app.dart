@@ -283,17 +283,28 @@ class _IdleShellState extends State<IdleShell> {
     }
     return _withUpdate(
       Scaffold(
+        backgroundColor: Colors.transparent,
         body: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Column(
-                children: [
-                  _Header(shards: shards),
-                  Expanded(
-                    child: IndexedStack(
-                      index: tab,
-                      children: [
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              color: Color(0xff070e20),
+              gradient: RadialGradient(
+                center: Alignment(0, -1.12),
+                radius: 1.25,
+                colors: [Color(0xff1c3256), Color(0xff070e20)],
+                stops: [0, .58],
+              ),
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: Column(
+                  children: [
+                    _Header(shards: shards),
+                    Expanded(
+                      child: IndexedStack(
+                        index: tab,
+                        children: [
                         _Tournament(
                           rewardsLeft: rewardsLeft,
                           status: battleStatus,
@@ -329,36 +340,19 @@ class _IdleShellState extends State<IdleShell> {
                           onLanguage: () => setState(() => italian = !italian),
                           cloud: _cloud,
                         ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: tab,
-          type: BottomNavigationBarType.fixed,
-          onTap: (v) => setState(() => tab = v),
-          items: [
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.shield),
-              label: 'TOURNAMENT',
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.style),
-              label: italian ? 'CARTE' : 'CARDS',
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.auto_awesome),
-              label: italian ? 'EVOCA' : 'SUMMON',
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.person),
-              label: italian ? 'PROFILO' : 'PROFILE',
-            ),
-          ],
+        bottomNavigationBar: _RuneNavigation(
+          current: tab,
+          italian: italian,
+          onTap: (value) => setState(() => tab = value),
         ),
       ),
     );
@@ -503,31 +497,167 @@ class _Header extends StatelessWidget {
   const _Header({required this.shards});
   final int shards;
   @override
-  Widget build(BuildContext context) => SizedBox(
-    height: 54,
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: Row(
-        children: [
-          const Text(
-            'IDLE KARDRUNE',
-            style: TextStyle(
-              color: KardRuneTheme.gold,
-              fontWeight: FontWeight.w900,
+  Widget build(BuildContext context) => Container(
+    height: 79,
+    padding: const EdgeInsets.symmetric(horizontal: 19),
+    decoration: const BoxDecoration(
+      color: Color(0xdd071226),
+      border: Border(bottom: BorderSide(color: Color(0x30d2b780))),
+    ),
+    child: Row(
+      children: [
+        Transform.rotate(
+          angle: -.12,
+          child: Container(
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xff1c3857), Color(0xff081122)],
+              ),
+              border: Border.all(color: const Color(0xffefc574), width: 2),
+              boxShadow: const [
+                BoxShadow(color: Color(0x33e7ab42), blurRadius: 20),
+              ],
+            ),
+            child: const Text(
+              'KR',
+              style: TextStyle(
+                color: Color(0xfff6d68e),
+                fontFamily: 'Georgia',
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
-          const Spacer(),
-          const Icon(Icons.diamond_outlined, color: KardRuneTheme.gold),
-          Text(
-            shards.toString().replaceAllMapped(
-              RegExp(r'\B(?=(\d{3})+(?!\d))'),
-              (_) => ',',
-            ),
+        ),
+        const SizedBox(width: 11),
+        const Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text.rich(
+                TextSpan(
+                  text: 'IDLE ',
+                  children: [
+                    TextSpan(
+                      text: 'KARDRUNE',
+                      style: TextStyle(color: Color(0xfff5d28b)),
+                    ),
+                  ],
+                ),
+                maxLines: 1,
+                style: TextStyle(
+                  color: Color(0xfff9f4e9),
+                  fontFamily: 'Georgia',
+                  fontSize: 15,
+                  letterSpacing: .7,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(height: 3),
+              Text(
+                'THE POCKET REALM',
+                style: TextStyle(
+                  color: Color(0xff8fa6c8),
+                  fontSize: 8,
+                  letterSpacing: 2.1,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xff1c2942),
+            border: Border.all(color: const Color(0x50c6a961)),
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('◆', style: TextStyle(color: Color(0xff72d8ff))),
+              const SizedBox(width: 5),
+              Text(
+                shards.toString().replaceAllMapped(
+                  RegExp(r'\B(?=(\d{3})+(?!\d))'),
+                  (_) => ',',
+                ),
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+        ),
+      ],
     ),
   );
+}
+
+class _RuneNavigation extends StatelessWidget {
+  const _RuneNavigation({required this.current, required this.italian, required this.onTap});
+  final int current;
+  final bool italian;
+  final ValueChanged<int> onTap;
+  @override
+  Widget build(BuildContext context) {
+    final items = <(IconData, String)>[
+      (Icons.emoji_events_outlined, 'TOURNAMENT'),
+      (Icons.style_outlined, italian ? 'CARTE' : 'CARDS'),
+      (Icons.auto_awesome_outlined, italian ? 'EVOCA' : 'SUMMON'),
+      (Icons.person_outline, italian ? 'PROFILO' : 'PROFILE'),
+    ];
+    return Container(
+      height: 68,
+      decoration: const BoxDecoration(
+        color: Color(0xf5091426),
+        border: Border(top: BorderSide(color: Color(0x59bca46c))),
+        boxShadow: [BoxShadow(color: Color(0x66000000), blurRadius: 24)],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            for (var i = 0; i < items.length; i++)
+              Expanded(
+                child: Semantics(
+                  button: true,
+                  selected: current == i,
+                  label: items[i].$2,
+                  child: InkWell(
+                    onTap: () => onTap(i),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        if (current == i)
+                          const Positioned(
+                            top: 0,
+                            child: SizedBox(
+                              width: 38,
+                              child: Divider(color: Color(0xfff9d892), thickness: 2, height: 2),
+                            ),
+                          ),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(items[i].$1, size: 23, color: current == i ? const Color(0xfff9d892) : const Color(0xff91a1b9)),
+                            const SizedBox(height: 4),
+                            Text(items[i].$2, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: current == i ? const Color(0xfff9d892) : const Color(0xff91a1b9))),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _Panel extends StatelessWidget {
@@ -580,65 +710,226 @@ class _Tournament extends StatelessWidget {
   final String? liveStatus;
   final bool canLive;
   @override
-  Widget build(BuildContext context) => _Panel(
-    title: 'TOURNAMENT',
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        const Text(
-          'TRAINING ARENA',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) {
+      final compact = box.maxHeight < 560;
+      return Padding(
+        padding: EdgeInsets.fromLTRB(compact ? 13 : 19, compact ? 8 : 16, compact ? 13 : 19, 7),
+        child: Column(
+          children: [
+            _Eyebrow(compact: compact),
+            SizedBox(height: compact ? 3 : 7),
+            Text.rich(
+              const TextSpan(
+                text: 'TOURNAMENT ',
+                children: [TextSpan(text: 'PvP', style: TextStyle(color: Color(0xfff5d28b)))],
+              ),
+              style: TextStyle(
+                color: const Color(0xfff9f4e9),
+                fontFamily: 'Georgia',
+                fontSize: compact ? 24 : 32,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (!compact) ...[
+              const SizedBox(height: 5),
+              const Text(
+                'Build your team. Face your rivals. Rise to the top of the Rune Circuit.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Color(0xffb9c5d8), fontSize: 12, height: 1.35),
+              ),
+              const SizedBox(height: 12),
+            ] else
+              const SizedBox(height: 5),
+            _SeasonBanner(compact: compact),
+            SizedBox(height: compact ? 8 : 13),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('YOUR NEXT BATTLE', style: TextStyle(color: Color(0xffeac981), fontSize: 8, letterSpacing: 1.2, fontWeight: FontWeight.w800)),
+                      SizedBox(height: 3),
+                      Text('PRACTICE ARENA', style: TextStyle(fontFamily: 'Georgia', fontSize: 18, fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                  decoration: BoxDecoration(color: const Color(0x331c5478), border: Border.all(color: const Color(0x6678c5ff)), borderRadius: BorderRadius.circular(30)),
+                  child: const Text('SOLO DEMO', style: TextStyle(color: Color(0xffa6daff), fontSize: 8, fontWeight: FontWeight.w800)),
+                ),
+              ],
+            ),
+            SizedBox(height: compact ? 6 : 9),
+            Expanded(
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 120),
+                padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 11, vertical: compact ? 5 : 10),
+                decoration: BoxDecoration(
+                  gradient: const RadialGradient(colors: [Color(0xff203958), Color(0xff0b172f)]),
+                  border: Border.all(color: const Color(0x45d3ad5b)),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(child: _HomeCombatant(id: 'sam', label: 'SAM · S1', subtitle: 'YOUR HERO', compact: compact)),
+                    SizedBox(
+                      width: compact ? 34 : 48,
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('VS', style: TextStyle(fontFamily: 'Georgia', color: Color(0xffe9c67d), fontSize: 21, fontWeight: FontWeight.w800)),
+                          Text('⚔', style: TextStyle(color: Color(0xffe9c67d), fontSize: 13)),
+                        ],
+                        ),
+                      ),
+                    ),
+                    Expanded(child: _HomeCombatant(id: 'dren', label: 'DREN · S1', subtitle: 'RANDOM OPPONENT', compact: compact, enemy: true)),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: compact ? 5 : 8),
+            if (status.isNotEmpty)
+              Text(status, key: const Key('battle-status'), style: const TextStyle(color: Color(0xff83dfa9), fontSize: 10)),
+            Text('Rewarded duels remaining today: $rewardsLeft/10', style: const TextStyle(color: Color(0xff93a6bc), fontSize: 10)),
+            SizedBox(height: compact ? 5 : 7),
+            _RuneButton(actionKey: const Key('start-practice-duel'), label: '⚔  START PRACTICE DUEL', onTap: onStart, gold: true),
+            const SizedBox(height: 5),
+            if (liveStatus != null)
+              Text(liveStatus!, key: const Key('live-match-status'), style: const TextStyle(fontSize: 10, color: Color(0xffa6b9d0))),
+            _RuneButton(
+              actionKey: const Key('find-live-match'),
+              label: onLive == null ? 'SIGN IN FOR LIVE PVP' : deckLabel,
+              onTap: canLive ? onLive : null,
+            ),
+          ],
         ),
-        Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _hero('sam', 1),
-              const Icon(Icons.flash_on, color: KardRuneTheme.gold, size: 34),
-              _hero('dren', 1),
-            ],
-          ),
-        ),
-        Text('Daily rewards remaining · $rewardsLeft'),
-        if (status.isNotEmpty) Text(status, key: const Key('battle-status')),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: onStart,
-            child: const Text('⚔ START DUEL'),
-          ),
-        ),
-        if (liveStatus != null)
-          Text(
-            liveStatus!,
-            key: const Key('live-match-status'),
-            style: const TextStyle(fontSize: 11),
-          ),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            key: const Key('find-live-match'),
-            onPressed: canLive ? onLive : null,
-            child: Text(onLive == null ? 'SIGN IN FOR LIVE PVP' : deckLabel),
-          ),
-        ),
-      ],
-    ),
+      );
+    },
   );
   String get deckLabel =>
       canLive ? 'FIND LIVE MATCH' : 'SAVE A DECK TO PLAY LIVE';
-  Widget _hero(String id, int stage) {
-    final h = KardRuneCatalog.heroes.firstWhere((x) => x.id == id);
-    return Flexible(
-      child: AspectRatio(
-        aspectRatio: .72,
-        child: Image.asset(
-          h.cardAsset(h.stages[stage - 1]),
-          fit: BoxFit.contain,
+}
+
+class _Eyebrow extends StatelessWidget {
+  const _Eyebrow({required this.compact});
+  final bool compact;
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      const SizedBox(width: 27, child: Divider(color: Color(0x5ce8bd66))),
+      const SizedBox(width: 10),
+      Text('ARENA OF THE RUNES', style: TextStyle(color: const Color(0xffe7bf68), fontSize: compact ? 8 : 9, letterSpacing: 1.5, fontWeight: FontWeight.w800)),
+      const SizedBox(width: 10),
+      const SizedBox(width: 27, child: Divider(color: Color(0x5ce8bd66))),
+    ],
+  );
+}
+
+class _SeasonBanner extends StatelessWidget {
+  const _SeasonBanner({required this.compact});
+  final bool compact;
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    height: compact ? 58 : 96,
+    padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 22, vertical: compact ? 8 : 12),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xff253550), Color(0xff101e37)]),
+      border: Border.all(color: const Color(0x66dfbe77)),
+      borderRadius: BorderRadius.circular(15),
+      boxShadow: const [BoxShadow(color: Color(0x66000000), blurRadius: 24, offset: Offset(0, 10))],
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('SEASON PREVIEW', style: TextStyle(color: Color(0xffeac981), fontSize: 8, letterSpacing: 1.2, fontWeight: FontWeight.w800)),
+              SizedBox(height: compact ? 3 : 6),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text.rich(
+                  const TextSpan(text: 'THE RUNE ', children: [TextSpan(text: 'CIRCUIT', style: TextStyle(color: Color(0xfff5d28b)))]),
+                  maxLines: 1,
+                  style: TextStyle(fontFamily: 'Georgia', fontSize: compact ? 17 : 22, fontWeight: FontWeight.w700),
+                ),
+              ),
+              if (!compact) const Text('First championship • Coming with online accounts', style: TextStyle(color: Color(0xffacbddd), fontSize: 9)),
+            ],
+          ),
         ),
-      ),
+        Text('♜', style: TextStyle(color: const Color(0xffe2c476), fontSize: compact ? 35 : 54)),
+      ],
+    ),
+  );
+}
+
+class _HomeCombatant extends StatelessWidget {
+  const _HomeCombatant({required this.id, required this.label, required this.subtitle, required this.compact, this.enemy = false});
+  final String id, label, subtitle;
+  final bool compact, enemy;
+  @override
+  Widget build(BuildContext context) {
+    final hero = KardRuneCatalog.heroes.firstWhere((item) => item.id == id);
+    return Column(
+      children: [
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(color: const Color(0xff0b1529), border: Border.all(color: enemy ? const Color(0x75ab636b) : const Color(0x68bdac7a)), borderRadius: BorderRadius.circular(12)),
+            child: Image.asset(hero.cardAsset(hero.stages.first), fit: BoxFit.contain),
+          ),
+        ),
+        SizedBox(height: compact ? 3 : 6),
+        Text(label, maxLines: 1, style: TextStyle(fontFamily: 'Georgia', fontSize: compact ? 11 : 14, fontWeight: FontWeight.w700)),
+        Text(subtitle, maxLines: 1, style: TextStyle(color: const Color(0xff93a5c1), fontSize: compact ? 7 : 8, letterSpacing: .7)),
+      ],
     );
   }
+}
+
+class _RuneButton extends StatelessWidget {
+  const _RuneButton({this.actionKey, required this.label, required this.onTap, this.gold = false});
+  final Key? actionKey;
+  final String label;
+  final VoidCallback? onTap;
+  final bool gold;
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    enabled: onTap != null,
+    child: GestureDetector(
+      key: actionKey,
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: AnimatedOpacity(
+        opacity: onTap == null ? .45 : 1,
+        duration: const Duration(milliseconds: 120),
+        child: Container(
+          width: double.infinity,
+          height: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: gold ? const [Color(0xfff8dd9d), Color(0xffbc8a3b)] : const [Color(0xff1e344f), Color(0xff13213a)]),
+            border: Border.all(color: gold ? const Color(0x9cf6dd9b) : const Color(0x66c4aa66)),
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Text(label, style: TextStyle(color: gold ? const Color(0xff251a0c) : const Color(0xfff7dba5), fontSize: 10, letterSpacing: .8, fontWeight: FontWeight.w800)),
+        ),
+      ),
+    ),
+  );
 }
 
 class _Cards extends StatelessWidget {

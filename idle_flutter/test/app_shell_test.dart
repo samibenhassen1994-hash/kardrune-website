@@ -30,7 +30,7 @@ void main() {
         await tester.pumpWidget(const KardRuneApp());
         await tester.pump();
         expect(find.text('TOURNAMENT'), findsWidgets);
-        expect(find.byType(BottomNavigationBar), findsOneWidget);
+        expect(find.text('TOURNAMENT'), findsWidgets);
         expect(tester.takeException(), isNull);
         for (final label in ['CARDS', 'SUMMON', 'PROFILE']) {
           await tester.tap(find.text(label).last);
@@ -67,11 +67,11 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(KardRuneApp(random: () => 0));
-    await tester.tap(find.text('⚔ START DUEL'));
+    await tester.tap(find.byKey(const Key('start-practice-duel')));
     await tester.pump();
     expect(find.text('VICTORY · +100 SHARDS'), findsOneWidget);
     expect(find.text('1,600'), findsOneWidget);
-    expect(find.text('Daily rewards remaining · 9'), findsOneWidget);
+    expect(find.text('Rewarded duels remaining today: 9/10'), findsOneWidget);
   });
   testWidgets('duplicate pull requires keep or replace and keep refunds 100', (
     tester,
@@ -134,7 +134,7 @@ void main() {
     expect(find.text('Saved Hero'), findsOneWidget);
     await tester.tap(find.text('TOURNAMENT').last);
     await tester.pump();
-    await tester.tap(find.text('⚔ START DUEL'));
+    await tester.tap(find.byKey(const Key('start-practice-duel')));
     await tester.pump();
     expect(find.text('DEFEAT · +35 SHARDS'), findsOneWidget);
     final saved = service.load(

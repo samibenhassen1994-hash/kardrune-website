@@ -30,3 +30,5 @@ Task C runtime integration: complete in working branch (dedicated `idle-kardrune
 
 Final automated verification (2026-10-26): Flutter 61/61 passed; analyze no issues; release build with `--base-href /idle/` succeeded; live-PvP Worker rules 4/4 passed; untouched legacy rules 26/27 with only the documented invalid CRIT fixture. Golden refreshed for the intentional Tournament live-match control. Remaining release gates are a fresh whole-branch review and manual preview tests with real Firebase/D1, two accounts, realtime WebSocket, service-worker lifecycle, and physical iPhone.
 
+Visual fidelity pass — Tournament/Home (2026-10-26): rebuilt Flutter header/logo, radial background, serif hierarchy, Rune Circuit banner, framed practice arena, original card art, gold/dark actions, and fixed four-tab navigation from the rendered legacy reference. Browser before/original/after captures are under `idle_flutter/test/visual/`; exact Flutter viewport coverage passes at 320×568, 375×667, 390×844, 393×852, and 430×932 with no overflow. Next visual screen: Cards/Collection; animation preference and remaining screens still pending.
+
