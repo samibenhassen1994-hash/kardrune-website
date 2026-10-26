@@ -34,3 +34,5 @@ Visual fidelity pass — Tournament/Home (2026-10-26): rebuilt Flutter header/lo
 
 Visual fidelity pass — Cards/Summon/Profile (2026-10-26): Cards now mirrors the original loadout, nine-slot preview, collection progress, filters, framed asset grid and styled Deck Builder; Summon mirrors the Dren featured portal and two original summon choices; Profile uses the original framed avatar/profile hierarchy. Added device-local `idle-motion-preference-v1` with Automatic/Full/Reduced choices, independent from save JSON, and propagated reduced-motion state to Deck Builder and PvP visual transitions without skipping combat/result timing. Focused responsive, cloud, deck and arena tests pass; Arena visual comparison remains the next UI checkpoint.
 
+Visual fidelity pass — PvP arena (2026-10-26): restored the original vertical composition (live header and round, rival zone/hand above, Rune Clash center, used pile left, deck remaining right, player hand below) while keeping physical deal, drag/tap, authoritative replay, HP/critical effects and two-second results. Added deterministic 390×844 golden coverage for Tournament, Cards, Summon, Profile and PvP arena.
+

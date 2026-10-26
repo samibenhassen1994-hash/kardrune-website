@@ -213,17 +213,39 @@ class _LivePvpArenaState extends State<LivePvpArena> {
             Positioned.fill(child: CustomPaint(painter: _ArenaPainter())),
             Align(
               alignment: Alignment.topCenter,
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Text(
-                  '${c.hand?.opponent ?? 'SEARCHING'}   ${c.score[0]} — ${c.score[1]}',
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
+              child: Container(
+                height: 46,
+                padding: const EdgeInsets.symmetric(horizontal: 15),
+                decoration: const BoxDecoration(color: Color(0xff101d36), border: Border(bottom: BorderSide(color: Color(0x66d6b36a)))),
+                child: Row(
+                  children: [
+                    const Text('⚔ LIVE ARENA', style: TextStyle(fontFamily: 'Georgia', color: Color(0xfff5d28b), fontSize: 14, fontWeight: FontWeight.w800)),
+                    const Spacer(),
+                    Text('ROUND ${c.hand?.round ?? 1}', style: const TextStyle(color: Color(0xffa0b0c8), fontSize: 10, letterSpacing: 1)),
+                  ],
                 ),
               ),
             ),
             Positioned(
+              top: 56,
+              left: 55,
+              right: 55,
+              child: Column(
+                children: [
+                  Text('⚔ ${c.hand?.opponent ?? 'SEARCHING'}', style: const TextStyle(fontFamily: 'Georgia', fontSize: 15, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 6),
+                  Container(
+                    height: 45,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: const Color(0xff15243a), border: Border.all(color: const Color(0x666884a0)), borderRadius: BorderRadius.circular(8)),
+                    child: const Text('✦  RIVAL HAND  ✦', style: TextStyle(color: Color(0xff91a1b9), fontSize: 10, letterSpacing: 1.2)),
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
               right: 12,
-              bottom: 72,
+              top: 330,
               child: Container(
                 key: const Key('deck-pile'),
                 width: 48,
@@ -238,7 +260,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
             ),
             Positioned(
               right: 18,
-              bottom: 142,
+              top: 402,
               child: Text(
                 '${c.hand?.deckSize ?? 0} LEFT',
                 key: const Key('deck-remaining'),
@@ -247,7 +269,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
             ),
             Positioned(
               left: 10,
-              top: 60,
+              top: 330,
               child: SizedBox(
                 width: 82,
                 child: Column(
@@ -270,7 +292,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
               ),
             ),
             Align(
-              alignment: const Alignment(0, -.25),
+              alignment: const Alignment(0, -.08),
               child: DragTarget<String>(
                 key: const Key('play-zone'),
                 onAcceptWithDetails: (details) => _play(details.data),
@@ -288,9 +310,13 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: c.opponentCard == null
-                      ? const Text(
-                          'PLAY CARD',
-                          style: TextStyle(color: Colors.white54),
+                      ? Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('RUNE CLASH   ${c.score[0]} : ${c.score[1]}', style: const TextStyle(fontFamily: 'Georgia', color: Color(0xfff5d28b), fontSize: 12, fontWeight: FontWeight.w800)),
+                            const SizedBox(height: 8),
+                            const Text('PLAY CARD', style: TextStyle(color: Colors.white54)),
+                          ],
                         )
                       : AnimatedSlide(
                           offset: c.attackActor == 1
