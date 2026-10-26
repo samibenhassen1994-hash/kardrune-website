@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../game/catalog.dart';
+import '../../game/combat_rules.dart';
 import '../../services/live_pvp_socket.dart';
 
 class ArenaViewController extends ChangeNotifier {
@@ -60,6 +62,10 @@ class ArenaViewController extends ChangeNotifier {
       opponentCard = PvpCard.fromJson(
         Map<String, dynamic>.from(cards[1] as Map),
       );
+      playerHp = CombatRules.hpForStage(playerCard!.stage);
+      opponentHp = CombatRules.hpForStage(opponentCard!.stage);
+      attackActor = -1;
+      effect = null;
       notifyListeners();
     }
     for (final raw in (json['log'] as List? ?? const [])) {
@@ -346,9 +352,15 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                           ? const Offset(0, -.18)
                           : Offset.zero,
                       duration: c.hitDuration,
-                      child: Text(
-                        '${c.playerHp} HP',
-                        style: const TextStyle(color: Colors.white),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _BattleCard(card: c.playerCard!, selected: false),
+                          Text(
+                            '${c.playerHp} HP',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ],
                       ),
                     ),
                   Text(
@@ -421,6 +433,11 @@ class _BattleCard extends StatelessWidget {
   const _BattleCard({super.key, required this.card, required this.selected});
   final PvpCard card;
   final bool selected;
+  String get asset {
+    final hero = KardRuneCatalog.heroes.firstWhere((item) => item.id == card.hero);
+    final index = (card.stage - 1).clamp(0, hero.stages.length - 1);
+    return hero.cardAsset(hero.stages[index]);
+  }
   @override
   Widget build(BuildContext context) => AnimatedScale(
     scale: selected ? 1.08 : 1,
@@ -441,7 +458,18 @@ class _BattleCard extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(card.hero, style: const TextStyle(color: Colors.white)),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(7)),
+              child: Image.asset(
+                asset,
+                key: ValueKey('card-art-${card.id}'),
+                fit: BoxFit.cover,
+                width: double.infinity,
+              ),
+            ),
+          ),
+          Text(card.hero, style: const TextStyle(color: Colors.white, fontSize: 11)),
           Text(
             'ATK ${card.attack}',
             style: const TextStyle(color: Colors.amber),

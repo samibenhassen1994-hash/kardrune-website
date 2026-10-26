@@ -255,4 +255,71 @@ void main() {
     expect(ready, 1);
     c.dispose();
   });
+
+  testWidgets('each replay resets HP from card stage and renders original art', (
+    tester,
+  ) async {
+    final c = ArenaViewController(hitDuration: Duration.zero);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LivePvpArena(controller: c, onPlay: (_) {}, onReady: () {}),
+      ),
+    );
+    c.startHand(
+      const HandEvent(
+        round: 1,
+        opponent: 'R',
+        score: [0, 0],
+        hand: cards,
+        deckSize: 3,
+        usedCount: 0,
+        durationMs: 30000,
+        deadline: 30000,
+        matchId: 'm',
+      ),
+    );
+    var replay = c.replay({
+      'winner': 2,
+      'cards': [
+        {'id': 'sam:2', 'hero': 'sam', 'stage': 2, 'attack': 40, 'crit': 4},
+        {'id': 'dren:3', 'hero': 'dren', 'stage': 3, 'attack': 65, 'crit': 7},
+      ],
+      'log': <Object>[],
+      'score': [0, 0],
+    });
+    await tester.pump();
+    expect(c.playerHp, 340);
+    expect(c.opponentHp, 430);
+    expect(find.byKey(const ValueKey('card-art-dren:3')), findsOneWidget);
+    await tester.pump(const Duration(seconds: 2));
+    await replay;
+
+    c.startHand(
+      const HandEvent(
+        round: 2,
+        opponent: 'R',
+        score: [0, 0],
+        hand: cards,
+        deckSize: 3,
+        usedCount: 0,
+        durationMs: 30000,
+        deadline: 30000,
+        matchId: 'm',
+      ),
+    );
+    replay = c.replay({
+      'winner': 2,
+      'cards': [
+        {'id': 'sam:1', 'hero': 'sam', 'stage': 1, 'attack': 40, 'crit': 4},
+        {'id': 'dren:2', 'hero': 'dren', 'stage': 2, 'attack': 65, 'crit': 7},
+      ],
+      'log': <Object>[],
+      'score': [0, 0],
+    });
+    await tester.pump();
+    expect(c.playerHp, 240);
+    expect(c.opponentHp, 340);
+    await tester.pump(const Duration(seconds: 2));
+    await replay;
+  });
 }

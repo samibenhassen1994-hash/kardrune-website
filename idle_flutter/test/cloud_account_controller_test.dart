@@ -60,6 +60,17 @@ class _Transport implements ApiTransport {
   }
 }
 
+class _SequenceTransport implements ApiTransport {
+  _SequenceTransport(this.responses);
+  final List<ApiResponse> responses;
+  final requests = <ApiRequest>[];
+  @override
+  Future<ApiResponse> send(ApiRequest request) async {
+    requests.add(request);
+    return responses.removeAt(0);
+  }
+}
+
 void main() {
   test(
     'first account creates cloud backup without changing save schema',
@@ -128,6 +139,57 @@ void main() {
     await controller.uploadLocal();
     expect(controller.state, CloudAccountState.review);
     expect(controller.message, contains('changed'));
+    controller.dispose();
+  });
+
+  test('load after 409 refetches and applies the latest cloud snapshot', () async {
+    final storage = _Storage(), local = LocalSaveService(storage), auth = _Auth();
+    local.save(PlayerSave.initial().copyWith(shards: 2000));
+    storage.values['idle-cloud-last-user-v1'] = 'old';
+    final transport = _SequenceTransport([
+      const ApiResponse(200, '{}'),
+      const ApiResponse(200, '{"save":{"shards":100},"revision":1}'),
+      const ApiResponse(409, '{"revision":2}'),
+      const ApiResponse(200, '{"save":{"shards":900},"revision":2}'),
+    ]);
+    final controller = CloudAccountController(
+      auth: auth,
+      api: ApiClient(auth, transport),
+      local: local,
+    );
+    controller.start();
+    auth.emit(const CloudIdentity(uid: 'new'));
+    await Future<void>.delayed(Duration.zero);
+    await controller.settle;
+    await controller.uploadLocal();
+    await controller.loadCloud();
+    expect(local.load().shards, 900);
+    expect(controller.revision, 2);
+    expect(
+      transport.requests.where((request) => request.path == '/api/save').length,
+      3,
+    );
+    controller.dispose();
+  });
+
+  test('current Firebase identity and its first stream event reconcile once', () async {
+    final storage = _Storage(), auth = _Auth()..identity = const CloudIdentity(uid: 'u1');
+    final transport = _Transport();
+    transport.responses = {
+      'GET /api/me': const ApiResponse(200, '{}'),
+      'GET /api/save': const ApiResponse(200, '{"save":null,"revision":0}'),
+      'PUT /api/save': const ApiResponse(200, '{"revision":1}'),
+    };
+    final controller = CloudAccountController(
+      auth: auth,
+      api: ApiClient(auth, transport),
+      local: LocalSaveService(storage),
+    );
+    controller.start();
+    auth.emit(const CloudIdentity(uid: 'u1'));
+    await controller.settle;
+    expect(transport.requests.where((request) => request.path == '/api/me'), hasLength(1));
+    expect(transport.requests.where((request) => request.method == 'PUT'), hasLength(1));
     controller.dispose();
   });
 

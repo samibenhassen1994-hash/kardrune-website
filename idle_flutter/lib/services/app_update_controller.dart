@@ -9,6 +9,10 @@ abstract interface class AppUpdateBridge {
   void applyUpdate();
 }
 
+abstract interface class DisposableAppUpdateBridge implements AppUpdateBridge {
+  void disposeBridge();
+}
+
 class AppUpdateController extends ChangeNotifier {
   AppUpdateController(this.bridge, {AppUpdateGate? gate})
     : gate = gate ?? AppUpdateGate();
@@ -37,6 +41,9 @@ class AppUpdateController extends ChangeNotifier {
   @override
   void dispose() {
     _subscription?.cancel();
+    if (bridge case final DisposableAppUpdateBridge disposable) {
+      disposable.disposeBridge();
+    }
     super.dispose();
   }
 }

@@ -44,6 +44,8 @@ class CloudAccountController extends ChangeNotifier {
   StreamSubscription<CloudIdentity?>? _subscription;
   Future<void> _settle = Future.value();
   Timer? _syncTimer;
+  String? _observedUid;
+  bool _hasObservedAccount = false;
   CloudIdentity? identity;
   CloudAccountState state = CloudAccountState.signedOut;
   String message = 'Local save';
@@ -55,11 +57,17 @@ class CloudAccountController extends ChangeNotifier {
 
   void start() {
     _subscription ??= auth.accountChanges.listen((account) {
-      _settle = _handleAccount(account);
+      _enqueueAccount(account);
     });
-    if (auth.currentIdentity != null) {
-      _settle = _handleAccount(auth.currentIdentity);
-    }
+    _enqueueAccount(auth.currentIdentity);
+  }
+
+  void _enqueueAccount(CloudIdentity? account) {
+    final uid = account?.uid;
+    if (_hasObservedAccount && uid == _observedUid) return;
+    _hasObservedAccount = true;
+    _observedUid = uid;
+    _settle = _settle.then((_) => _handleAccount(account));
   }
 
   Future<void> _handleAccount(CloudIdentity? account) async {
@@ -191,6 +199,19 @@ class CloudAccountController extends ChangeNotifier {
   Future<void> uploadLocal() => _upload(auto: false);
 
   Future<void> loadCloud() async {
+    try {
+      final response = await api.get('/api/save');
+      revision = response['revision'] is int
+          ? response['revision'] as int
+          : revision;
+      remoteSave = response['save'] is Map
+          ? Map<String, Object?>.from(response['save'] as Map)
+          : null;
+    } catch (error) {
+      _review(_errorText(error));
+      notifyListeners();
+      return;
+    }
     if (remoteSave == null) {
       _review('No cloud backup is available.');
       notifyListeners();
