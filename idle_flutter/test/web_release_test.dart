@@ -19,8 +19,11 @@ void main() {
     );
     expect(index, contains('<title>Idle KardRune</title>'));
     expect(index, contains("register('kardrune_service_worker.js'"));
+    expect(index, contains('kardrune-update-available'));
+    expect(index, contains('kardrune-apply-update'));
     final worker = File('web/kardrune_service_worker.js').readAsStringSync();
     expect(worker, contains("idle-kardrune-v1"));
+    expect(worker, contains('SKIP_WAITING'));
     expect(worker, contains("'./manifest.json'"));
     expect(manifest['name'], 'Idle KardRune');
     expect(manifest['short_name'], 'KardRune');

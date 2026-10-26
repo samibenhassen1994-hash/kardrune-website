@@ -8,9 +8,15 @@ import 'game/game_rules.dart';
 import 'game/summon_rules.dart';
 import 'features/cards/deck_builder.dart';
 import 'features/profile/cloud_account_controller.dart';
+import 'features/pvp/live_match_coordinator.dart';
+import 'features/pvp/live_pvp_arena.dart';
 import 'models/player_save.dart';
 import 'services/local_save_service.dart';
+import 'services/live_pvp_socket.dart';
+import 'repositories/pvp_repository.dart';
 import 'services/cloud_factory.dart';
+import 'services/app_update_controller.dart';
+import 'services/update_factory.dart';
 import 'services/storage_factory.dart';
 import 'theme/kardrune_theme.dart';
 
@@ -22,11 +28,15 @@ class KardRuneApp extends StatelessWidget {
     this.random,
     this.saveService,
     this.cloudController,
+    this.liveMatchCoordinator,
+    this.updateController,
     this.nowMs,
   });
   final RandomRoll? random;
   final LocalSaveService? saveService;
   final CloudAccountController? cloudController;
+  final LiveMatchCoordinator? liveMatchCoordinator;
+  final AppUpdateController? updateController;
   final int Function()? nowMs;
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -37,6 +47,8 @@ class KardRuneApp extends StatelessWidget {
       random: random ?? math.Random().nextDouble,
       saveService: saveService,
       cloudController: cloudController,
+      liveMatchCoordinator: liveMatchCoordinator,
+      updateController: updateController,
       nowMs: nowMs ?? (() => DateTime.now().millisecondsSinceEpoch),
     ),
   );
@@ -48,11 +60,15 @@ class IdleShell extends StatefulWidget {
     required this.random,
     this.saveService,
     this.cloudController,
+    this.liveMatchCoordinator,
+    this.updateController,
     required this.nowMs,
   });
   final RandomRoll random;
   final LocalSaveService? saveService;
   final CloudAccountController? cloudController;
+  final LiveMatchCoordinator? liveMatchCoordinator;
+  final AppUpdateController? updateController;
   final int Function() nowMs;
   @override
   State<IdleShell> createState() => _IdleShellState();
@@ -74,7 +90,10 @@ class _IdleShellState extends State<IdleShell> {
   List<String> deck = [];
   late final LocalSaveService? _saveService;
   CloudAccountController? _cloud;
+  LiveMatchCoordinator? _pvp;
   bool _ownsCloud = false;
+  late final AppUpdateController? _updates;
+  bool _ownsUpdates = false;
 
   @override
   void initState() {
@@ -102,6 +121,12 @@ class _IdleShellState extends State<IdleShell> {
     practiceDay = daily.day;
     practiceCount = daily.count;
     rewardsLeft = GameRules.dailyRewardLimit - practiceCount;
+    _pvp = widget.liveMatchCoordinator;
+    _pvp?.addListener(_pvpChanged);
+    _updates = widget.updateController ?? createDefaultUpdateController();
+    _ownsUpdates = widget.updateController == null && _updates != null;
+    _updates?.addListener(_updateChanged);
+    _updates?.start();
     _cloud = widget.cloudController;
     if (_cloud != null) {
       _cloud!.addListener(_cloudChanged);
@@ -125,7 +150,50 @@ class _IdleShellState extends State<IdleShell> {
   }
 
   void _cloudChanged() {
+    if (_cloud?.identity != null && _pvp == null) {
+      _pvp = LiveMatchCoordinator(
+        repository: PvpRepository(_cloud!.api),
+        connect: LivePvpSocket.connect,
+      )..addListener(_pvpChanged);
+      _loadCloudDeck();
+    } else if (_cloud?.identity == null && _pvp != null) {
+      _pvp!.removeListener(_pvpChanged);
+      _pvp!.dispose();
+      _pvp = null;
+    }
     if (mounted) setState(() {});
+  }
+
+  void _pvpChanged() {
+    _updates?.setMatchActive(_pvp?.state == LiveMatchState.arena);
+    if (mounted) setState(() {});
+  }
+
+  void _updateChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _loadCloudDeck() async {
+    try {
+      final value = await _pvp!.loadDeck();
+      if (!mounted || value.isEmpty) return;
+      setState(() => deck = value.where(owned.contains).take(9).toList());
+      _saveService?.saveDeck(deck);
+    } catch (_) {}
+  }
+
+  Future<void> _saveDeck(List<String> value) async {
+    setState(() => deck = [...value]);
+    _saveService?.saveDeck(deck);
+    if (_pvp != null) {
+      try {
+        await _pvp!.saveDeck(deck);
+      } catch (error) {
+        if (mounted) {
+          setState(() => battleStatus = 'Deck saved locally · Cloud: $error');
+        }
+      }
+    }
   }
 
   void _applyRemoteSave(PlayerSave save) {
@@ -157,6 +225,10 @@ class _IdleShellState extends State<IdleShell> {
   @override
   void dispose() {
     _cloud?.removeListener(_cloudChanged);
+    _pvp?.removeListener(_pvpChanged);
+    _pvp?.dispose();
+    _updates?.removeListener(_updateChanged);
+    if (_ownsUpdates) _updates?.dispose();
     if (_ownsCloud) _cloud?.dispose();
     super.dispose();
   }
@@ -182,85 +254,148 @@ class _IdleShellState extends State<IdleShell> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: Column(
-            children: [
-              _Header(shards: shards),
-              Expanded(
-                child: IndexedStack(
-                  index: tab,
+  Widget build(BuildContext context) {
+    if (_pvp?.state == LiveMatchState.arena) {
+      return _withUpdate(
+        Stack(
+          children: [
+            Positioned.fill(
+              child: LivePvpArena(
+                controller: _pvp!.arena,
+                onPlay: _pvp!.play,
+                onReady: _pvp!.ready,
+              ),
+            ),
+            Positioned(
+              top: 12,
+              left: 12,
+              child: SafeArea(
+                child: IconButton(
+                  key: const Key('close-live-arena'),
+                  onPressed: _pvp!.close,
+                  icon: const Icon(Icons.close, color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return _withUpdate(
+      Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Column(
+                children: [
+                  _Header(shards: shards),
+                  Expanded(
+                    child: IndexedStack(
+                      index: tab,
+                      children: [
+                        _Tournament(
+                          rewardsLeft: rewardsLeft,
+                          status: battleStatus,
+                          onStart: _train,
+                          onLive: _pvp?.findMatch,
+                          liveStatus: _pvp?.message,
+                          canLive: _pvp != null && deck.isNotEmpty,
+                        ),
+                        _Cards(
+                          page: page,
+                          title: italian ? 'CARTE' : 'CARDS',
+                          owned: owned.toList(),
+                          deck: deck,
+                          onPage: (v) => setState(() => page = v),
+                          onDeck: _saveDeck,
+                        ),
+                        _Summon(
+                          shards: shards,
+                          title: italian ? 'EVOCA' : 'SUMMON',
+                          onSummon: _summon,
+                        ),
+                        _Profile(
+                          name: name,
+                          avatar: avatar,
+                          onName: (v) {
+                            setState(() => name = v);
+                            _persist();
+                          },
+                          onAvatar: (v) {
+                            setState(() => avatar = v);
+                            _persist();
+                          },
+                          onLanguage: () => setState(() => italian = !italian),
+                          cloud: _cloud,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: tab,
+          type: BottomNavigationBarType.fixed,
+          onTap: (v) => setState(() => tab = v),
+          items: [
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.shield),
+              label: 'TOURNAMENT',
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.style),
+              label: italian ? 'CARTE' : 'CARDS',
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.auto_awesome),
+              label: italian ? 'EVOCA' : 'SUMMON',
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.person),
+              label: italian ? 'PROFILO' : 'PROFILE',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _withUpdate(Widget child) => Stack(
+    children: [
+      Positioned.fill(child: child),
+      if (_updates?.available == true)
+        Positioned(
+          top: 8,
+          left: 16,
+          right: 16,
+          child: SafeArea(
+            child: Material(
+              color: const Color(0xff2c2350),
+              borderRadius: BorderRadius.circular(10),
+              elevation: 8,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
                   children: [
-                    _Tournament(
-                      rewardsLeft: rewardsLeft,
-                      status: battleStatus,
-                      onStart: _train,
-                    ),
-                    _Cards(
-                      page: page,
-                      title: italian ? 'CARTE' : 'CARDS',
-                      owned: owned.toList(),
-                      deck: deck,
-                      onPage: (v) => setState(() => page = v),
-                      onDeck: (value) {
-                        setState(() => deck = [...value]);
-                        _saveService?.saveDeck(deck);
-                      },
-                    ),
-                    _Summon(
-                      shards: shards,
-                      title: italian ? 'EVOCA' : 'SUMMON',
-                      onSummon: _summon,
-                    ),
-                    _Profile(
-                      name: name,
-                      avatar: avatar,
-                      onName: (v) {
-                        setState(() => name = v);
-                        _persist();
-                      },
-                      onAvatar: (v) {
-                        setState(() => avatar = v);
-                        _persist();
-                      },
-                      onLanguage: () => setState(() => italian = !italian),
-                      cloud: _cloud,
+                    const Expanded(child: Text('A new version is ready.')),
+                    TextButton(
+                      key: const Key('apply-update'),
+                      onPressed: _updates!.apply,
+                      child: const Text('UPDATE'),
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
-      ),
-    ),
-    bottomNavigationBar: BottomNavigationBar(
-      currentIndex: tab,
-      type: BottomNavigationBarType.fixed,
-      onTap: (v) => setState(() => tab = v),
-      items: [
-        BottomNavigationBarItem(
-          icon: const Icon(Icons.shield),
-          label: 'TOURNAMENT',
-        ),
-        BottomNavigationBarItem(
-          icon: const Icon(Icons.style),
-          label: italian ? 'CARTE' : 'CARDS',
-        ),
-        BottomNavigationBarItem(
-          icon: const Icon(Icons.auto_awesome),
-          label: italian ? 'EVOCA' : 'SUMMON',
-        ),
-        BottomNavigationBarItem(
-          icon: const Icon(Icons.person),
-          label: italian ? 'PROFILO' : 'PROFILE',
-        ),
-      ],
-    ),
+    ],
   );
+
   void _train() {
     final parts = active.split(':');
     final stage = int.tryParse(parts.last) ?? 1;
@@ -434,10 +569,16 @@ class _Tournament extends StatelessWidget {
     required this.rewardsLeft,
     required this.status,
     required this.onStart,
+    required this.onLive,
+    required this.liveStatus,
+    required this.canLive,
   });
   final int rewardsLeft;
   final String status;
   final VoidCallback onStart;
+  final VoidCallback? onLive;
+  final String? liveStatus;
+  final bool canLive;
   @override
   Widget build(BuildContext context) => _Panel(
     title: 'TOURNAMENT',
@@ -467,9 +608,25 @@ class _Tournament extends StatelessWidget {
             child: const Text('⚔ START DUEL'),
           ),
         ),
+        if (liveStatus != null)
+          Text(
+            liveStatus!,
+            key: const Key('live-match-status'),
+            style: const TextStyle(fontSize: 11),
+          ),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            key: const Key('find-live-match'),
+            onPressed: canLive ? onLive : null,
+            child: Text(onLive == null ? 'SIGN IN FOR LIVE PVP' : deckLabel),
+          ),
+        ),
       ],
     ),
   );
+  String get deckLabel =>
+      canLive ? 'FIND LIVE MATCH' : 'SAVE A DECK TO PLAY LIVE';
   Widget _hero(String id, int stage) {
     final h = KardRuneCatalog.heroes.firstWhere((x) => x.id == id);
     return Flexible(

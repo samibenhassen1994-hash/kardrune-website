@@ -76,5 +76,9 @@ void main() {
       ).toString(),
       'wss://pvp.example/connect?ticket=abc',
     );
+    expect(
+      LivePvpSocket.connectionUri('wss://pvp.example', 'abc').toString(),
+      'wss://pvp.example/connect?ticket=abc',
+    );
   });
 }

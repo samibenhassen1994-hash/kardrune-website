@@ -120,18 +120,24 @@ abstract interface class PvpSocketPort {
   Future<void> close();
 }
 
-class LivePvpSocket implements PvpSocketPort {
+abstract interface class PvpEventSocket implements PvpSocketPort {
+  Stream<PvpEvent> get events;
+}
+
+class LivePvpSocket implements PvpEventSocket {
   LivePvpSocket._(this.channel);
   final WebSocketChannel channel;
   static Uri connectionUri(String url, String ticket) {
     final base = Uri.parse(url);
     return base.replace(
+      path: '/connect',
       queryParameters: {...base.queryParameters, 'ticket': ticket},
     );
   }
 
   factory LivePvpSocket.connect(String url, String ticket) =>
       LivePvpSocket._(WebSocketChannel.connect(connectionUri(url, ticket)));
+  @override
   Stream<PvpEvent> get events => channel.stream
       .where((value) => value is String)
       .map(

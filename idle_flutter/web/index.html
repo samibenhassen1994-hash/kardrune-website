@@ -46,7 +46,21 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('kardrune_service_worker.js', { scope: './' });
+        navigator.serviceWorker.register('kardrune_service_worker.js', { scope: './' }).then((registration) => {
+          const announce = () => window.dispatchEvent(new Event('kardrune-update-available'));
+          if (registration.waiting) announce();
+          registration.addEventListener('updatefound', () => {
+            const worker = registration.installing;
+            worker?.addEventListener('statechange', () => {
+              if (worker.state === 'installed' && navigator.serviceWorker.controller) announce();
+            });
+          });
+          window.addEventListener('kardrune-apply-update', () => registration.waiting?.postMessage('SKIP_WAITING'));
+          let reloading = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!reloading) { reloading = true; window.location.reload(); }
+          });
+        });
       });
     }
   </script>

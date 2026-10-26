@@ -227,6 +227,39 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                 child: const Icon(Icons.layers, color: Colors.white70),
               ),
             ),
+            Positioned(
+              right: 18,
+              bottom: 142,
+              child: Text(
+                '${c.hand?.deckSize ?? 0} LEFT',
+                key: const Key('deck-remaining'),
+                style: const TextStyle(color: Colors.white70, fontSize: 11),
+              ),
+            ),
+            Positioned(
+              left: 10,
+              top: 60,
+              child: SizedBox(
+                width: 82,
+                child: Column(
+                  children: [
+                    const Text(
+                      'USED',
+                      style: TextStyle(color: Colors.white54, fontSize: 10),
+                    ),
+                    for (final id in c.used)
+                      Text(
+                        id,
+                        key: const Key('used-card'),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 10,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
             Align(
               alignment: const Alignment(0, -.25),
               child: DragTarget<String>(

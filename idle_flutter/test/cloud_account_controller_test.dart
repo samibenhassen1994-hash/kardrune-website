@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/material.dart';
+import 'package:idle_kardrune/app.dart';
 import 'package:idle_kardrune/features/profile/cloud_account_controller.dart';
 import 'package:idle_kardrune/models/player_save.dart';
 import 'package:idle_kardrune/services/api_client.dart';
@@ -141,5 +143,46 @@ void main() {
     expect(auth.googleCalls, 1);
     expect(auth.logoutCalls, 1);
     controller.dispose();
+  });
+
+  testWidgets('Profile exposes auth actions at 320x568 without overflow', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final storage = _Storage(), auth = _Auth(), transport = _Transport();
+    transport.responses = {
+      'GET /api/me': const ApiResponse(
+        200,
+        '{"player":{"display_name":"Rune"}}',
+      ),
+      'GET /api/save': const ApiResponse(200, '{"save":null,"revision":0}'),
+      'PUT /api/save': const ApiResponse(200, '{"revision":1}'),
+    };
+    final cloud = CloudAccountController(
+      auth: auth,
+      api: ApiClient(auth, transport),
+      local: LocalSaveService(storage),
+    );
+    await tester.pumpWidget(
+      KardRuneApp(
+        saveService: LocalSaveService(storage),
+        cloudController: cloud,
+      ),
+    );
+    await tester.tap(find.text('PROFILE').last);
+    await tester.pump();
+    expect(find.byKey(const Key('cloud-google')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byKey(const Key('cloud-google')));
+    expect(auth.googleCalls, 1);
+    auth.emit(const CloudIdentity(uid: 'u', email: 'u@test.it'));
+    await tester.pump();
+    await cloud.settle;
+    await tester.pump();
+    expect(find.byKey(const Key('cloud-logout')), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

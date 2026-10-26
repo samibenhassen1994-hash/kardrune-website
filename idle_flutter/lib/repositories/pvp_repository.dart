@@ -16,6 +16,13 @@ class PvpRepository {
     await api.request('/api/pvp/deck', 'PUT', {'cards': cards});
   }
 
+  Future<List<String>> loadDeck() async {
+    final value = await api.get('/api/pvp/deck');
+    return value['cards'] is List
+        ? List<String>.from(value['cards'] as List)
+        : <String>[];
+  }
+
   Future<LiveTicket> liveTicket() async {
     final j = await api.post('/api/pvp/live-ticket');
     return LiveTicket(
