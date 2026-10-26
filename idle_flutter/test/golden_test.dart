@@ -22,6 +22,12 @@ void main() {
         await tester.tap(find.text(target.value!).last);
         await tester.pumpAndSettle();
       }
+      if (target.key == 'cards') {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 250)),
+        );
+        await tester.pump();
+      }
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile('goldens/${target.key}_390x844.png'),

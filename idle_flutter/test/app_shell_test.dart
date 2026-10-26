@@ -114,6 +114,109 @@ void main() {
     await tester.pump();
     expect(find.byKey(const Key('deck-slot')), findsNWidgets(9));
   });
+  testWidgets('owned card image tap selects it and persists real statistics', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final storage = _MemoryStorage(), service = LocalSaveService(storage);
+    service.save(
+      PlayerSave.initial().copyWith(
+        owned: ['sam:1', 'sam:2'],
+        attacks: {'sam:1': 40, 'sam:2': 73},
+        crits: {'sam:1': 4, 'sam:2': 19},
+      ),
+    );
+
+    await tester.pumpWidget(KardRuneApp(saveService: service));
+    await tester.tap(find.text('CARDS').last);
+    await tester.pump();
+    expect(find.byKey(const Key('card-stats-sam:2')), findsOneWidget);
+    expect(find.text('HP 340'), findsWidgets);
+    expect(find.text('ATK 73'), findsWidgets);
+    expect(find.text('CRIT 19%'), findsWidgets);
+
+    await tester.tap(find.byKey(const Key('card-art-sam:2')));
+    await tester.pump();
+    expect(find.byKey(const Key('card-details-sam:2')), findsOneWidget);
+    expect(find.text('SELECTED CHAMPION'), findsOneWidget);
+    expect(service.load().active, 'sam:2');
+  });
+
+  testWidgets('unowned card image tap opens preview without selecting it', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final storage = _MemoryStorage(), service = LocalSaveService(storage);
+    service.save(PlayerSave.initial());
+
+    await tester.pumpWidget(KardRuneApp(saveService: service));
+    await tester.tap(find.text('CARDS').last);
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('card-art-sam:3')));
+    await tester.pump();
+    final details = find.byKey(const Key('card-details-sam:3'));
+    expect(details, findsOneWidget);
+    expect(find.text('NOT COLLECTED'), findsOneWidget);
+    expect(find.text('HP 430'), findsWidgets);
+    expect(find.descendant(of: details, matching: find.text('ATK —')), findsOneWidget);
+    expect(find.descendant(of: details, matching: find.text('CRIT —')), findsOneWidget);
+    expect(service.load().active, 'sam:1');
+  });
+
+  testWidgets('selected saved ATK and Stage determine the practice result', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final storage = _MemoryStorage(), service = LocalSaveService(storage);
+    service.save(
+      PlayerSave.initial().copyWith(
+        owned: ['sam:1', 'sam:2'],
+        attacks: {'sam:1': 1, 'sam:2': 100},
+        crits: {'sam:1': 4, 'sam:2': 19},
+      ),
+    );
+    await tester.pumpWidget(KardRuneApp(saveService: service, random: () => .75));
+    await tester.tap(find.text('CARDS').last);
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('card-art-sam:2')));
+    await tester.pump();
+    await tester.tap(find.text('CLOSE'));
+    await tester.pump();
+    await tester.tap(find.text('TOURNAMENT').last);
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('start-practice-duel')));
+    await tester.pump();
+    expect(find.text('VICTORY · +100 SHARDS'), findsOneWidget);
+  });
+
+  testWidgets('duplicate replacement refreshes and persists card ATK and CRIT', (
+    tester,
+  ) async {
+    final storage = _MemoryStorage(), service = LocalSaveService(storage);
+    service.save(PlayerSave.initial());
+    await tester.pumpWidget(KardRuneApp(saveService: service, random: () => 0));
+    await tester.tap(find.text('SUMMON').last);
+    await tester.pump();
+    await tester.tap(find.textContaining('SUMMON 1'));
+    await tester.pump();
+    await tester.tap(find.text('REPLACE'));
+    await tester.pump();
+    await tester.tap(find.text('CARDS').last);
+    await tester.pump();
+    expect(find.text('ATK 1'), findsWidgets);
+    expect(find.text('CRIT 0%'), findsWidgets);
+    expect(service.load().attacks['sam:1'], 1);
+    expect(service.load().crits['sam:1'], 0);
+  });
   testWidgets('runtime loads legacy save and persists exact practice result', (
     tester,
   ) async {

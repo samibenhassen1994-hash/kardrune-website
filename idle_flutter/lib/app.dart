@@ -326,8 +326,15 @@ class _IdleShellState extends State<IdleShell> {
                           title: italian ? 'CARTE' : 'CARDS',
                           owned: owned.toList(),
                           deck: deck,
+                          active: active,
+                          attacks: attacks,
+                          crits: crits,
                           onPage: (v) => setState(() => page = v),
                           onDeck: _saveDeck,
+                          onSelect: (id) {
+                            setState(() => active = id);
+                            _persist();
+                          },
                         ),
                         _Summon(
                           shards: shards,
@@ -927,15 +934,22 @@ class _Cards extends StatelessWidget {
     required this.title,
     required this.owned,
     required this.deck,
+    required this.active,
+    required this.attacks,
+    required this.crits,
     required this.onPage,
     required this.onDeck,
+    required this.onSelect,
   });
   final int page;
   final String title;
   final List<String> owned;
   final List<String> deck;
+  final String active;
+  final Map<String, int> attacks, crits;
   final ValueChanged<int> onPage;
   final ValueChanged<List<String>> onDeck;
+  final ValueChanged<String> onSelect;
   @override
   Widget build(BuildContext context) {
     final all = [
@@ -1012,13 +1026,22 @@ class _Cards extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Expanded(
-            child: GridView.count(
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              childAspectRatio: .72,
-              mainAxisSpacing: 6,
-              crossAxisSpacing: 6,
-              children: [for (final item in slice) _card(item.key, item.value, owned.contains('${item.key.id}:${item.value}'))],
+            child: LayoutBuilder(
+              builder: (context, constraints) => GridView.builder(
+                padding: EdgeInsets.zero,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisExtent: (constraints.maxHeight - 6) / 2,
+                  mainAxisSpacing: 6,
+                  crossAxisSpacing: 6,
+                ),
+                itemCount: slice.length,
+                itemBuilder: (context, index) {
+                  final item = slice.elementAt(index);
+                  return _card(context, item.key, item.value);
+                },
+              ),
             ),
           ),
           Row(
@@ -1066,13 +1089,142 @@ class _Cards extends StatelessWidget {
     ),
   );
 
-  Widget _card(dynamic h, int s, bool isOwned) => Semantics(
-    label: '${h.name} Stage $s',
-    button: true,
-    child: Container(
-      padding: const EdgeInsets.all(5),
-      decoration: BoxDecoration(color: const Color(0xff111e35), border: Border.all(color: const Color(0x62c3a669)), borderRadius: BorderRadius.circular(12)),
-      child: Opacity(opacity: isOwned ? 1 : .28, child: Image.asset(h.cardAsset(h.stages[s - 1]), fit: BoxFit.contain)),
+  Widget _card(BuildContext context, dynamic hero, int stage) {
+    final id = '${hero.id}:$stage',
+        isOwned = owned.contains(id),
+        isSelected = active == id;
+    return Semantics(
+      label: '${hero.name} Stage $stage',
+      button: true,
+      selected: isSelected,
+      child: GestureDetector(
+        key: ValueKey('collection-card-$id'),
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          if (isOwned) onSelect(id);
+          _openCard(context, hero, stage, isOwned);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            color: const Color(0xff111e35),
+            border: Border.all(
+              color: isSelected
+                  ? const Color(0xff7fd7c3)
+                  : const Color(0x62c3a669),
+              width: isSelected ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: isSelected
+                ? const [BoxShadow(color: Color(0x557fd7c3), blurRadius: 8)]
+                : null,
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Opacity(
+                opacity: isOwned ? 1 : .28,
+                child: Image.asset(
+                  hero.cardAsset(hero.stages[stage - 1]),
+                  key: ValueKey('card-art-$id'),
+                  fit: BoxFit.contain,
+                ),
+              ),
+              Positioned(
+                left: 3,
+                right: 3,
+                bottom: 3,
+                child: IgnorePointer(
+                  child: _CardStats(
+                    key: ValueKey('card-stats-$id'),
+                    hp: CombatRules.hpForStage(stage),
+                    attack: isOwned ? attacks[id] : null,
+                    crit: isOwned ? crits[id] : null,
+                  ),
+                ),
+              ),
+              if (!isOwned)
+                const IgnorePointer(
+                  child: Center(
+                    child: Text('?', style: TextStyle(fontSize: 28, color: Color(0xfff5d28b), fontWeight: FontWeight.w800)),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openCard(BuildContext context, dynamic hero, int stage, bool isOwned) {
+    final id = '${hero.id}:$stage';
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        key: ValueKey('card-details-$id'),
+        backgroundColor: const Color(0xff101d36),
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(color: Color(0xffd5ad62)),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 390),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('${hero.name.toString().toUpperCase()} · STAGE $stage', style: const TextStyle(fontFamily: 'Georgia', fontSize: 20, color: Color(0xfff5d28b), fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                SizedBox(height: 220, child: Image.asset(hero.cardAsset(hero.stages[stage - 1]), fit: BoxFit.contain)),
+                _CardStats(
+                  hp: CombatRules.hpForStage(stage),
+                  attack: isOwned ? attacks[id] : null,
+                  crit: isOwned ? crits[id] : null,
+                  large: true,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  isOwned ? 'SELECTED CHAMPION' : 'NOT COLLECTED',
+                  style: TextStyle(color: isOwned ? const Color(0xff7fd7c3) : const Color(0xffa0b0c8), fontSize: 10, letterSpacing: 1.1, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+                _RuneButton(label: 'CLOSE', onTap: () => Navigator.pop(dialogContext)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CardStats extends StatelessWidget {
+  const _CardStats({super.key, required this.hp, this.attack, this.crit, this.large = false});
+  final int hp;
+  final int? attack, crit;
+  final bool large;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: EdgeInsets.symmetric(horizontal: large ? 10 : 4, vertical: large ? 8 : 4),
+    decoration: BoxDecoration(color: const Color(0xe6091428), border: Border.all(color: const Color(0x88d5ad62)), borderRadius: BorderRadius.circular(7)),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        Expanded(child: _stat('HP $hp', const Color(0xff80cfff))),
+        Expanded(child: _stat('ATK ${attack ?? '—'}', const Color(0xffff8b83))),
+        Expanded(child: _stat('CRIT ${crit == null ? '—' : '$crit%'}', const Color(0xfff5d28b))),
+      ],
+    ),
+  );
+
+  Widget _stat(String value, Color color) => FittedBox(
+    fit: BoxFit.scaleDown,
+    child: Text(
+      value,
+      maxLines: 1,
+      style: TextStyle(color: color, fontSize: large ? 12 : 7, fontWeight: FontWeight.w800),
     ),
   );
 }
