@@ -24,3 +24,9 @@ Whole-branch review gate: NOT READY FOR PR. Critical finding was that the launch
 
 Task A runtime integration: complete in working branch (Firebase config remains server-provided; Profile exposes Google/email/register/logout; authenticated `/api/me` and `/api/save` reconciliation protects account switches and 409 conflicts; first backup and explicit upload/load are covered by controller tests). Next: Task B cloud deck and live arena routing.
 
+Task B runtime integration: complete in working branch (`/api/pvp/deck` load/save, live ticket, forced `/connect` Worker path, typed socket stream, automatic arena opening on `hand`, server-authoritative replay, one `ready`, disconnect/close/reset, local two-match-safe arena state; app integration test covers Tournament→arena).
+
+Task C runtime integration: complete in working branch (dedicated `idle-kardrune-v1` worker announces waiting updates, Flutter displays a manual UPDATE action, `AppUpdateGate` defers application while arena state is active, controller change reloads once, `/idle/` relative scope retained).
+
+Final automated verification (2026-10-26): Flutter 61/61 passed; analyze no issues; release build with `--base-href /idle/` succeeded; live-PvP Worker rules 4/4 passed; untouched legacy rules 26/27 with only the documented invalid CRIT fixture. Golden refreshed for the intentional Tournament live-match control. Remaining release gates are a fresh whole-branch review and manual preview tests with real Firebase/D1, two accounts, realtime WebSocket, service-worker lifecycle, and physical iPhone.
+
