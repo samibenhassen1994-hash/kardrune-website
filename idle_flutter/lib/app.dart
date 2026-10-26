@@ -7,17 +7,26 @@ import 'game/combat_rules.dart';
 import 'game/game_rules.dart';
 import 'game/summon_rules.dart';
 import 'features/cards/deck_builder.dart';
+import 'features/profile/cloud_account_controller.dart';
 import 'models/player_save.dart';
 import 'services/local_save_service.dart';
+import 'services/cloud_factory.dart';
 import 'services/storage_factory.dart';
 import 'theme/kardrune_theme.dart';
 
 typedef RandomRoll = double Function();
 
 class KardRuneApp extends StatelessWidget {
-  const KardRuneApp({super.key, this.random, this.saveService, this.nowMs});
+  const KardRuneApp({
+    super.key,
+    this.random,
+    this.saveService,
+    this.cloudController,
+    this.nowMs,
+  });
   final RandomRoll? random;
   final LocalSaveService? saveService;
+  final CloudAccountController? cloudController;
   final int Function()? nowMs;
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -27,6 +36,7 @@ class KardRuneApp extends StatelessWidget {
     home: IdleShell(
       random: random ?? math.Random().nextDouble,
       saveService: saveService,
+      cloudController: cloudController,
       nowMs: nowMs ?? (() => DateTime.now().millisecondsSinceEpoch),
     ),
   );
@@ -37,10 +47,12 @@ class IdleShell extends StatefulWidget {
     super.key,
     required this.random,
     this.saveService,
+    this.cloudController,
     required this.nowMs,
   });
   final RandomRoll random;
   final LocalSaveService? saveService;
+  final CloudAccountController? cloudController;
   final int Function() nowMs;
   @override
   State<IdleShell> createState() => _IdleShellState();
@@ -61,6 +73,8 @@ class _IdleShellState extends State<IdleShell> {
       practiceCount = 0;
   List<String> deck = [];
   late final LocalSaveService? _saveService;
+  CloudAccountController? _cloud;
+  bool _ownsCloud = false;
 
   @override
   void initState() {
@@ -88,24 +102,85 @@ class _IdleShellState extends State<IdleShell> {
     practiceDay = daily.day;
     practiceCount = daily.count;
     rewardsLeft = GameRules.dailyRewardLimit - practiceCount;
+    _cloud = widget.cloudController;
+    if (_cloud != null) {
+      _cloud!.addListener(_cloudChanged);
+      _cloud!.start();
+    } else if (_saveService != null) {
+      _initializeCloud();
+    }
   }
 
-  void _persist() => _saveService?.save(
-    PlayerSave(
-      name: name,
-      avatar: avatar,
-      shards: shards,
-      owned: owned.toList(),
-      active: active,
-      duels: duels,
-      wins: wins,
-      pulls: pulls,
-      practiceDay: practiceDay,
-      practiceCount: practiceCount,
-      attacks: Map.of(attacks),
-      crits: Map.of(crits),
-    ),
-  );
+  Future<void> _initializeCloud() async {
+    final controller = await createDefaultCloudController(
+      _saveService!,
+      _applyRemoteSave,
+    );
+    if (!mounted || controller == null) return;
+    _cloud = controller;
+    _ownsCloud = true;
+    controller.addListener(_cloudChanged);
+    controller.start();
+    setState(() {});
+  }
+
+  void _cloudChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _applyRemoteSave(PlayerSave save) {
+    if (!mounted) return;
+    setState(() {
+      name = save.name;
+      avatar = save.avatar;
+      shards = save.shards;
+      active = save.active;
+      duels = save.duels;
+      wins = save.wins;
+      pulls = save.pulls;
+      practiceDay = save.practiceDay;
+      practiceCount = save.practiceCount;
+      rewardsLeft = GameRules.dailyRewardLimit - practiceCount;
+      owned
+        ..clear()
+        ..addAll(save.owned);
+      attacks
+        ..clear()
+        ..addAll(save.attacks);
+      crits
+        ..clear()
+        ..addAll(save.crits);
+      deck = _saveService?.loadDeck().where(owned.contains).toList() ?? [];
+    });
+  }
+
+  @override
+  void dispose() {
+    _cloud?.removeListener(_cloudChanged);
+    if (_ownsCloud) _cloud?.dispose();
+    super.dispose();
+  }
+
+  void _persist() {
+    _saveService?.save(
+      PlayerSave(
+        name: name,
+        avatar: avatar,
+        shards: shards,
+        owned: owned.toList(),
+        active: active,
+        duels: duels,
+        wins: wins,
+        pulls: pulls,
+        practiceDay: practiceDay,
+        practiceCount: practiceCount,
+        attacks: Map.of(attacks),
+        crits: Map.of(crits),
+      ),
+    );
+    _cloud?.localChanged();
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     body: SafeArea(
@@ -152,6 +227,7 @@ class _IdleShellState extends State<IdleShell> {
                         _persist();
                       },
                       onLanguage: () => setState(() => italian = !italian),
+                      cloud: _cloud,
                     ),
                   ],
                 ),
@@ -540,10 +616,12 @@ class _Profile extends StatelessWidget {
     required this.onName,
     required this.onAvatar,
     required this.onLanguage,
+    required this.cloud,
   });
   final String name, avatar;
   final ValueChanged<String> onName, onAvatar;
   final VoidCallback onLanguage;
+  final CloudAccountController? cloud;
   @override
   Widget build(BuildContext context) => _Panel(
     title: 'PROFILE',
@@ -574,8 +652,129 @@ class _Profile extends StatelessWidget {
           decoration: const InputDecoration(labelText: 'DISPLAY NAME'),
           onSubmitted: onName,
         ),
+        if (cloud != null) ...[
+          Text(
+            cloud!.identity?.email ??
+                cloud!.identity?.displayName ??
+                cloud!.message,
+            key: const Key('cloud-identity'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            cloud!.message,
+            key: const Key('cloud-status'),
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 11),
+          ),
+          if (cloud!.identity == null)
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    key: const Key('cloud-google'),
+                    onPressed: cloud!.signInGoogle,
+                    child: const Text('GOOGLE'),
+                  ),
+                ),
+                Expanded(
+                  child: TextButton(
+                    key: const Key('cloud-email'),
+                    onPressed: () => _emailDialog(context),
+                    child: const Text('EMAIL'),
+                  ),
+                ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                if (cloud!.state == CloudAccountState.review) ...[
+                  Expanded(
+                    child: TextButton(
+                      onPressed: cloud!.uploadLocal,
+                      child: const Text('UPLOAD LOCAL'),
+                    ),
+                  ),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: cloud!.loadCloud,
+                      child: const Text('LOAD CLOUD'),
+                    ),
+                  ),
+                ],
+                IconButton(
+                  key: const Key('cloud-logout'),
+                  onPressed: cloud!.signOut,
+                  icon: const Icon(Icons.logout),
+                ),
+              ],
+            ),
+        ],
         TextButton(onPressed: onLanguage, child: const Text('ITALIANO')),
       ],
     ),
   );
+
+  Future<void> _emailDialog(BuildContext context) async {
+    final email = TextEditingController(), password = TextEditingController();
+    var register = false;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('KARDRUNE ACCOUNT'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                key: const Key('cloud-email-field'),
+                controller: email,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(labelText: 'EMAIL'),
+              ),
+              TextField(
+                key: const Key('cloud-password-field'),
+                controller: password,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'PASSWORD'),
+              ),
+              CheckboxListTile(
+                value: register,
+                onChanged: (value) =>
+                    setDialogState(() => register = value ?? false),
+                title: const Text('CREATE ACCOUNT'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('CANCEL'),
+            ),
+            FilledButton(
+              key: const Key('cloud-email-submit'),
+              onPressed: () async {
+                if (password.text.length < 6 || !email.text.contains('@')) {
+                  return;
+                }
+                await cloud!.signInEmail(
+                  email.text.trim(),
+                  password.text,
+                  register: register,
+                );
+                if (dialogContext.mounted) {
+                  Navigator.pop(dialogContext);
+                }
+              },
+              child: const Text('CONTINUE'),
+            ),
+          ],
+        ),
+      ),
+    );
+    email.dispose();
+    password.dispose();
+  }
 }

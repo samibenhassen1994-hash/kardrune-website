@@ -22,3 +22,5 @@ Task 8: complete (`flutter test` 49/49; `flutter analyze` no issues; release bui
 
 Whole-branch review gate: NOT READY FOR PR. Critical finding was that the launched shell did not construct persistence/auth/PvP services. Post-review work now wires automatic Web localStorage through conditional imports, exact `GameRules` practice results/statistics, summon ATK/CRIT/pulls and duplicate replacement, persistent deck drafts, plus a one-replay-per-hand guard. Remaining before PR: Firebase Profile/auth + D1 save reconciliation, cloud deck/matchmaking/WebSocket arena routing, and browser service-worker update signaling through `AppUpdateGate`. Do not push/open PR until these are implemented, tested, and re-reviewed.
 
+Task A runtime integration: complete in working branch (Firebase config remains server-provided; Profile exposes Google/email/register/logout; authenticated `/api/me` and `/api/save` reconciliation protects account switches and 409 conflicts; first backup and explicit upload/load are covered by controller tests). Next: Task B cloud deck and live arena routing.
+

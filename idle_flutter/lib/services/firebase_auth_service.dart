@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
+import '../features/profile/cloud_account_controller.dart';
 import 'api_client.dart';
 
 class FirebaseWebConfig {
@@ -39,11 +40,23 @@ class FirebaseWebConfig {
   }
 }
 
-class FirebaseAuthService implements AuthTokenProvider {
+class FirebaseAuthService implements CloudAuthPort {
   FirebaseAuthService(this.auth);
   final FirebaseAuth auth;
   User? get currentUser => auth.currentUser;
   Stream<User?> get changes => auth.authStateChanges();
+  @override
+  CloudIdentity? get currentIdentity => _identity(auth.currentUser);
+  @override
+  Stream<CloudIdentity?> get accountChanges =>
+      auth.authStateChanges().map(_identity);
+  static CloudIdentity? _identity(User? user) => user == null
+      ? null
+      : CloudIdentity(
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+        );
   @override
   Future<String> idToken() async {
     final token = await auth.currentUser?.getIdToken();
@@ -60,22 +73,47 @@ class FirebaseAuthService implements AuthTokenProvider {
   Future<UserCredential> registerWithEmail(String email, String password) =>
       auth.createUserWithEmailAndPassword(email: email, password: password);
   Future<void> signOut() => auth.signOut();
+  @override
+  Future<void> signInGoogle() async {
+    await signInWithGoogle();
+  }
+
+  @override
+  Future<void> signInEmail(
+    String email,
+    String password, {
+    required bool register,
+  }) async {
+    if (register) {
+      await registerWithEmail(email, password);
+    } else {
+      await signInWithEmail(email, password);
+    }
+  }
+
+  @override
+  Future<void> signOutAccount() => signOut();
 
   static Future<FirebaseAuthService?> initialize(ApiClient client) async {
     final config = FirebaseWebConfig.fromApi(
       await client.getPublic('/api/config'),
     );
     if (!config.enabled) return null;
-    final app = await Firebase.initializeApp(
-      name: 'idle-kardrune-cloud',
-      options: FirebaseOptions(
-        apiKey: config.apiKey!,
-        appId: config.appId ?? 'idle-kardrune-web',
-        messagingSenderId: '',
-        projectId: config.projectId!,
-        authDomain: config.authDomain,
-      ),
+    final existing = Firebase.apps.where(
+      (item) => item.name == 'idle-kardrune-cloud',
     );
+    final app = existing.isNotEmpty
+        ? existing.first
+        : await Firebase.initializeApp(
+            name: 'idle-kardrune-cloud',
+            options: FirebaseOptions(
+              apiKey: config.apiKey!,
+              appId: config.appId ?? 'idle-kardrune-web',
+              messagingSenderId: '',
+              projectId: config.projectId!,
+              authDomain: config.authDomain,
+            ),
+          );
     return FirebaseAuthService(FirebaseAuth.instanceFor(app: app));
   }
 }
