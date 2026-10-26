@@ -127,3 +127,12 @@
 - [x] Commit `chore: validate Flutter Web release candidate`.
 - [ ] Perform whole-branch review, push the feature branch, and open a PR without merging or deploying.
 
+### Post-review integration gate
+
+- [x] Wire legacy local save loading/writes, exact practice rewards/statistics, summon stats/duplicate replacement, and local deck draft into the launched app.
+- [x] Reject duplicate `round_result` replay/`ready` advancement.
+- [ ] Wire Firebase sign-in and D1 save reconciliation into Profile and the launched app.
+- [ ] Wire deck cloud save, matchmaking, WebSocket controller, and `LivePvpArena` into Tournament.
+- [ ] Connect browser service-worker update notification to the match-aware update gate.
+- [ ] Repeat whole-branch review; only then push and create the PR.
+

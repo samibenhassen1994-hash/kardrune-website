@@ -7,13 +7,13 @@ abstract final class KardRuneTheme {
   static const parchment = Color(0xffffe9b8);
 
   static ThemeData get data => ThemeData(
-        brightness: Brightness.dark,
-        colorScheme: const ColorScheme.dark(
-          primary: gold,
-          secondary: Color(0xff68b9ff),
-          surface: navy,
-        ),
-        scaffoldBackgroundColor: navy,
-        useMaterial3: true,
-      );
+    brightness: Brightness.dark,
+    colorScheme: const ColorScheme.dark(
+      primary: gold,
+      secondary: Color(0xff68b9ff),
+      surface: navy,
+    ),
+    scaffoldBackgroundColor: navy,
+    useMaterial3: true,
+  );
 }

@@ -15,6 +15,7 @@ class ArenaViewController extends ChangeNotifier {
   int playerHp = 240, opponentHp = 240, attackActor = -1;
   bool automatic = false;
   int seconds = 30, generation = 0;
+  bool _replaying = false;
   VoidCallback? onReady;
   Timer? _clock;
 
@@ -23,6 +24,7 @@ class ArenaViewController extends ChangeNotifier {
     score = [...value.score];
     lockedCard = popup = effect = null;
     automatic = false;
+    _replaying = false;
     seconds = (value.durationMs / 1000).ceil();
     generation++;
     _clock?.cancel();
@@ -49,6 +51,8 @@ class ArenaViewController extends ChangeNotifier {
   }
 
   Future<void> replay(Map<String, dynamic> json) async {
+    if (_replaying) return;
+    _replaying = true;
     final token = generation;
     if (json['cards'] is List && (json['cards'] as List).length >= 2) {
       final cards = json['cards'] as List;
@@ -104,6 +108,7 @@ class ArenaViewController extends ChangeNotifier {
     playerHp = opponentHp = 240;
     attackActor = -1;
     automatic = false;
+    _replaying = false;
     seconds = 30;
     notifyListeners();
   }

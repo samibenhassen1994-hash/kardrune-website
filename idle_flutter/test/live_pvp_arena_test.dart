@@ -228,4 +228,31 @@ void main() {
       c.dispose();
     },
   );
+
+  test('duplicate round results only advance ready once', () async {
+    final c = ArenaViewController(hitDuration: const Duration(milliseconds: 1));
+    var ready = 0;
+    c.onReady = () => ready++;
+    c.startHand(
+      const HandEvent(
+        round: 1,
+        opponent: 'R',
+        score: [0, 0],
+        hand: cards,
+        deckSize: 3,
+        usedCount: 0,
+        durationMs: 30000,
+        deadline: 30000,
+        matchId: 'same',
+      ),
+    );
+    final result = {
+      'winner': 0,
+      'log': <Object>[],
+      'score': [1, 0],
+    };
+    await Future.wait([c.replay(result), c.replay(result)]);
+    expect(ready, 1);
+    c.dispose();
+  });
 }

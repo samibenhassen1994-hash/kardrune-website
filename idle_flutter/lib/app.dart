@@ -3,27 +3,45 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'game/catalog.dart';
+import 'game/combat_rules.dart';
+import 'game/game_rules.dart';
 import 'game/summon_rules.dart';
 import 'features/cards/deck_builder.dart';
+import 'models/player_save.dart';
+import 'services/local_save_service.dart';
+import 'services/storage_factory.dart';
 import 'theme/kardrune_theme.dart';
 
 typedef RandomRoll = double Function();
 
 class KardRuneApp extends StatelessWidget {
-  const KardRuneApp({super.key, this.random});
+  const KardRuneApp({super.key, this.random, this.saveService, this.nowMs});
   final RandomRoll? random;
+  final LocalSaveService? saveService;
+  final int Function()? nowMs;
   @override
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
     title: 'Idle KardRune',
     theme: KardRuneTheme.data,
-    home: IdleShell(random: random ?? math.Random().nextDouble),
+    home: IdleShell(
+      random: random ?? math.Random().nextDouble,
+      saveService: saveService,
+      nowMs: nowMs ?? (() => DateTime.now().millisecondsSinceEpoch),
+    ),
   );
 }
 
 class IdleShell extends StatefulWidget {
-  const IdleShell({super.key, required this.random});
+  const IdleShell({
+    super.key,
+    required this.random,
+    this.saveService,
+    required this.nowMs,
+  });
   final RandomRoll random;
+  final LocalSaveService? saveService;
+  final int Function() nowMs;
   @override
   State<IdleShell> createState() => _IdleShellState();
 }
@@ -33,7 +51,61 @@ class _IdleShellState extends State<IdleShell> {
   String name = 'Runebearer', avatar = 'player';
   String battleStatus = '';
   bool italian = false;
-  final owned = <String>{'sam:1'};
+  final owned = <String>{};
+  final attacks = <String, int>{}, crits = <String, int>{};
+  var active = 'sam:1',
+      duels = 0,
+      wins = 0,
+      pulls = 0,
+      practiceDay = '',
+      practiceCount = 0;
+  List<String> deck = [];
+  late final LocalSaveService? _saveService;
+
+  @override
+  void initState() {
+    super.initState();
+    _saveService = widget.saveService ?? createDefaultLocalSave();
+    final save =
+        _saveService?.load(nowMs: widget.nowMs()) ?? PlayerSave.initial();
+    name = save.name;
+    avatar = save.avatar;
+    shards = save.shards;
+    active = save.active;
+    duels = save.duels;
+    wins = save.wins;
+    pulls = save.pulls;
+    practiceDay = save.practiceDay;
+    practiceCount = save.practiceCount;
+    owned.addAll(save.owned);
+    attacks.addAll(save.attacks);
+    crits.addAll(save.crits);
+    deck = _saveService?.loadDeck().where(owned.contains).toList() ?? [];
+    final daily = GameRules.dailyRewardState(
+      DailyRewardState(day: practiceDay, count: practiceCount),
+      widget.nowMs(),
+    );
+    practiceDay = daily.day;
+    practiceCount = daily.count;
+    rewardsLeft = GameRules.dailyRewardLimit - practiceCount;
+  }
+
+  void _persist() => _saveService?.save(
+    PlayerSave(
+      name: name,
+      avatar: avatar,
+      shards: shards,
+      owned: owned.toList(),
+      active: active,
+      duels: duels,
+      wins: wins,
+      pulls: pulls,
+      practiceDay: practiceDay,
+      practiceCount: practiceCount,
+      attacks: Map.of(attacks),
+      crits: Map.of(crits),
+    ),
+  );
   @override
   Widget build(BuildContext context) => Scaffold(
     body: SafeArea(
@@ -56,7 +128,12 @@ class _IdleShellState extends State<IdleShell> {
                       page: page,
                       title: italian ? 'CARTE' : 'CARDS',
                       owned: owned.toList(),
+                      deck: deck,
                       onPage: (v) => setState(() => page = v),
+                      onDeck: (value) {
+                        setState(() => deck = [...value]);
+                        _saveService?.saveDeck(deck);
+                      },
                     ),
                     _Summon(
                       shards: shards,
@@ -66,8 +143,14 @@ class _IdleShellState extends State<IdleShell> {
                     _Profile(
                       name: name,
                       avatar: avatar,
-                      onName: (v) => setState(() => name = v),
-                      onAvatar: (v) => setState(() => avatar = v),
+                      onName: (v) {
+                        setState(() => name = v);
+                        _persist();
+                      },
+                      onAvatar: (v) {
+                        setState(() => avatar = v);
+                        _persist();
+                      },
                       onLanguage: () => setState(() => italian = !italian),
                     ),
                   ],
@@ -103,13 +186,26 @@ class _IdleShellState extends State<IdleShell> {
     ),
   );
   void _train() {
+    final parts = active.split(':');
+    final stage = int.tryParse(parts.last) ?? 1;
+    final result = GameRules.resolvePractice(
+      DailyRewardState(day: practiceDay, count: practiceCount),
+      attacks[active] ?? CombatRules.legacyAttack(active),
+      stage,
+      widget.random(),
+      widget.nowMs(),
+    );
     setState(() {
-      if (rewardsLeft > 0) {
-        shards += 100;
-        rewardsLeft--;
-      }
-      battleStatus = 'VICTORY · +100 SHARDS';
+      shards += result.reward;
+      duels++;
+      if (result.win) wins++;
+      practiceDay = result.daily.day;
+      practiceCount = result.daily.count;
+      rewardsLeft = GameRules.dailyRewardLimit - practiceCount;
+      battleStatus =
+          '${result.win ? 'VICTORY' : 'DEFEAT'} · +${result.reward} SHARDS';
     });
+    _persist();
   }
 
   void _summon(bool featured) {
@@ -123,27 +219,45 @@ class _IdleShellState extends State<IdleShell> {
     );
     final id = '${KardRuneCatalog.heroes[index].id}:$stage',
         duplicate = owned.contains(id);
+    final attack = CombatRules.rollAttack(widget.random);
+    final crit = CombatRules.rollCrit(widget.random);
     setState(() {
       shards -= cost;
-      if (!duplicate) owned.add(id);
+      pulls++;
+      if (!duplicate) {
+        owned.add(id);
+        attacks[id] = attack;
+        crits[id] = crit;
+      }
     });
+    _persist();
     if (duplicate) {
       showDialog<void>(
         context: context,
         barrierDismissible: false,
         builder: (c) => AlertDialog(
           title: const Text('DUPLICATE CARD'),
-          content: const Text('Compare the new card with your current stats.'),
+          content: Text(
+            'Current ATK ${attacks[id]} · CRIT ${crits[id]}%\nNew ATK $attack · CRIT $crit%',
+          ),
           actions: [
             TextButton(
               onPressed: () {
                 setState(() => shards += 100);
+                _persist();
                 Navigator.pop(c);
               },
               child: const Text('KEEP CURRENT · +100'),
             ),
             TextButton(
-              onPressed: () => Navigator.pop(c),
+              onPressed: () {
+                setState(() {
+                  attacks[id] = attack;
+                  crits[id] = crit;
+                });
+                _persist();
+                Navigator.pop(c);
+              },
               child: const Text('REPLACE'),
             ),
           ],
@@ -299,12 +413,16 @@ class _Cards extends StatelessWidget {
     required this.page,
     required this.title,
     required this.owned,
+    required this.deck,
     required this.onPage,
+    required this.onDeck,
   });
   final int page;
   final String title;
   final List<String> owned;
+  final List<String> deck;
   final ValueChanged<int> onPage;
+  final ValueChanged<List<String>> onDeck;
   @override
   Widget build(BuildContext context) {
     final all = [
@@ -351,8 +469,11 @@ class _Cards extends StatelessWidget {
                     height: 650,
                     child: DeckBuilder(
                       owned: owned,
-                      initial: const [],
-                      onSave: (_) => Navigator.pop(dialogContext),
+                      initial: deck,
+                      onSave: (value) {
+                        onDeck(value);
+                        Navigator.pop(dialogContext);
+                      },
                     ),
                   ),
                 ),
