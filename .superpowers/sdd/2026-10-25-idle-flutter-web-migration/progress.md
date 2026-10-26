@@ -36,3 +36,5 @@ Visual fidelity pass — Cards/Summon/Profile (2026-10-26): Cards now mirrors th
 
 Visual fidelity pass — PvP arena (2026-10-26): restored the original vertical composition (live header and round, rival zone/hand above, Rune Clash center, used pile left, deck remaining right, player hand below) while keeping physical deal, drag/tap, authoritative replay, HP/critical effects and two-second results. Added deterministic 390×844 golden coverage for Tournament, Cards, Summon, Profile and PvP arena.
 
+Post-visual automated verification (2026-10-26): Flutter 69/69 passed, `flutter analyze` no issues, and release build with `--base-href /idle/` succeeded. No changes exist under legacy `idle/`, backend, database, or game-rule files in this visual pass. Real Safari/iPhone, real Firebase/D1 credentials, and a two-account deployed-preview match remain manual release checks and were not claimed.
+

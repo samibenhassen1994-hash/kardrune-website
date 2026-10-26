@@ -12,11 +12,11 @@ Evidence is recorded against branch `feature/idle-flutter-web-migration`; no dep
 - PvP tests cover the unchanged Worker protocol, forced `/connect` socket path, cloud deck endpoints, ticket acquisition, automatic arena routing, one-play lock, physical deal, timer, authoritative replay, critical/hit feedback, two-second result, disconnect, late-event cancellation, and second-match reset.
 - Web release tests cover PWA identity, `/idle/` base injection, install scope, zoom lock, browser-to-Flutter update signaling, `SKIP_WAITING`, and match-aware update deferral.
 
-Final automated run on 2026-10-26: `flutter test` 61/61 passed; `flutter analyze` reported no issues; `flutter build web --release --base-href /idle/` completed and produced `build/web`; live-PvP Worker rules 4/4 passed; legacy rules 26/27 passed with only the baseline CRIT fixture below.
+Final automated run on 2026-10-26 after the visual-fidelity pass: `flutter test` 69/69 passed; `flutter analyze` reported no issues; `flutter build web --release --base-href /idle/` completed and produced `build/web`; live-PvP Worker rules 4/4 passed; legacy rules 26/27 passed with only the baseline CRIT fixture below.
 
 ## Visual evidence
 
-The deterministic Flutter candidate is `idle_flutter/test/goldens/tournament_390x844.png`. It was refreshed only after the new live-match control intentionally changed the Tournament screen, then rechecked with the golden test. Earlier local browser smoke captures were inspected at 390×844 for both `idle/#tournament` and the `/idle/`-based Flutter release: navigation remained reachable, no overflow occurred, original card assets loaded, and browser logs contained no warnings/errors. The legacy screen contains richer promotional copy than the migrated training view; this remains visible in the comparison and is not concealed as a test success.
+Deterministic 390×844 Flutter candidates now cover Tournament, Cards, Summon, Profile, and the realtime PvP arena under `idle_flutter/test/goldens/`. Rendered browser captures for the legacy Tournament and Flutter before/after state are under `idle_flutter/test/visual/`; the Cards legacy reference is recorded there as well. The visual pass restored the original header/logo, radial navy palette, fantasy serif hierarchy, gold borders/actions, original card art, collection/loadout structure, summon portal, profile framing, fixed navigation, and vertical PvP composition. Exact widget viewports at 320×568, 375×667, 390×844, 393×852, and 430×932 pass without overflow.
 
 ## Manual release gates
 

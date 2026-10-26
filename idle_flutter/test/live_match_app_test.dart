@@ -83,7 +83,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byType(LivePvpArena), findsOneWidget);
-    expect(find.text('Rival   0 — 0'), findsOneWidget);
+    expect(find.text('⚔ Rival'), findsOneWidget);
+    expect(find.text('RUNE CLASH   0 : 0'), findsOneWidget);
     await tester.tap(find.byKey(const Key('close-live-arena')));
     await tester.pumpAndSettle();
     expect(find.byType(LivePvpArena), findsNothing);
