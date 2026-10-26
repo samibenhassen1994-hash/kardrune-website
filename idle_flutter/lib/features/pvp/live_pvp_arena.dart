@@ -171,9 +171,10 @@ class _LivePvpArenaState extends State<LivePvpArena> {
         timer.cancel();
       }
       _deals.clear();
+      final reduced = MediaQuery.disableAnimationsOf(context);
       for (var i = 0; i < widget.controller.hand!.hand.length; i++) {
         _deals.add(
-          Timer(Duration(milliseconds: 250 * (i + 1)), () {
+          Timer(reduced ? Duration.zero : Duration(milliseconds: 250 * (i + 1)), () {
             if (mounted && seenGeneration == widget.controller.generation) {
               setState(() => dealt = i + 1);
             }
@@ -201,6 +202,8 @@ class _LivePvpArenaState extends State<LivePvpArena> {
   @override
   Widget build(BuildContext context) {
     final c = widget.controller;
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    final motionDuration = reduced ? Duration.zero : c.hitDuration;
     final cards = c.hand?.hand ?? const <PvpCard>[];
     return Scaffold(
       backgroundColor: const Color(0xff090d19),
@@ -293,7 +296,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                           offset: c.attackActor == 1
                               ? const Offset(0, .18)
                               : Offset.zero,
-                          duration: c.hitDuration,
+                          duration: motionDuration,
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -313,7 +316,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
             ),
             for (var i = 0; i < cards.length; i++)
               AnimatedAlign(
-                duration: const Duration(milliseconds: 300),
+                duration: reduced ? Duration.zero : const Duration(milliseconds: 300),
                 curve: Curves.easeOutBack,
                 alignment: i < dealt
                     ? Alignment(-0.7 + i * 0.7, .78)
@@ -351,7 +354,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                       offset: c.attackActor == 0
                           ? const Offset(0, -.18)
                           : Offset.zero,
-                      duration: c.hitDuration,
+                      duration: motionDuration,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -387,7 +390,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                 child: TweenAnimationBuilder<double>(
                   key: ValueKey(c.effect),
                   tween: Tween(begin: .5, end: 1.15),
-                  duration: const Duration(milliseconds: 350),
+                  duration: reduced ? Duration.zero : const Duration(milliseconds: 350),
                   builder: (_, scale, child) =>
                       Transform.scale(scale: scale, child: child),
                   child: Text(

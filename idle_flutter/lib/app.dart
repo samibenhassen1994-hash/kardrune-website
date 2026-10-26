@@ -22,6 +22,8 @@ import 'theme/kardrune_theme.dart';
 
 typedef RandomRoll = double Function();
 
+enum MotionPreference { automatic, full, reduced }
+
 class KardRuneApp extends StatelessWidget {
   const KardRuneApp({
     super.key,
@@ -75,6 +77,7 @@ class IdleShell extends StatefulWidget {
 }
 
 class _IdleShellState extends State<IdleShell> {
+  static const _motionKey = 'idle-motion-preference-v1';
   int tab = 0, shards = 1500, page = 0, rewardsLeft = 10;
   String name = 'Runebearer', avatar = 'player';
   String battleStatus = '';
@@ -88,6 +91,7 @@ class _IdleShellState extends State<IdleShell> {
       practiceDay = '',
       practiceCount = 0;
   List<String> deck = [];
+  MotionPreference motion = MotionPreference.automatic;
   late final LocalSaveService? _saveService;
   CloudAccountController? _cloud;
   LiveMatchCoordinator? _pvp;
@@ -114,6 +118,10 @@ class _IdleShellState extends State<IdleShell> {
     attacks.addAll(save.attacks);
     crits.addAll(save.crits);
     deck = _saveService?.loadDeck().where(owned.contains).toList() ?? [];
+    motion = MotionPreference.values.firstWhere(
+      (value) => value.name == _saveService?.storage.read(_motionKey),
+      orElse: () => MotionPreference.automatic,
+    );
     final daily = GameRules.dailyRewardState(
       DailyRewardState(day: practiceDay, count: practiceCount),
       widget.nowMs(),
@@ -256,7 +264,7 @@ class _IdleShellState extends State<IdleShell> {
   @override
   Widget build(BuildContext context) {
     if (_pvp?.state == LiveMatchState.arena) {
-      return _withUpdate(
+      return _motionWrap(_withUpdate(
         Stack(
           children: [
             Positioned.fill(
@@ -279,9 +287,9 @@ class _IdleShellState extends State<IdleShell> {
             ),
           ],
         ),
-      );
+      ));
     }
-    return _withUpdate(
+    return _motionWrap(_withUpdate(
       Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
@@ -338,6 +346,11 @@ class _IdleShellState extends State<IdleShell> {
                             _persist();
                           },
                           onLanguage: () => setState(() => italian = !italian),
+                          motion: motion,
+                          onMotion: (value) {
+                            setState(() => motion = value);
+                            _saveService?.storage.write(_motionKey, value.name);
+                          },
                           cloud: _cloud,
                         ),
                         ],
@@ -355,7 +368,17 @@ class _IdleShellState extends State<IdleShell> {
           onTap: (value) => setState(() => tab = value),
         ),
       ),
-    );
+    ));
+  }
+
+  Widget _motionWrap(Widget child) {
+    final media = MediaQuery.of(context);
+    final reduce = switch (motion) {
+      MotionPreference.automatic => media.disableAnimations,
+      MotionPreference.full => false,
+      MotionPreference.reduced => true,
+    };
+    return MediaQuery(data: media.copyWith(disableAnimations: reduce), child: child);
   }
 
   Widget _withUpdate(Widget child) => Stack(
@@ -660,40 +683,6 @@ class _RuneNavigation extends StatelessWidget {
   }
 }
 
-class _Panel extends StatelessWidget {
-  const _Panel({required this.title, required this.child});
-  final String title;
-  final Widget child;
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xdd0b1c31),
-        border: Border.all(color: KardRuneTheme.gold.withValues(alpha: .55)),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                color: KardRuneTheme.gold,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Expanded(child: child),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
 class _Tournament extends StatelessWidget {
   const _Tournament({
     required this.rewardsLeft,
@@ -954,10 +943,74 @@ class _Cards extends StatelessWidget {
         for (var s = 1; s <= 3; s++) MapEntry(h, s),
     ];
     final slice = all.skip(page * 4).take(4);
-    return _Panel(
-      title: title,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(19, 12, 19, 8),
       child: Column(
         children: [
+          Text(
+            title == 'CARTE' ? 'LE TUE CARTE' : 'YOUR CARDS',
+            style: const TextStyle(fontFamily: 'Georgia', fontSize: 27, fontWeight: FontWeight.w700, color: Color(0xfff9f4e9)),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(color: const Color(0xff101d36), border: Border.all(color: const Color(0x66dfbe77)), borderRadius: BorderRadius.circular(13)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('⚔ PVP LOADOUT', style: TextStyle(color: Color(0xffa0b0c8), fontSize: 8, letterSpacing: 1.1, fontWeight: FontWeight.w800)),
+                const Text('MY DECK', style: TextStyle(fontFamily: 'Georgia', color: Color(0xfff5d28b), fontSize: 16, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 5),
+                Row(
+                  children: [
+                    for (var i = 0; i < 9; i++)
+                      Expanded(
+                        child: AspectRatio(
+                          aspectRatio: .72,
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 1),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(color: const Color(0xff0b172f), border: Border.all(color: const Color(0x667a89a6)), borderRadius: BorderRadius.circular(4)),
+                            child: i < deck.length
+                                ? Image.asset(_assetForId(deck[i]), fit: BoxFit.contain)
+                                : Text('${i + 1}'.padLeft(2, '0'), style: const TextStyle(color: Color(0xff71819c), fontSize: 7)),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                _RuneButton(onTap: () => _openDeck(context), label: '✦  EDIT DECK IN CARDS'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 9),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+            decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xff1c3252), Color(0xff0c182e)]), border: Border.all(color: const Color(0x54bca766)), borderRadius: BorderRadius.circular(12)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('COLLECTION PROGRESS', style: TextStyle(color: Color(0xffafc2d6), letterSpacing: 1.2, fontSize: 8)),
+                Text('${owned.length} / 27 CARDS', style: const TextStyle(fontFamily: 'Georgia', fontSize: 17, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 5),
+                ClipRRect(borderRadius: BorderRadius.circular(10), child: LinearProgressIndicator(value: owned.length / 27, minHeight: 6, backgroundColor: const Color(0xff071025), color: const Color(0xfff4d38c))),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _FilterLabel('ALL HEROES', active: page == 0),
+              const SizedBox(width: 6),
+              _FilterLabel('OWNED', active: true),
+              const SizedBox(width: 6),
+              _FilterLabel('BY RARITY'),
+            ],
+          ),
+          const SizedBox(height: 8),
           Expanded(
             child: GridView.count(
               physics: const NeverScrollableScrollPhysics(),
@@ -965,7 +1018,7 @@ class _Cards extends StatelessWidget {
               childAspectRatio: .72,
               mainAxisSpacing: 6,
               crossAxisSpacing: 6,
-              children: [for (final item in slice) _card(item.key, item.value)],
+              children: [for (final item in slice) _card(item.key, item.value, owned.contains('${item.key.id}:${item.value}'))],
             ),
           ),
           Row(
@@ -982,38 +1035,60 @@ class _Cards extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => showDialog<void>(
-                context: context,
-                builder: (dialogContext) => Dialog(
-                  child: SizedBox(
-                    width: 430,
-                    height: 650,
-                    child: DeckBuilder(
-                      owned: owned,
-                      initial: deck,
-                      onSave: (value) {
-                        onDeck(value);
-                        Navigator.pop(dialogContext);
-                      },
-                    ),
-                  ),
-                ),
-              ),
-              child: const Text('DECK BUILDER'),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _card(dynamic h, int s) => Semantics(
+  String _assetForId(String id) {
+    final parts = id.split(':');
+    final hero = KardRuneCatalog.heroes.firstWhere((item) => item.id == parts.first);
+    return hero.cardAsset(hero.stages[int.parse(parts.last) - 1]);
+  }
+
+  void _openDeck(BuildContext context) => showDialog<void>(
+    context: context,
+    builder: (dialogContext) => Dialog(
+      backgroundColor: const Color(0xff101d36),
+      shape: RoundedRectangleBorder(side: const BorderSide(color: Color(0xffd5ad62)), borderRadius: BorderRadius.circular(16)),
+      child: SizedBox(
+        width: 430,
+        height: 650,
+        child: DeckBuilder(
+          owned: owned,
+          initial: deck,
+          onSave: (value) {
+            onDeck(value);
+            Navigator.pop(dialogContext);
+          },
+        ),
+      ),
+    ),
+  );
+
+  Widget _card(dynamic h, int s, bool isOwned) => Semantics(
     label: '${h.name} Stage $s',
     button: true,
-    child: Image.asset(h.cardAsset(h.stages[s - 1]), fit: BoxFit.contain),
+    child: Container(
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(color: const Color(0xff111e35), border: Border.all(color: const Color(0x62c3a669)), borderRadius: BorderRadius.circular(12)),
+      child: Opacity(opacity: isOwned ? 1 : .28, child: Image.asset(h.cardAsset(h.stages[s - 1]), fit: BoxFit.contain)),
+    ),
+  );
+}
+
+class _FilterLabel extends StatelessWidget {
+  const _FilterLabel(this.label, {this.active = false});
+  final String label;
+  final bool active;
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: Container(
+      height: 34,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: active ? const Color(0xff463c30) : const Color(0xff142541), border: Border.all(color: active ? const Color(0x88dabb77) : const Color(0x457484a1)), borderRadius: BorderRadius.circular(8)),
+      child: Text(label, style: TextStyle(color: active ? const Color(0xffffe3a4) : const Color(0xffacbfd6), fontSize: 8)),
+    ),
   );
 }
 
@@ -1027,31 +1102,71 @@ class _Summon extends StatelessWidget {
   final String title;
   final ValueChanged<bool> onSummon;
   @override
-  Widget build(BuildContext context) => _Panel(
-    title: title,
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(19, 12, 19, 8),
     child: Column(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        const Icon(Icons.auto_awesome, color: KardRuneTheme.gold, size: 72),
-        const Text(
-          'CALL HEROES FROM THE RUNES',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 18),
+        Text.rich(
+          TextSpan(text: title == 'EVOCA' ? 'EVOCA ' : 'HERO ', children: [TextSpan(text: title == 'EVOCA' ? 'EROI' : 'SUMMON', style: const TextStyle(color: Color(0xfff5d28b)))]),
+          style: const TextStyle(fontFamily: 'Georgia', fontSize: 28, fontWeight: FontWeight.w700),
         ),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: shards >= 300 ? () => onSummon(false) : null,
-            child: const Text('STANDARD · 300'),
+        const SizedBox(height: 10),
+        Expanded(
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(gradient: const RadialGradient(center: Alignment(0, -.3), colors: [Color(0xff624966), Color(0xff152443)]), border: Border.all(color: const Color(0x88e1bc71)), borderRadius: BorderRadius.circular(16)),
+            child: Stack(
+              children: [
+                Positioned.fill(child: Image.asset(KardRuneCatalog.heroes.firstWhere((hero) => hero.id == 'dren').cardAsset(KardRuneCatalog.heroes.firstWhere((hero) => hero.id == 'dren').stages[2]), fit: BoxFit.contain)),
+                Positioned(top: 14, left: 14, child: Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6), decoration: BoxDecoration(color: const Color(0xffd8b35f), borderRadius: BorderRadius.circular(5)), child: const Text('FEATURED HERO', style: TextStyle(color: Color(0xff241b13), fontSize: 8, letterSpacing: .8, fontWeight: FontWeight.w800)))),
+                const Positioned(left: 0, right: 0, bottom: 10, child: Column(children: [Text('EPIC · SHADOW', style: TextStyle(color: Color(0xffe9c880), fontSize: 8, letterSpacing: 1.1, fontWeight: FontWeight.w800)), Text('DREN', style: TextStyle(fontFamily: 'Georgia', fontSize: 25, fontWeight: FontWeight.w700)), Text('The darkness answers his call.', style: TextStyle(color: Color(0xffcad1e0), fontSize: 10))])),
+              ],
+            ),
           ),
         ),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            onPressed: shards >= 600 ? () => onSummon(true) : null,
-            child: const Text('FEATURED · 600'),
-          ),
+        const SizedBox(height: 9),
+        _SummonChoice(
+          eyebrow: 'SUMMON PORTAL 01',
+          title: 'Standard Summon',
+          symbol: '✧',
+          action: 'SUMMON 1     ◆ 300',
+          enabled: shards >= 300,
+          onTap: () => onSummon(false),
         ),
+        const SizedBox(height: 8),
+        _SummonChoice(
+          eyebrow: 'SUMMON PORTAL 02',
+          title: 'Featured Summon',
+          symbol: '✦',
+          action: 'FEATURED PULL     ◆ 600',
+          enabled: shards >= 600,
+          gold: true,
+          onTap: () => onSummon(true),
+        ),
+      ],
+    ),
+  );
+}
+
+class _SummonChoice extends StatelessWidget {
+  const _SummonChoice({required this.eyebrow, required this.title, required this.symbol, required this.action, required this.enabled, required this.onTap, this.gold = false});
+  final String eyebrow, title, symbol, action;
+  final bool enabled, gold;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(11),
+    decoration: BoxDecoration(color: gold ? const Color(0xff283248) : const Color(0xff12233d), border: Border.all(color: gold ? const Color(0x79d8b769) : const Color(0x5c6887a0)), borderRadius: BorderRadius.circular(13)),
+    child: Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(eyebrow, style: const TextStyle(color: Color(0xffe9c880), fontSize: 8, letterSpacing: 1)), Text(title, style: const TextStyle(fontFamily: 'Georgia', fontSize: 16, fontWeight: FontWeight.w700))])),
+            Text(symbol, style: const TextStyle(color: Color(0xffe1c07a), fontSize: 28)),
+          ],
+        ),
+        const SizedBox(height: 5),
+        _RuneButton(label: action, onTap: enabled ? onTap : null, gold: gold),
       ],
     ),
   );
@@ -1064,40 +1179,76 @@ class _Profile extends StatelessWidget {
     required this.onName,
     required this.onAvatar,
     required this.onLanguage,
+    required this.motion,
+    required this.onMotion,
     required this.cloud,
   });
   final String name, avatar;
   final ValueChanged<String> onName, onAvatar;
   final VoidCallback onLanguage;
+  final MotionPreference motion;
+  final ValueChanged<MotionPreference> onMotion;
   final CloudAccountController? cloud;
   @override
-  Widget build(BuildContext context) => _Panel(
-    title: 'PROFILE',
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final compact = constraints.maxHeight < 500;
+      return Padding(
+    padding: const EdgeInsets.fromLTRB(19, 10, 19, 7),
     child: Column(
       children: [
+        if (!compact) ...[const _Eyebrow(compact: true), const SizedBox(height: 3)],
+        const Text.rich(
+          TextSpan(text: 'PLAYER ', children: [TextSpan(text: 'PROFILE', style: TextStyle(color: Color(0xfff5d28b)))]),
+          style: TextStyle(fontFamily: 'Georgia', fontSize: 25, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 7),
         Expanded(
-          child: Image.asset(
-            'assets/idle/avatars/avatar_$avatar.webp',
-            fit: BoxFit.contain,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(gradient: const RadialGradient(center: Alignment(0, -.5), colors: [Color(0xff365174), Color(0xff111e35)]), border: Border.all(color: const Color(0x6bc6aa65)), borderRadius: BorderRadius.circular(15)),
+            child: Column(
+              children: [
+                Expanded(child: Image.asset('assets/idle/avatars/avatar_$avatar.webp', fit: BoxFit.contain)),
+                const Text('RUNE ADVENTURER', style: TextStyle(color: Color(0xffe8c77d), fontSize: 8, letterSpacing: 1.3)),
+                Text(name, style: const TextStyle(fontFamily: 'Georgia', fontSize: 20, fontWeight: FontWeight.w700)),
+                const Text('LOCAL ACCOUNT · LEVEL 1', style: TextStyle(color: Color(0xffa6daff), fontSize: 8)),
+              ],
+            ),
           ),
         ),
-        Text(name, style: const TextStyle(fontSize: 20)),
-        Wrap(
-          children: [
-            for (final id in ['player', 'guard', 'vassal', 'king'])
-              IconButton(
-                onPressed: () => onAvatar(id),
-                icon: CircleAvatar(
-                  backgroundImage: AssetImage(
-                    'assets/idle/avatars/avatar_$id.webp',
+        if (!compact) ...[
+          const SizedBox(height: 5),
+          const Align(alignment: Alignment.centerLeft, child: Text('CHOOSE YOUR AVATAR', style: TextStyle(fontFamily: 'Georgia', fontSize: 11, fontWeight: FontWeight.w700))),
+          Wrap(
+            children: [
+              for (final id in ['player', 'guard', 'vassal', 'king'])
+                IconButton(
+                  onPressed: () => onAvatar(id),
+                  padding: const EdgeInsets.all(2),
+                  constraints: const BoxConstraints.tightFor(width: 38, height: 38),
+                  icon: CircleAvatar(
+                    backgroundImage: AssetImage(
+                      'assets/idle/avatars/avatar_$id.webp',
+                    ),
                   ),
                 ),
-              ),
-          ],
-        ),
+            ],
+          ),
+        ],
         TextField(
           maxLength: 20,
-          decoration: const InputDecoration(labelText: 'DISPLAY NAME'),
+          style: const TextStyle(fontSize: 12),
+          decoration: InputDecoration(
+            labelText: 'DISPLAY NAME',
+            counterText: '',
+            isDense: true,
+            filled: true,
+            fillColor: const Color(0xff0e1b35),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0x5e7a89a6)), borderRadius: BorderRadius.circular(9)),
+          ),
           onSubmitted: onName,
         ),
         if (cloud != null) ...[
@@ -1114,7 +1265,8 @@ class _Profile extends StatelessWidget {
             key: const Key('cloud-status'),
             maxLines: 2,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 11),
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 9),
           ),
           if (cloud!.identity == null)
             Row(
@@ -1123,6 +1275,7 @@ class _Profile extends StatelessWidget {
                   child: TextButton(
                     key: const Key('cloud-google'),
                     onPressed: cloud!.signInGoogle,
+                    style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
                     child: const Text('GOOGLE'),
                   ),
                 ),
@@ -1130,6 +1283,7 @@ class _Profile extends StatelessWidget {
                   child: TextButton(
                     key: const Key('cloud-email'),
                     onPressed: () => _emailDialog(context),
+                    style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
                     child: const Text('EMAIL'),
                   ),
                 ),
@@ -1160,9 +1314,46 @@ class _Profile extends StatelessWidget {
               ],
             ),
         ],
-        TextButton(onPressed: onLanguage, child: const Text('ITALIANO')),
+        const Align(
+          alignment: Alignment.centerLeft,
+          child: Text('GRAPHICS SETTINGS · ANIMATIONS', style: TextStyle(color: Color(0xffeac981), fontSize: 8, letterSpacing: 1.1, fontWeight: FontWeight.w800)),
+        ),
+        const SizedBox(height: 5),
+        Row(
+          children: [
+            for (final value in MotionPreference.values) ...[
+              Expanded(
+                child: GestureDetector(
+                  key: ValueKey('motion-${value.name}${motion == value ? '-selected' : ''}'),
+                  onTap: () => onMotion(value),
+                  child: Container(
+                    height: 28,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: motion == value ? const Color(0xff463c30) : const Color(0xff142541),
+                      border: Border.all(color: motion == value ? const Color(0x88dabb77) : const Color(0x457484a1)),
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: Text(
+                      switch (value) {
+                        MotionPreference.automatic => 'AUTOMATIC',
+                        MotionPreference.full => 'FULL',
+                        MotionPreference.reduced => 'REDUCED',
+                      },
+                      style: TextStyle(color: motion == value ? const Color(0xffffe3a4) : const Color(0xffacbfd6), fontSize: 7, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ),
+              if (value != MotionPreference.reduced) const SizedBox(width: 5),
+            ],
+          ],
+        ),
+        TextButton(style: TextButton.styleFrom(visualDensity: VisualDensity.compact), onPressed: onLanguage, child: const Text('LANGUAGE · ITALIANO', style: TextStyle(color: Color(0xffa6b9d0), fontSize: 9))),
       ],
     ),
+  );
+    },
   );
 
   Future<void> _emailDialog(BuildContext context) async {

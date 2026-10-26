@@ -35,14 +35,22 @@ class _DeckBuilderState extends State<DeckBuilder> {
   }
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context) {
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    return Container(
+    decoration: const BoxDecoration(
+      gradient: RadialGradient(center: Alignment(0, -.8), colors: [Color(0xff253b60), Color(0xff0c1528)]),
+    ),
+    child: Padding(
     padding: const EdgeInsets.all(8),
     child: Column(
       children: [
         const Text(
-          'MY DECK · 1–9 CARDS',
+          'PVP LOADOUT · MY DECK',
           style: TextStyle(
             color: KardRuneTheme.gold,
+            fontFamily: 'Georgia',
+            fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -68,7 +76,7 @@ class _DeckBuilderState extends State<DeckBuilder> {
                   },
                   builder: (context, candidates, rejected) => AnimatedContainer(
                     key: const Key('deck-slot'),
-                    duration: const Duration(milliseconds: 160),
+                    duration: reduced ? Duration.zero : const Duration(milliseconds: 160),
                     decoration: BoxDecoration(
                       color: hover == index
                           ? Colors.blue.withValues(alpha: .35)
@@ -114,16 +122,26 @@ class _DeckBuilderState extends State<DeckBuilder> {
             ),
           ),
         ),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: () => widget.onSave(slots.whereType<String>().toList()),
-            child: const Text('SAVE DECK'),
+        GestureDetector(
+          key: const Key('save-deck'),
+          onTap: () => widget.onSave(slots.whereType<String>().toList()),
+          child: Container(
+            width: double.infinity,
+            height: 45,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [Color(0xfff8dd9d), Color(0xffbc8a3b)]),
+              border: Border.all(color: const Color(0x9cf6dd9b)),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: const Text('SAVE DECK', style: TextStyle(color: Color(0xff251a0c), fontSize: 11, letterSpacing: 1, fontWeight: FontWeight.w800)),
           ),
         ),
       ],
     ),
+  ),
   );
+  }
   Widget _draggable(
     String id, {
     required VoidCallback onTap,

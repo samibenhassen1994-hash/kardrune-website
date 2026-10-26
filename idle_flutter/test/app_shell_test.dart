@@ -55,7 +55,7 @@ void main() {
     await tester.tap(find.text('SUMMON').last);
     await tester.pump();
     expect(find.text('1,500'), findsOneWidget);
-    await tester.tap(find.text('STANDARD · 300'));
+    await tester.tap(find.textContaining('SUMMON 1'));
     await tester.pump();
     expect(find.text('1,200'), findsOneWidget);
   });
@@ -83,7 +83,7 @@ void main() {
     await tester.pumpWidget(KardRuneApp(random: () => 0));
     await tester.tap(find.text('SUMMON').last);
     await tester.pump();
-    await tester.tap(find.text('STANDARD · 300'));
+    await tester.tap(find.textContaining('SUMMON 1'));
     await tester.pump();
     expect(find.text('DUPLICATE CARD'), findsOneWidget);
     await tester.tap(find.text('KEEP CURRENT · +100'));
@@ -96,7 +96,7 @@ void main() {
     await tester.pumpWidget(const KardRuneApp());
     await tester.tap(find.text('PROFILE').last);
     await tester.pump();
-    await tester.tap(find.text('ITALIANO'));
+    await tester.tap(find.textContaining('ITALIANO'));
     await tester.pump();
     expect(find.text('CARTE'), findsOneWidget);
   });
@@ -110,7 +110,7 @@ void main() {
     await tester.pumpWidget(const KardRuneApp());
     await tester.tap(find.text('CARDS').last);
     await tester.pump();
-    await tester.tap(find.text('DECK BUILDER'));
+    await tester.tap(find.textContaining('EDIT DECK IN CARDS'));
     await tester.pump();
     expect(find.byKey(const Key('deck-slot')), findsNWidgets(9));
   });
@@ -144,5 +144,23 @@ void main() {
     expect(saved.duels, 1);
     expect(saved.wins, 0);
     expect(saved.practiceCount, 1);
+  });
+
+  testWidgets('animation preference persists outside the game save', (tester) async {
+    final storage = _MemoryStorage(), service = LocalSaveService(storage);
+    await tester.pumpWidget(KardRuneApp(saveService: service));
+    await tester.tap(find.text('PROFILE').last);
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('motion-reduced')));
+    await tester.pump();
+    expect(storage.values['idle-motion-preference-v1'], 'reduced');
+    expect(find.byKey(const Key('motion-reduced-selected')), findsOneWidget);
+    expect(storage.values[LocalSaveService.legacySaveKey], isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(KardRuneApp(saveService: service));
+    await tester.tap(find.text('PROFILE').last);
+    await tester.pump();
+    expect(find.byKey(const Key('motion-reduced-selected')), findsOneWidget);
   });
 }
