@@ -54,7 +54,7 @@ void main() {
     final storage = _Storage(),
         local = LocalSaveService(storage),
         socket = _Socket();
-    local.saveDeck(['sam:1']);
+    local.saveDeck(['sam:1', 'lira:1', 'rhea:1']);
     final match = LiveMatchCoordinator(
       repository: PvpRepository(ApiClient(_Auth(), _Transport())),
       connect: (url, ticket) => socket,
