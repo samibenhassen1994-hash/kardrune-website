@@ -2,7 +2,7 @@
  * Never cache /api/ responses, authenticated requests, WebSockets or video.
  * This also supersedes the legacy /idle/sw.js cache on activation.
  */
-const CACHE_NAME = 'idle-kardrune-flutter-v2';
+const CACHE_NAME = 'idle-kardrune-flutter-v3';
 const SCOPE = new URL(self.registration.scope);
 const SHELL = ['./', './index.html', './manifest.json', './flutter_bootstrap.js'];
 const STATIC_FILES = new Set([
@@ -15,7 +15,7 @@ function cacheable(request) {
   const url = new URL(request.url);
   if (url.origin !== SCOPE.origin || !url.pathname.startsWith(SCOPE.pathname)) return false;
   const relative = url.pathname.slice(SCOPE.pathname.length);
-  if (relative.startsWith('api/') || /\.(mp4|webm)$/i.test(relative)) return false;
+  if (relative === 'release-id.json' || relative.startsWith('api/') || /\.(mp4|webm)$/i.test(relative)) return false;
   return STATIC_FILES.has(relative) ||
       /^(assets|canvaskit|icons)\//.test(relative) ||
       /\.(?:js|wasm|json|png|svg|webp|bin|ttf|otf)$/.test(relative);
