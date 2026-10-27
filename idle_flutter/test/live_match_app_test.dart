@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_kardrune/app.dart';
+import 'package:idle_kardrune/models/player_save.dart';
 import 'package:idle_kardrune/features/pvp/live_match_coordinator.dart';
 import 'package:idle_kardrune/features/pvp/live_pvp_arena.dart';
 import 'package:idle_kardrune/repositories/pvp_repository.dart';
@@ -54,6 +55,11 @@ void main() {
     final storage = _Storage(),
         local = LocalSaveService(storage),
         socket = _Socket();
+    local.save(PlayerSave.initial().copyWith(
+      owned: ['sam:1', 'lira:1', 'rhea:1'],
+      attacks: {'sam:1': 40, 'lira:1': 46, 'rhea:1': 50},
+      crits: {'sam:1': 4, 'lira:1': 5, 'rhea:1': 6},
+    ));
     local.saveDeck(['sam:1', 'lira:1', 'rhea:1']);
     final match = LiveMatchCoordinator(
       repository: PvpRepository(ApiClient(_Auth(), _Transport())),
