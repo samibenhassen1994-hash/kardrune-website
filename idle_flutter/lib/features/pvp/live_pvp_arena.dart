@@ -248,8 +248,9 @@ class _LivePvpArenaState extends State<LivePvpArena> {
               border: Border(bottom: BorderSide(color: Color(0xffdfb76c)))),
             child: Column(children: [
               Row(children: [
-                const Text('⚔ LIVE RUNE CLASH', style: TextStyle(color: Color(0xffffd993), fontSize: 16, fontWeight: FontWeight.w900)),
-                const Spacer(),
+                const Expanded(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
+                  child: Text('⚔ LIVE RUNE CLASH', style: TextStyle(color: Color(0xffffd993), fontSize: 16, fontWeight: FontWeight.w900)))),
+                const SizedBox(width: 8),
                 Text('ROUND ' + (c.hand?.round ?? 1).toString() + ' / 3',
                   key: const Key('round-counter'), style: const TextStyle(fontWeight: FontWeight.w900)),
               ]),
@@ -367,7 +368,9 @@ class _LivePvpArenaState extends State<LivePvpArena> {
         Text(side == 'you' ? 'YOU' : 'RIVAL',
           style: const TextStyle(color: Color(0xffd9e4f2), fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
-        _BattleCard(card: card, selected: false, width: 140, height: 188, hp: hp),
+        _BattleCard(card: card, selected: false,
+          width: MediaQuery.sizeOf(context).width < 360 ? 104 : 135,
+          height: MediaQuery.sizeOf(context).height < 680 ? 158 : 185, hp: hp),
         const SizedBox(height: 6),
         Text(hp.toString() + ' HP', key: Key('pvp-' + side + '-hp'),
           style: const TextStyle(color: Color(0xff88c9ff), fontSize: 13, fontWeight: FontWeight.w900)),
