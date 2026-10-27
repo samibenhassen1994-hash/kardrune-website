@@ -18,6 +18,10 @@ void main() {
       ),
     );
     expect(index, contains('<title>Idle KardRune</title>'));
+    // The desktop frame is an actual Flutter host, not CSS-resized canvas.
+    expect(index, contains('id="idle-game-frame"'));
+    final bootstrap = File('web/flutter_bootstrap.js').readAsStringSync();
+    expect(bootstrap, contains("hostElement: document.getElementById('idle-game-frame')"));
     expect(index, contains("register('kardrune_service_worker.js'"));
     expect(index, contains('kardrune-update-available'));
     expect(index, contains('kardrune-apply-update'));
