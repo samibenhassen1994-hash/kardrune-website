@@ -73,11 +73,11 @@ class _SummonResultState extends State<SummonResult> with SingleTickerProviderSt
       ])
       :_button('CONTINUE',const Key('summon-continue'),widget.onContinue,true))
   ]);
+  // Full-height card comparison. Keep actions pinned below the scrollable area.
   Widget _compare() => Column(children:[
-    SizedBox(height:220,child:Row(children:[
+    SizedBox(height:290,child:Row(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
       Expanded(child:_card('YOUR CARD',widget.oldAttack!,widget.oldCrit!,true)),
-      const Padding(padding:EdgeInsets.symmetric(horizontal:2),
-        child:Icon(Icons.compare_arrows,color:Color(0xffe9bd70),size:22)),
+      const SizedBox(width:8),
       Expanded(child:_card('NEW CARD',widget.newAttack,widget.newCrit,false)),
     ])),
     const SizedBox(height:12),
@@ -87,15 +87,51 @@ class _SummonResultState extends State<SummonResult> with SingleTickerProviderSt
     const SizedBox(height:6),
     _stat('HP',widget.hp,widget.hp),
     const SizedBox(height:10),
-    const Text('▲ GREEN: BETTER    ▼ RED: WORSE',style:TextStyle(color:Color(0xffb5c7db),fontSize:9)),
+    const Text('▲ GREEN: BETTER    ▼ RED: WORSE',
+      style:TextStyle(color:Color(0xffd2dfef),fontSize:11,fontWeight:FontWeight.bold)),
   ]);
+
   Widget _card(String label,int atk,int crit,bool old) => Column(children:[
-    Text(label,style:TextStyle(color:old?const Color(0xffc1cfde):const Color(0xffffd88b),
-      fontSize:10,fontWeight:FontWeight.w900,letterSpacing:1)),
-    const SizedBox(height:5),
-    Expanded(child:CharacterCardArt(key:Key(old?'summon-old-card':'summon-new-card'),
-      asset:widget.asset,hp:widget.hp,attack:atk,crit:crit,compact:true))
+    Text(label,style:TextStyle(color:old?const Color(0xffd9e3ee):const Color(0xffffd88b),
+      fontSize:12,fontWeight:FontWeight.w900,letterSpacing:1)),
+    const SizedBox(height:7),
+    Expanded(child:Container(
+      key:Key(old?'summon-old-card':'summon-new-card'),
+      decoration:BoxDecoration(color:const Color(0xff080f22),
+        borderRadius:BorderRadius.circular(9),
+        border:Border.all(color:old?const Color(0xff647892):const Color(0xffdbb369),width:1.5)),
+      clipBehavior:Clip.antiAlias,
+      child:Stack(fit:StackFit.expand,children:[
+        Padding(padding:const EdgeInsets.only(top:47),child:Image.asset(widget.asset,
+          fit:BoxFit.contain,alignment:Alignment.center)),
+        Positioned(top:3,left:3,right:3,child:Row(children:[
+          Expanded(child:_cardStat('ATK','$atk',old?null:atk-widget.oldAttack!)),
+          const SizedBox(width:3),
+          Expanded(child:_cardStat('CRIT','$crit%',old?null:crit-widget.oldCrit!)),
+          const SizedBox(width:3),
+          Expanded(child:_cardStat('HP','${widget.hp}',null)),
+        ])),
+      ]))),
   ]);
+
+  // Green/red feedback is displayed ON the new card, not hidden below it.
+  Widget _cardStat(String label,String value,int? delta) {
+    final better=delta!=null && delta>0;
+    final worse=delta!=null && delta<0;
+    final color=better?const Color(0xff79ffae):worse?const Color(0xffff9999):const Color(0xffffe0a0);
+    return Semantics(label:'$label $value${better ? ' improved' : worse ? ' worse' : ''}',
+      child:Container(height:43,
+        decoration:BoxDecoration(borderRadius:BorderRadius.circular(5),
+          color:better?const Color(0xff10472e):worse?const Color(0xff542329):const Color(0xee172237),
+          border:Border.all(color:better?const Color(0xff3fe58f):worse?const Color(0xffff7474):const Color(0xff647892))),
+        padding:const EdgeInsets.symmetric(horizontal:1),
+        child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[
+          Text(label,maxLines:1,style:const TextStyle(color:Color(0xffeff5ff),
+            fontSize:9,fontWeight:FontWeight.w800)),
+          FittedBox(fit:BoxFit.scaleDown,child:Text('${better ? '▲ ' : worse ? '▼ ' : ''}$value',
+            maxLines:1,style:TextStyle(color:color,fontSize:14,fontWeight:FontWeight.w900))),
+        ])));
+  }
   Widget _stat(String label,int old,int next,{bool percent=false}) {
     final delta=next-old;
     final color=delta>0?const Color(0xff77e6a4):delta<0?const Color(0xffff8989):const Color(0xffc9d5e2);
