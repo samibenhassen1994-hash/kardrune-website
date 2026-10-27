@@ -165,10 +165,9 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 1200));
-    await tester.drag(
-      find.byKey(const ValueKey('hand-lira:1')),
-      const Offset(0, -300),
-    );
+    final from = tester.getCenter(find.byKey(const ValueKey('hand-lira:1')));
+    final to = tester.getCenter(find.byKey(const Key('player-play-zone')));
+    await tester.dragFrom(from, to - from);
     await tester.pump();
     expect(played, ['lira:1']);
     final replay = c.replay({
