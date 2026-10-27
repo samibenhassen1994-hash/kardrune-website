@@ -1,0 +1,46 @@
+name: Build Idle Flutter Summon
+on:
+  push:
+    branches:
+      - feature/idle-summon-animated-comparison
+    paths:
+      - 'idle_flutter/**'
+      - '.github/workflows/idle-flutter-summon.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Install and analyze
+        working-directory: idle_flutter
+        run: |
+          flutter pub get
+          flutter analyze
+      - name: Test Summon interactions and save parity
+        working-directory: idle_flutter
+        run: flutter test test/app_shell_test.dart test/summon_rules_test.dart test/player_save_test.dart
+      - name: Build /idle/ release
+        working-directory: idle_flutter
+        run: flutter build web --release --base-href /idle/
+      - name: Verify and commit compiled frontend
+        shell: bash
+        run: |
+          test -f idle_flutter/build/web/main.dart.js
+          grep -q '<base href="/idle/">' idle_flutter/build/web/index.html
+          rm -rf idle
+          cp -a idle_flutter/build/web idle
+          git add -A -- idle
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'build: compile updated Idle Flutter Summon frontend'
+            git push origin HEAD:feature/idle-summon-animated-comparison
+          fi
