@@ -17,4 +17,5 @@ export function resolveDuel(a,b,random=Math.random){
  }
  return {winner:hp[0]===hp[1]?'draw':hp[0]>0?0:1,log,hp};
 }
+export function matchComplete(scores, roundsPlayed){return scores.some(score=>score>=2)||roundsPlayed>=3}
 export function pickWinner(scores){return scores[0]===scores[1]?'draw':scores[0]>scores[1]?0:1}

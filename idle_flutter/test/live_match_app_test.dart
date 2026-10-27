@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_kardrune/app.dart';
+import 'package:idle_kardrune/models/player_save.dart';
 import 'package:idle_kardrune/features/pvp/live_match_coordinator.dart';
 import 'package:idle_kardrune/features/pvp/live_pvp_arena.dart';
 import 'package:idle_kardrune/repositories/pvp_repository.dart';
@@ -54,7 +55,12 @@ void main() {
     final storage = _Storage(),
         local = LocalSaveService(storage),
         socket = _Socket();
-    local.saveDeck(['sam:1']);
+    local.save(PlayerSave.initial().copyWith(
+      owned: ['sam:1', 'lira:1', 'rhea:1'],
+      attacks: {'sam:1': 40, 'lira:1': 46, 'rhea:1': 50},
+      crits: {'sam:1': 4, 'lira:1': 5, 'rhea:1': 6},
+    ));
+    local.saveDeck(['sam:1', 'lira:1', 'rhea:1']);
     final match = LiveMatchCoordinator(
       repository: PvpRepository(ApiClient(_Auth(), _Transport())),
       connect: (url, ticket) => socket,
@@ -84,7 +90,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(LivePvpArena), findsOneWidget);
     expect(find.text('⚔ Rival'), findsOneWidget);
-    expect(find.text('RUNE CLASH   0 : 0'), findsOneWidget);
+    expect(find.byKey(const Key('pvp-round-header')), findsOneWidget);
+    expect(find.text('ROUND 1 / 3'), findsOneWidget);
+    expect(find.byKey(const Key('round-score')), findsOneWidget);
     await tester.tap(find.byKey(const Key('close-live-arena')));
     await tester.pumpAndSettle();
     expect(find.byType(LivePvpArena), findsNothing);
