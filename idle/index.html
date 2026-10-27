@@ -20,7 +20,17 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Idle KardRune — collect, train and battle with KardRune heroes.">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#070e20"><meta name="color-scheme" content="dark"><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#070e20}body{isolation:isolate}flutter-view{display:block;position:relative;z-index:1;margin:0 auto;max-width:100%;background:#070e20}@media(min-width:900px){flutter-view{max-width:520px;box-shadow:0 0 50px 20px #000a}body:before,body:after{content:"";pointer-events:none;position:fixed;top:-25px;bottom:-25px;width:calc((100vw - 520px)/2 + 25px);background-size:cover;background-position:center;filter:blur(18px) brightness(.4);opacity:.8}body:before{left:-25px;background-image:url("assets/assets/idle/cards/young_sam/Sam_Last_Guardian_stage_3.webp")}body:after{right:-25px;background-image:url("assets/assets/idle/cards/aria/Aria_Fallen_Arcanist_stage_3.webp")}}</style>
+  <meta name="theme-color" content="#070e20"><meta name="color-scheme" content="dark"><style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#070e20}
+body{background:#070e20}
+#idle-side-art{position:fixed;inset:0;z-index:0;pointer-events:none;display:none}
+@media(min-width:900px){
+#idle-side-art{display:block}
+#idle-side-art::before,#idle-side-art::after{content:"";position:absolute;top:-24px;bottom:-24px;width:calc((100% - 520px)/2 + 24px);background-size:cover;background-position:center;filter:blur(18px) brightness(.34);opacity:.8}
+#idle-side-art::before{left:-24px;background-image:url("assets/assets/idle/cards/young_sam/Sam_Last_Guardian_stage_3.webp")}
+#idle-side-art::after{right:-24px;background-image:url("assets/assets/idle/cards/aria/Aria_Fallen_Arcanist_stage_3.webp")}
+}
+</style>
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -35,7 +45,7 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
-  <!--
+  <div id="idle-side-art" aria-hidden="true"></div><!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
     or to give the user feedback during the initialization process.
