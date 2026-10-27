@@ -184,6 +184,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 640));
     expect(find.text('175 HP'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(seconds: 2));
     await replay;
   });
 
