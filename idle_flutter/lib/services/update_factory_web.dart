@@ -9,6 +9,13 @@ class _WebUpdateBridge implements DisposableAppUpdateBridge {
   _WebUpdateBridge() {
     _listener = ((web.Event event) => _updates.add(null)).toJS;
     web.window.addEventListener('kardrune-update-available', _listener);
+    // In standalone Safari the version event can precede Flutter startup.
+    scheduleMicrotask(() {
+      if (!_updates.isClosed &&
+          web.document.documentElement?.getAttribute('data-kardrune-update') == 'true') {
+        _updates.add(null);
+      }
+    });
   }
   final _updates = StreamController<void>.broadcast();
   late final web.EventListener _listener;
