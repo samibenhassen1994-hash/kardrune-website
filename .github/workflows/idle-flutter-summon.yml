@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feature/idle-summon-animated-comparison
+      - fix/idle-summon-stats-ios-update
     paths:
       - 'idle_flutter/**'
       - '.github/workflows/idle-flutter-summon.yml'
@@ -32,6 +33,10 @@ jobs:
       - name: Build /idle/ release
         working-directory: idle_flutter
         run: flutter build web --release --base-href /idle/
+      - name: Stamp release for PWA version checks
+        shell: bash
+        run: |
+          printf '{"release":"%s"}\n' "$(git rev-parse --short HEAD)" > idle_flutter/build/web/release-id.json
       - name: Verify and commit compiled frontend
         shell: bash
         run: |
@@ -42,5 +47,5 @@ jobs:
           git add -A -- idle
           if ! git diff --cached --quiet; then
             git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'build: compile updated Idle Flutter Summon frontend'
-            git push origin HEAD:feature/idle-summon-animated-comparison
+            git push origin HEAD:"$GITHUB_REF_NAME"
           fi
