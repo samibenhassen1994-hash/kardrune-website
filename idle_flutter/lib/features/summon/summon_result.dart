@@ -28,7 +28,7 @@ class _SummonResultState extends State<SummonResult> with SingleTickerProviderSt
     child: Dialog(insetPadding: const EdgeInsets.all(10), backgroundColor: const Color(0xff101c32),
       shape: RoundedRectangleBorder(borderRadius:BorderRadius.circular(16),
         side:const BorderSide(color:Color(0xffd6b16a))),
-      child: SizedBox(width:430,height:math.min(630,MediaQuery.sizeOf(context).height*.9),
+      child: SizedBox(width:430,height:math.min(725,MediaQuery.sizeOf(context).height*.96),
         child: AnimatedBuilder(animation:animation,builder:(context,child) =>
           animation.value < .99 ? _portal(animation.value) : _result()))));
   Widget _portal(double t) => Stack(alignment:Alignment.center,children:[
@@ -74,13 +74,13 @@ class _SummonResultState extends State<SummonResult> with SingleTickerProviderSt
       :_button('CONTINUE',const Key('summon-continue'),widget.onContinue,true))
   ]);
   Widget _compare() => Column(children:[
-    SizedBox(height:220,child:Row(children:[
+    SizedBox(height:310,child:Row(children:[
       Expanded(child:_card('YOUR CARD',widget.oldAttack!,widget.oldCrit!,true)),
       const Padding(padding:EdgeInsets.symmetric(horizontal:2),
         child:Icon(Icons.compare_arrows,color:Color(0xffe9bd70),size:22)),
       Expanded(child:_card('NEW CARD',widget.newAttack,widget.newCrit,false)),
     ])),
-    const SizedBox(height:12),
+    const SizedBox(height:9),
     _stat('ATK',widget.oldAttack!,widget.newAttack),
     const SizedBox(height:6),
     _stat('CRIT',widget.oldCrit!,widget.newCrit,percent:true),
@@ -89,18 +89,65 @@ class _SummonResultState extends State<SummonResult> with SingleTickerProviderSt
     const SizedBox(height:10),
     const Text('▲ GREEN: BETTER    ▼ RED: WORSE',style:TextStyle(color:Color(0xffb5c7db),fontSize:9)),
   ]);
-  Widget _card(String label,int atk,int crit,bool old) => Column(children:[
-    Text(label,style:TextStyle(color:old?const Color(0xffc1cfde):const Color(0xffffd88b),
-      fontSize:10,fontWeight:FontWeight.w900,letterSpacing:1)),
-    const SizedBox(height:5),
-    Expanded(child:CharacterCardArt(key:Key(old?'summon-old-card':'summon-new-card'),
-      asset:widget.asset,hp:widget.hp,attack:atk,crit:crit,compact:true))
+  Widget _card(String label, int atk, int crit, bool old) => Column(children: [
+    Text(label, style: TextStyle(
+      color: old ? const Color(0xffd7e4f5) : const Color(0xffffdc91),
+      fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1)),
+    const SizedBox(height: 5),
+    Expanded(child: Container(
+      key: Key(old ? 'summon-old-card' : 'summon-new-card'),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: const Color(0xff0a152a),
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(
+          color: old ? const Color(0xff6d89ae) : const Color(0xfff5ce7b),
+          width: 1.5)),
+      child: Stack(fit: StackFit.expand, children: [
+        Image.asset(widget.asset, fit: BoxFit.contain),
+        Positioned(top: 4, left: 4, right: 4,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(6, 6, 6, 5),
+            decoration: BoxDecoration(
+              color: const Color(0xf2071427),
+              borderRadius: BorderRadius.circular(7),
+              border: Border.all(color: const Color(0x99eccf85))),
+            child: Column(children: [
+              _overlayStat('HP', widget.hp, null),
+              const SizedBox(height: 4),
+              _overlayStat('ATK', atk, old ? null : atk - widget.oldAttack!),
+              const SizedBox(height: 4),
+              _overlayStat('CRIT', crit, old ? null : crit - widget.oldCrit!, percent: true),
+            ]))),
+      ]),
+    )),
   ]);
+
+  Widget _overlayStat(String label, int value, int? delta, {bool percent = false}) {
+    final better = delta != null && delta > 0;
+    final worse = delta != null && delta < 0;
+    final color = better ? const Color(0xff76ffaf) :
+      worse ? const Color(0xffff8c92) : const Color(0xfff6e6c3);
+    return Row(children: [
+      SizedBox(width: 31, child: Text(label, style: const TextStyle(
+        color: Color(0xffe4d1a6), fontWeight: FontWeight.w900, fontSize: 10))),
+      Expanded(child: Text(percent ? '$value%' : '$value',
+        style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 15))),
+      if (better || worse) Icon(
+        better ? Icons.arrow_upward : Icons.arrow_downward,
+        color: color, size: 17),
+      if (better || worse) Text(
+        '${better ? '+' : ''}$delta${percent ? '%' : ''}',
+        style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 11)),
+      if (delta == 0) const Icon(Icons.remove, color: Color(0xffd2d6df), size: 13),
+    ]);
+  }
+
   Widget _stat(String label,int old,int next,{bool percent=false}) {
     final delta=next-old;
     final color=delta>0?const Color(0xff77e6a4):delta<0?const Color(0xffff8989):const Color(0xffc9d5e2);
     String fmt(int v)=>percent?'$v%':'$v';
-    return Container(height:37,padding:const EdgeInsets.symmetric(horizontal:9),
+    return Container(height:43,padding:const EdgeInsets.symmetric(horizontal:9),
       decoration:BoxDecoration(color:const Color(0xff192941),borderRadius:BorderRadius.circular(7),
         border:Border.all(color:const Color(0x66798da8))),
       child:Row(children:[
