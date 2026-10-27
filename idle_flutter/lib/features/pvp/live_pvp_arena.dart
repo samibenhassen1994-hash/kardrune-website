@@ -85,7 +85,9 @@ class ArenaViewController extends ChangeNotifier {
       effect = null;
       notifyListeners();
     }
-    await Future<void>.delayed(const Duration(milliseconds: 550));
+    if (hitDuration > Duration.zero) {
+      await Future<void>.delayed(const Duration(milliseconds: 550));
+    }
     if (token != generation) return;
     popup = null;
     notifyListeners();
