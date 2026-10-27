@@ -1,4 +1,6 @@
 import 'dart:math' as math;
+import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
@@ -85,6 +87,8 @@ class IdleShell extends StatefulWidget {
 
 class _IdleShellState extends State<IdleShell> {
   static const _motionKey = 'idle-motion-preference-v1';
+  static const _pvpRewardKey = 'idle-pvp-completed-rewards-v1';
+  Timer? _matchExitTimer;
   int tab = 0, shards = 1500, page = 0, rewardsLeft = 10;
   String name = 'Runebearer', avatar = 'player';
   String battleStatus = '';
@@ -144,6 +148,7 @@ class _IdleShellState extends State<IdleShell> {
     rewardsLeft = GameRules.dailyRewardLimit - practiceCount;
     _pvp = widget.liveMatchCoordinator;
     _pvp?.addListener(_pvpChanged);
+    if (_pvp != null) _pvp!.onMatchFinished = _pvpFinished;
     _updates = widget.updateController ?? createDefaultUpdateController();
     _ownsUpdates = widget.updateController == null && _updates != null;
     _updates?.addListener(_updateChanged);
@@ -202,6 +207,7 @@ class _IdleShellState extends State<IdleShell> {
         repository: PvpRepository(_cloud!.api),
         connect: LivePvpSocket.connect,
       )..addListener(_pvpChanged);
+      _pvp!.onMatchFinished = _pvpFinished;
       _loadCloudDeck();
     } else if (_cloud?.identity == null && _pvp != null) {
       _pvp!.removeListener(_pvpChanged);
@@ -209,6 +215,31 @@ class _IdleShellState extends State<IdleShell> {
       _pvp = null;
     }
     if (mounted) setState(() {});
+  }
+
+  void _pvpFinished(String matchId, String reason) {
+    _matchExitTimer?.cancel();
+    if (reason == 'completed' && _saveService != null) {
+      final storage = _saveService!.storage;
+      final claimed = <String>[];
+      try {
+        final decoded = jsonDecode(storage.read(_pvpRewardKey) ?? '[]');
+        if (decoded is List) claimed.addAll(decoded.whereType<String>());
+      } catch (_) {}
+      if (!claimed.contains(matchId)) {
+        claimed.add(matchId);
+        // Durable marker is written before the reward. Demo wallet is local;
+        // never award the same server match twice after re-entry.
+        storage.write(_pvpRewardKey, jsonEncode(claimed.take(500).toList()));
+        setState(() => shards += 100);
+        _persist();
+      }
+    }
+    _matchExitTimer = Timer(const Duration(seconds: 5), () {
+      if (!mounted) return;
+      setState(() => tab = 0);
+      _pvp?.close();
+    });
   }
 
   void _pvpChanged() {
@@ -272,6 +303,7 @@ class _IdleShellState extends State<IdleShell> {
 
   @override
   void dispose() {
+    _matchExitTimer?.cancel();
     _cloud?.removeListener(_cloudChanged);
     _pvp?.removeListener(_pvpChanged);
     _pvp?.dispose();
@@ -432,7 +464,7 @@ class _IdleShellState extends State<IdleShell> {
   Widget _motionWrap(Widget child) {
     final media = MediaQuery.of(context);
     final reduce = switch (motion) {
-      MotionPreference.automatic => media.disableAnimations,
+      MotionPreference.automatic => false,
       MotionPreference.full => false,
       MotionPreference.reduced => true,
     };
