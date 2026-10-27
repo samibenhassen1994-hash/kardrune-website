@@ -82,7 +82,7 @@ class LiveMatchCoordinator extends ChangeNotifier {
       case RoundResultEvent():
         arena.replay(event.json);
       case FinishedEvent():
-        arena.finish(event.winner, event.score);
+        arena.finish(event.winner, event.score, rewarded: event.reason == 'completed');
         final id = _protocol?.matchId;
         if (id != null) onMatchFinished?.call(id, event.reason);
       case ErrorEvent():
