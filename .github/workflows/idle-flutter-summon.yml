@@ -32,6 +32,9 @@ jobs:
       - name: Test Summon interactions and save parity
         working-directory: idle_flutter
         run: flutter test test/app_shell_test.dart test/summon_rules_test.dart test/player_save_test.dart test/live_match_coordinator_test.dart test/live_match_app_test.dart test/pvp_protocol_test.dart test/live_pvp_arena_test.dart
+      - name: Test live PvP server rules
+        working-directory: live-pvp
+        run: node --test tests/*.test.js
       - name: Build /idle/ release
         working-directory: idle_flutter
         run: flutter build web --release --base-href /idle/
