@@ -56,6 +56,11 @@ class ApiFailure implements Exception {
   const ApiFailure(this.statusCode, this.message);
   final int statusCode;
   final String message;
+
+  // In Flutter Web release builds the default Exception.toString() may show
+  // only a minified Dart type (e.g. "Instance of 'minified:mw'").
+  @override
+  String toString() => 'HTTP $statusCode: $message';
 }
 
 class ApiClient {
