@@ -135,6 +135,8 @@ void main() {
     await tester.pump();
     expect(find.byKey(const Key('card-stats-sam:2')), findsOneWidget);
     final stats = find.byKey(const Key('card-stats-sam:2'));
+    final frame = find.byKey(const Key('card-frame-sam:2'));
+    expect(frame, findsOneWidget);
     expect(
       find.descendant(
         of: stats,
@@ -168,6 +170,15 @@ void main() {
       find.descendant(of: stats, matching: find.text('19%')),
       findsOneWidget,
     );
+    final frameRect = tester.getRect(frame);
+    for (final badgeKey in const [
+      Key('stat-badge-atk'),
+      Key('stat-badge-crit'),
+      Key('stat-badge-hp'),
+    ]) {
+      final badge = find.descendant(of: frame, matching: find.byKey(badgeKey));
+      expect(frameRect.contains(tester.getCenter(badge)), isTrue);
+    }
 
     await tester.tap(find.byKey(const Key('card-art-sam:2')));
     await tester.pump();

@@ -1430,26 +1430,15 @@ class _Cards extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Opacity(
-                opacity: isOwned ? 1 : .28,
-                child: Image.asset(
-                  hero.cardAsset(hero.stages[stage - 1]),
-                  key: ValueKey('card-art-$id'),
-                  fit: BoxFit.contain,
-                ),
-              ),
-              Positioned(
-                left: 3,
-                right: 3,
-                top: 3,
-                child: IgnorePointer(
-                  child: CardStatBadges(
-                    key: ValueKey('card-stats-$id'),
-                    hp: CombatRules.hpForStage(stage),
-                    attack: isOwned ? attacks[id] : null,
-                    crit: isOwned ? crits[id] : null,
-                  ),
-                ),
+              CharacterCardArt(
+                key: ValueKey('card-frame-$id'),
+                asset: hero.cardAsset(hero.stages[stage - 1]),
+                artKey: ValueKey('card-art-$id'),
+                statsKey: ValueKey('card-stats-$id'),
+                hp: CombatRules.hpForStage(stage),
+                attack: isOwned ? attacks[id] : null,
+                crit: isOwned ? crits[id] : null,
+                imageOpacity: isOwned ? 1 : .28,
               ),
               if (!isOwned)
                 const IgnorePointer(
@@ -1501,15 +1490,13 @@ class _Cards extends StatelessWidget {
                 const SizedBox(height: 8),
                 SizedBox(
                   height: 220,
-                  child: Image.asset(
-                    hero.cardAsset(hero.stages[stage - 1]),
-                    fit: BoxFit.contain,
+                  child: CharacterCardArt(
+                    key: ValueKey('card-detail-frame-$id'),
+                    asset: hero.cardAsset(hero.stages[stage - 1]),
+                    hp: CombatRules.hpForStage(stage),
+                    attack: isOwned ? attacks[id] : null,
+                    crit: isOwned ? crits[id] : null,
                   ),
-                ),
-                CardStatBadges(
-                  hp: CombatRules.hpForStage(stage),
-                  attack: isOwned ? attacks[id] : null,
-                  crit: isOwned ? crits[id] : null,
                 ),
                 const SizedBox(height: 12),
                 Text(

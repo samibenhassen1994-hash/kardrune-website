@@ -44,3 +44,5 @@ Final PvP review qualification (2026-10-27): realtime match execution is server-
 
 Card stat badge pass (2026-10-27): Collection/details and realtime PvP cards now render the saved ATK in a red circular badge, saved CRIT in a purple badge, and stage-derived HP in a blue circular badge over the top of the original card art, matching the supplied visual reference. Locked previews expose only deterministic HP and em dashes for unavailable ATK/CRIT. Widget interaction, compact arena layout, responsive viewports and refreshed Collection/Arena goldens pass; Flutter 73/73 and analyze are clean.
 
+Card-frame correction (2026-10-27): image and ATK/CRIT/HP badges are now one aspect-ratio-preserving `CharacterCardArt` widget. Badge positions are constrained to the actual illustrated card frame instead of the surrounding Collection/Arena panel, including the details dialog and scaled PvP hand cards. Geometry tests assert the three badge centers remain inside the card frame.
+

@@ -542,32 +542,14 @@ class _BattleCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(9),
       ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(7),
-            child: Image.asset(
-              asset,
-              key: ValueKey('card-art-${card.id}'),
-              fit: BoxFit.cover,
-              width: double.infinity,
-            ),
-          ),
-          Positioned(
-            left: 2,
-            right: 2,
-            top: 2,
-            child: IgnorePointer(
-              child: CardStatBadges(
-                hp: CombatRules.hpForStage(card.stage),
-                attack: card.attack,
-                crit: card.crit,
-                compact: true,
-              ),
-            ),
-          ),
-        ],
+      child: CharacterCardArt(
+        key: ValueKey('battle-card-frame-${card.id}'),
+        asset: asset,
+        artKey: ValueKey('card-art-${card.id}'),
+        hp: CombatRules.hpForStage(card.stage),
+        attack: card.attack,
+        crit: card.crit,
+        compact: true,
       ),
     ),
   );

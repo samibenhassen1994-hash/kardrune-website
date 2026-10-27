@@ -39,6 +39,7 @@ void main() {
     expect(find.text('40'), findsOneWidget);
     expect(find.text('4%'), findsOneWidget);
     expect(find.text('240'), findsNWidgets(3));
+    expect(find.byKey(const Key('battle-card-frame-sam:1')), findsOneWidget);
   });
   testWidgets('tap selects once and automatic lock is explained', (
     tester,
