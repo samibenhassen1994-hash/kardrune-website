@@ -334,8 +334,14 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                 Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
                   Expanded(child: _fighter(c.playerCard!, c.playerHp, c.attackActor == 0 && c.attackWindup, c.hitSerial, motionDuration, 'you', c.attackActor == 1 && !c.attackWindup)),
                   SizedBox(width: 45, child: Center(child: c.attackWindup
-                    ? Text(_attackGlyph(c.attackActor == 0 ? c.playerCard!.hero : c.opponentCard!.hero),
-                        key: const Key('pvp-attack-effect'), style: const TextStyle(fontSize: 30))
+                    ? TweenAnimationBuilder<double>(
+                        key: ValueKey('attack-${c.hitSerial}'),
+                        tween: Tween(begin: c.attackActor == 0 ? -1.0 : 1.0, end: 0),
+                        duration: const Duration(milliseconds: 360),
+                        builder: (context, x, child) => Transform.translate(
+                          offset: Offset(x * 25, 0), child: child),
+                        child: Text(_attackGlyph(c.attackActor == 0 ? c.playerCard!.hero : c.opponentCard!.hero),
+                          key: const Key('pvp-attack-effect'), style: const TextStyle(fontSize: 30)))
                     : const Text('VS', style: TextStyle(fontSize: 23, color: Color(0xffffd993), fontWeight: FontWeight.bold)))),
                   Expanded(child: _fighter(c.opponentCard!, c.opponentHp, c.attackActor == 1 && c.attackWindup, c.hitSerial, motionDuration, 'rival', c.attackActor == 0 && !c.attackWindup)),
                 ]),
