@@ -220,7 +220,7 @@ class _IdleShellState extends State<IdleShell> {
   void _pvpFinished(String matchId, String reason) {
     _matchExitTimer?.cancel();
     if (reason == 'completed' && _saveService != null) {
-      final storage = _saveService!.storage;
+      final storage = _saveService.storage;
       final claimed = <String>[];
       try {
         final decoded = jsonDecode(storage.read(_pvpRewardKey) ?? '[]');
