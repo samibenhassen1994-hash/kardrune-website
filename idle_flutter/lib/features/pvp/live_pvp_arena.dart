@@ -248,7 +248,9 @@ class _LivePvpArenaState extends State<LivePvpArena> {
   Widget build(BuildContext context) {
     final c = widget.controller;
     final reduced = MediaQuery.disableAnimationsOf(context);
-    final motionDuration = reduced ? Duration.zero : c.hitDuration;
+    // On mobile Safari, moving full textured cards forces expensive repaints.
+    // Keep the readable hit text but use static artwork and lightweight indicators.
+    final motionDuration = reduced ? Duration.zero : const Duration(milliseconds: 120);
     final cards = c.hand?.hand ?? const <PvpCard>[];
     final battle = c.battleStarted && c.playerCard != null && c.opponentCard != null;
     final choosing = c.hand != null && c.lockedCard == null && !c.battleStarted;
@@ -321,10 +323,9 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                   Expanded(child: _fighter(c.opponentCard!, c.opponentHp, c.attackActor == 1 && c.attackWindup, c.hitSerial, motionDuration, 'rival', c.attackActor == 0 && !c.attackWindup)),
                 ]),
                 const SizedBox(height: 5),
-                if (c.effect != null) AnimatedSwitcher(duration: motionDuration,
-                  child: Text(c.effect!, key: ValueKey(c.hitSerial), style: TextStyle(
+                if (c.effect != null) Text(c.effect!, key: ValueKey(c.hitSerial), style: TextStyle(
                     fontSize: 24, fontWeight: FontWeight.w900,
-                    color: c.effect!.startsWith('CRITICAL!') ? const Color(0xffffd56c) : const Color(0xffff8787)))),
+                    color: c.effect!.startsWith('CRITICAL!') ? const Color(0xffffd56c) : const Color(0xffff8787))),
               ]),
               if (c.popup != null) Container(key: const Key('battle-announcement'),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
@@ -384,22 +385,21 @@ class _LivePvpArenaState extends State<LivePvpArena> {
     ]));
 
   Widget _fighter(PvpCard card, int hp, bool attacking, int serial, Duration duration, String side, bool hit) =>
-    AnimatedSlide(offset: attacking ? Offset(side == 'you' ? .12 : -.12, 0) : Offset.zero,
-      duration: duration, curve: Curves.easeOutBack,
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(side == 'you' ? 'YOU' : 'RIVAL',
-          style: const TextStyle(color: Color(0xffd9e4f2), fontWeight: FontWeight.bold)),
-        const SizedBox(height: 6),
-        AnimatedContainer(duration: duration, padding: EdgeInsets.all(hit ? 3 : 0),
-          decoration: BoxDecoration(border: Border.all(color: hit ? Colors.redAccent : Colors.transparent, width: 3),
-            borderRadius: BorderRadius.circular(12)),
-          child: _BattleCard(card: card, selected: false,
+    Column(mainAxisSize: MainAxisSize.min, children: [
+      Text(side == 'you' ? 'YOU' : 'RIVAL',
+        style: const TextStyle(color: Color(0xffd9e4f2), fontWeight: FontWeight.bold)),
+      const SizedBox(height: 6),
+      RepaintBoundary(child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: hit ? Colors.redAccent : attacking ? Colors.amberAccent : Colors.transparent, width: 2),
+          borderRadius: BorderRadius.circular(10)),
+        child: _BattleCard(card: card, selected: false,
           width: MediaQuery.sizeOf(context).width < 360 ? 104 : 135,
-          height: MediaQuery.sizeOf(context).height < 900 ? 128 : 175, hp: hp)),
-        const SizedBox(height: 6),
-        Text(hp.toString() + ' HP', key: Key('pvp-' + side + '-hp'),
-          style: const TextStyle(color: Color(0xff88c9ff), fontSize: 13, fontWeight: FontWeight.w900)),
-      ]));
+          height: MediaQuery.sizeOf(context).height < 900 ? 128 : 175, hp: hp))),
+      const SizedBox(height: 6),
+      Text(hp.toString() + ' HP', key: Key('pvp-' + side + '-hp'),
+        style: const TextStyle(color: Color(0xff88c9ff), fontSize: 13, fontWeight: FontWeight.w900)),
+    ]);
 
 }
 
@@ -442,6 +442,7 @@ class _BattleCard extends StatelessWidget {
         attack: card.attack,
         crit: card.crit,
         compact: true,
+        imageCacheWidth: 320,
       ),
     ),
   );
