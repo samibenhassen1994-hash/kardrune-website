@@ -1,5 +1,7 @@
 import {buildHand,resolveDuel,pickWinner} from './rules.js';
 const CHOOSE_MS=30000;
+const MAX_ROUNDS=3;
+const WINS_TO_WIN=2;
 const PONG_GRACE_MS=18000;
 const send=(ws,obj)=>{try{if(ws.readyState===1)ws.send(JSON.stringify(obj))}catch{}};
 export default {
@@ -18,7 +20,7 @@ export default {
   const deckRow=await env.DB.prepare('SELECT d.cards_json,s.save_json,p.display_name FROM pvp_decks d JOIN demo_saves s ON d.uid=s.uid JOIN players p ON p.uid=d.uid WHERE d.uid=? AND p.is_banned=0').bind(row.uid).first();
   if(!deckRow)return new Response('Deck unavailable',{status:403});
   const save=JSON.parse(deckRow.save_json),ids=JSON.parse(deckRow.cards_json);
-  if(!Array.isArray(ids)||ids.length<1||ids.length>9||new Set(ids).size!==ids.length)return new Response('Invalid deck',{status:400});
+  if(!Array.isArray(ids)||ids.length<MAX_ROUNDS||ids.length>9||new Set(ids).size!==ids.length)return new Response('Invalid deck',{status:400});
   const deck=[];
   for(const id of ids){
    const [hero,stageText]=id.split(':'),stage=Number(stageText),attack=save.attacks?.[id],crit=save.crits?.[id];
@@ -38,7 +40,7 @@ export class PvpLobby {
  async fetch(request){
   if(request.headers.get('Upgrade')?.toLowerCase()!=='websocket')return new Response('WebSocket required',{status:426});
   const uid=request.headers.get('X-Player'),name=request.headers.get('X-Name'),deck=JSON.parse(request.headers.get('X-Deck')||'[]');
-  if(!uid||!deck.length||deck.length>9)return new Response('Invalid match participant',{status:400});
+  if(!uid||deck.length<MAX_ROUNDS||deck.length>9)return new Response('Invalid match participant',{status:400});
   const pair=new WebSocketPair(),client=pair[0],server=pair[1];server.accept();
   const previous=this.sockets.get(uid);
   if(previous){this.drop(previous);try{previous.ws.close(4000,'Reconnected')}catch{}}
@@ -85,6 +87,11 @@ export class PvpLobby {
  next(match){
   if(!this.matches.has(match.id))return;
   this.clearTimers(match);
+  // Best-of-three: finish as soon as someone has two round wins.
+  // A third round is the maximum, including when one ends in a draw.
+  if(match.scores.some(s=>s>=WINS_TO_WIN)||match.round>=MAX_ROUNDS){
+   this.finish(match,'completed');return;
+  }
   const [a,b]=match.players;
   const handA=buildHand(a.deck,a.used),handB=buildHand(b.deck,b.used);
   if(!handA.length||!handB.length){this.finish(match,'completed');return}
