@@ -8,6 +8,7 @@ import 'game/game_rules.dart';
 import 'game/summon_rules.dart';
 import 'features/cards/deck_builder.dart';
 import 'features/cards/card_stat_badges.dart';
+import 'features/summon/summon_result.dart';
 import 'features/profile/cloud_account_controller.dart';
 import 'features/pvp/live_match_coordinator.dart';
 import 'features/pvp/live_pvp_arena.dart';
@@ -97,6 +98,8 @@ class _IdleShellState extends State<IdleShell> {
       practiceDay = '',
       practiceCount = 0;
   List<String> deck = [];
+  Map<String, Object?>? _pendingDuplicate;
+  bool _summonOpen = false;
   MotionPreference motion = MotionPreference.automatic;
   late final LocalSaveService? _saveService;
   CloudAccountController? _cloud;
@@ -125,6 +128,8 @@ class _IdleShellState extends State<IdleShell> {
     owned.addAll(save.owned);
     attacks.addAll(save.attacks);
     crits.addAll(save.crits);
+    _pendingDuplicate = save.pendingDuplicate;
+    if (_pendingDuplicate != null) WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _resumeDuplicate(); });
     deck = _saveService?.loadDeck().where(owned.contains).toList() ?? [];
     motion = MotionPreference.values.firstWhere(
       (value) => value.name == _saveService?.storage.read(_motionKey),
@@ -260,6 +265,7 @@ class _IdleShellState extends State<IdleShell> {
       crits
         ..clear()
         ..addAll(save.crits);
+      _pendingDuplicate = save.pendingDuplicate;
       deck = _saveService?.loadDeck().where(owned.contains).toList() ?? [];
     });
   }
@@ -290,6 +296,7 @@ class _IdleShellState extends State<IdleShell> {
         practiceCount: practiceCount,
         attacks: Map.of(attacks),
         crits: Map.of(crits),
+        pendingDuplicate: _pendingDuplicate,
       ),
     );
     _cloud?.localChanged();
@@ -491,83 +498,79 @@ class _IdleShellState extends State<IdleShell> {
   }
 
   void _summon(bool featured) {
-    final cost = SummonRules.cost(featured);
-    if (shards < cost) return;
+    if (_pendingDuplicate != null) { _resumeDuplicate(); return; }
+    if (_summonOpen || shards < SummonRules.cost(featured)) return;
     final stage = SummonRules.stageFor(featured, widget.random());
-    final index = SummonRules.heroIndex(
-      featured,
-      widget.random(),
-      widget.random(),
-    );
-    final id = '${KardRuneCatalog.heroes[index].id}:$stage',
-        duplicate = owned.contains(id);
+    final index = SummonRules.heroIndex(featured, widget.random(), widget.random());
+    final hero = KardRuneCatalog.heroes[index];
+    final id = '${hero.id}:$stage';
+    final duplicate = owned.contains(id);
     final attack = CombatRules.rollAttack(widget.random);
     final crit = CombatRules.rollCrit(widget.random);
     setState(() {
-      shards -= cost;
+      shards -= SummonRules.cost(featured);
       pulls++;
-      if (!duplicate) {
+      if (duplicate) {
+        _pendingDuplicate = {'id': id, 'attack': attack, 'crit': crit};
+      } else {
         owned.add(id);
         attacks[id] = attack;
         crits[id] = crit;
       }
     });
     _persist();
-    if (duplicate) {
-      showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (c) => AlertDialog(
-          title: const Text('DUPLICATE CARD'),
-          content: Text(
-            'Current ATK ${attacks[id]} · CRIT ${crits[id]}%\nNew ATK $attack · CRIT $crit%',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                setState(() => shards += 100);
-                _persist();
-                Navigator.pop(c);
-              },
-              child: const Text('KEEP CURRENT · +100'),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  attacks[id] = attack;
-                  crits[id] = crit;
-                });
-                _persist();
-                Navigator.pop(c);
-              },
-              child: const Text('REPLACE'),
-            ),
-          ],
-        ),
-      );
-      return;
+    _reveal(id, attack, crit, duplicate);
+  }
+
+  void _resumeDuplicate() {
+    if (_pendingDuplicate == null || _summonOpen) return;
+    final p = _pendingDuplicate!;
+    _reveal(p['id'] as String, p['attack'] as int, p['crit'] as int, true);
+  }
+
+  void _reveal(String id, int attack, int crit, bool duplicate) {
+    if (!mounted || _summonOpen) return;
+    final parts = id.split(':');
+    final stage = int.parse(parts.last);
+    final hero = KardRuneCatalog.heroes.firstWhere((h) => h.id == parts.first);
+    _summonOpen = true;
+    void decide(BuildContext dialogContext, bool replace) {
+      if (_pendingDuplicate == null) return;
+      final decision = SummonRules.resolveDuplicate(replace: replace);
+      setState(() {
+        if (decision.useNewStats) {
+          attacks[id] = attack;
+          crits[id] = crit;
+        } else {
+          shards += decision.refund;
+        }
+        _pendingDuplicate = null;
+      });
+      _persist();
+      Navigator.of(dialogContext).pop();
     }
     showDialog<void>(
       context: context,
-      builder: (c) => AlertDialog(
-        title: Text(
-          '${KardRuneCatalog.heroes[index].name.toUpperCase()} · STAGE $stage',
-        ),
-        content: Image.asset(
-          KardRuneCatalog.heroes[index].cardAsset(
-            KardRuneCatalog.heroes[index].stages[stage - 1],
-          ),
-          fit: BoxFit.contain,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c),
-            child: const Text('CONTINUE'),
-          ),
-        ],
+      barrierDismissible: false,
+      builder: (dialogContext) => SummonResult(
+        heroName: hero.name, stage: stage,
+        asset: hero.cardAsset(hero.stages[stage - 1]),
+        hp: CombatRules.hpForStage(stage),
+        oldAttack: duplicate ? attacks[id] : null,
+        oldCrit: duplicate ? crits[id] : null,
+        newAttack: attack, newCrit: crit,
+        onKeep: () => decide(dialogContext, false),
+        onReplace: () => decide(dialogContext, true),
+        onContinue: () => Navigator.of(dialogContext).pop(),
       ),
-    );
+    ).whenComplete(() {
+      _summonOpen = false;
+      if (mounted && _pendingDuplicate != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _resumeDuplicate(); });
+      }
+    });
   }
+
 }
 
 class _Header extends StatelessWidget {
