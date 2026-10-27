@@ -102,7 +102,9 @@ class ArenaViewController extends ChangeNotifier {
       } else {
         playerHp = log['hp'] as int;
       }
-      effect = log['critical'] == true ? 'CRITICAL!' : '-${log['damage']} HP';
+      effect = log['critical'] == true
+          ? 'CRITICAL!  -${log['damage']} HP'
+          : '-${log['damage']} HP';
       notifyListeners();
     }
     if (token != generation) return;
@@ -302,7 +304,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                 if (c.effect != null) AnimatedSwitcher(duration: motionDuration,
                   child: Text(c.effect!, key: ValueKey(c.hitSerial), style: TextStyle(
                     fontSize: 24, fontWeight: FontWeight.w900,
-                    color: c.effect == 'CRITICAL!' ? const Color(0xffffd56c) : const Color(0xffff8787)))),
+                    color: c.effect!.startsWith('CRITICAL!') ? const Color(0xffffd56c) : const Color(0xffff8787)))),
               ]),
               if (c.popup != null) Container(key: const Key('battle-announcement'),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
@@ -361,8 +363,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
     ]));
 
   Widget _fighter(PvpCard card, int hp, bool attacking, int serial, Duration duration, String side) =>
-    AnimatedSlide(key: ValueKey(side + serial.toString()),
-      offset: attacking ? Offset(side == 'you' ? .12 : -.12, 0) : Offset.zero,
+    AnimatedSlide(offset: attacking ? Offset(side == 'you' ? .12 : -.12, 0) : Offset.zero,
       duration: duration, curve: Curves.easeOutBack,
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Text(side == 'you' ? 'YOU' : 'RIVAL',
