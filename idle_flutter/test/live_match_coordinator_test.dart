@@ -58,6 +58,16 @@ const hand = HandEvent(
 );
 
 void main() {
+  test('iOS sees understandable errors instead of minified class names', () {
+    expect(describeLivePvpError(const ApiFailure(503, 'unavailable')),
+      'Live PvP server unavailable. Please try again later.');
+    expect(describeLivePvpError(const ApiFailure(400, 'Save and configure your deck first')),
+      contains('Save and configure your deck first'));
+    expect(describeLivePvpError(const FormatException('bad response')),
+      contains('invalid server response'));
+    expect(describeLivePvpError(StateError('connection refused')),
+      contains('Check your internet connection'));
+  });
   test('ticket opens socket and first hand opens arena', () async {
     final transport = _Transport(), socket = _Socket();
     final c = LiveMatchCoordinator(
