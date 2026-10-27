@@ -363,7 +363,7 @@ class _IdleShellState extends State<IdleShell> {
                               onStart: _train,
                               onLive: _pvp?.findMatch,
                               liveStatus: _pvp?.message,
-                              canLive: _pvp != null && deck.isNotEmpty,
+                              canLive: _pvp != null && deck.length >= 3,
                             ),
                             _Cards(
                               page: page,
@@ -977,7 +977,7 @@ class _Tournament extends StatelessWidget {
     },
   );
   String get deckLabel =>
-      canLive ? 'FIND LIVE MATCH' : 'SAVE A DECK TO PLAY LIVE';
+      canLive ? 'FIND LIVE MATCH' : 'SAVE 3+ CARDS TO PLAY LIVE';
 }
 
 class _Eyebrow extends StatelessWidget {
