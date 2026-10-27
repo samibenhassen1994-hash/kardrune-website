@@ -105,7 +105,7 @@ class ArenaViewController extends ChangeNotifier {
       attackWindup = true;
       hitSerial++;
       notifyListeners();
-      await Future<void>.delayed(hitDuration > Duration.zero ? const Duration(milliseconds: 440) : Duration.zero);
+      await Future<void>.delayed(hitDuration >= const Duration(milliseconds: 600) ? const Duration(milliseconds: 440) : Duration.zero);
       if (token != generation) return;
       attackWindup = false;
       if (attackActor == 0) {
@@ -131,9 +131,9 @@ class ArenaViewController extends ChangeNotifier {
     if (token == generation) onReady?.call();
   }
 
-  void finish(String winner, List<int> value) {
+  void finish(String winner, List<int> value, {bool rewarded = false}) {
     score = [...value];
-    actionText = 'MATCH COMPLETE  ·  +100 SHARDS';
+    actionText = rewarded ? 'MATCH COMPLETE  ·  +100 SHARDS' : 'MATCH ENDED';
     popup = winner == 'you'
         ? 'VICTORY'
         : winner == 'opponent'
