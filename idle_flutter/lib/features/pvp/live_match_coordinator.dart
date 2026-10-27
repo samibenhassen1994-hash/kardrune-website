@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../repositories/pvp_repository.dart';
+import '../../services/api_client.dart';
 import '../../services/live_pvp_socket.dart';
 import 'live_pvp_arena.dart';
 import 'pvp_controller.dart';
@@ -56,7 +57,7 @@ class LiveMatchCoordinator extends ChangeNotifier {
       notifyListeners();
     } catch (error) {
       state = LiveMatchState.error;
-      message = 'Unable to start live PvP: $error';
+      message = describeLivePvpError(error);
       notifyListeners();
     }
   }
@@ -121,4 +122,25 @@ class LiveMatchCoordinator extends ChangeNotifier {
     arena.dispose();
     super.dispose();
   }
+}
+
+String describeLivePvpError(Object error) {
+  if (error is ApiFailure) {
+    switch (error.statusCode) {
+      case 401:
+      case 403:
+        return 'Live PvP: sign in again, then retry.';
+      case 400:
+      case 409:
+        return 'Live PvP: ${error.message}';
+      case 503:
+        return 'Live PvP server unavailable. Please try again later.';
+      default:
+        return 'Live PvP request failed (HTTP ${error.statusCode}): ${error.message}';
+    }
+  }
+  if (error is FormatException || error is TypeError) {
+    return 'Live PvP received an invalid server response. Please try again later.';
+  }
+  return 'Could not connect to live PvP. Check your internet connection and retry.';
 }
