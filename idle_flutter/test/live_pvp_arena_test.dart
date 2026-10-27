@@ -114,7 +114,8 @@ void main() {
       ],
       'score': [1, 0],
     });
-    await tester.pump(const Duration(milliseconds: 680));
+    await tester.pump(const Duration(milliseconds: 570));
+    await tester.pump(const Duration(milliseconds: 130));
     expect(find.text('CRITICAL!'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
     expect(find.textContaining('ROUND WON'), findsOneWidget);
@@ -181,7 +182,8 @@ void main() {
       ],
       'score': [0, 1],
     });
-    await tester.pump(const Duration(milliseconds: 640));
+    await tester.pump(const Duration(milliseconds: 570));
+    await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('175 HP'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
     await tester.pump(const Duration(seconds: 2));
