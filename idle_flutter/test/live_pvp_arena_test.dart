@@ -32,7 +32,9 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('30'), findsOneWidget);
+    expect(find.text('30s'), findsOneWidget);
+    expect(find.byKey(const Key('player-play-zone')), findsOneWidget);
+    expect(find.byKey(const Key('opponent-play-zone')), findsOneWidget);
     expect(find.byKey(const Key('deck-pile')), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 1200));
     expect(find.byKey(const Key('hand-card')), findsNWidgets(3));
@@ -112,7 +114,7 @@ void main() {
       ],
       'score': [1, 0],
     });
-    await tester.pump(const Duration(milliseconds: 120));
+    await tester.pump(const Duration(milliseconds: 680));
     expect(find.text('CRITICAL!'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
     expect(find.textContaining('ROUND WON'), findsOneWidget);
@@ -164,7 +166,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1200));
     await tester.drag(
       find.byKey(const ValueKey('hand-lira:1')),
-      const Offset(0, -260),
+      const Offset(0, -300),
     );
     await tester.pump();
     expect(played, ['lira:1']);
@@ -179,7 +181,7 @@ void main() {
       ],
       'score': [0, 1],
     });
-    await tester.pump(const Duration(milliseconds: 70));
+    await tester.pump(const Duration(milliseconds: 640));
     expect(find.text('175 HP'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
     await replay;
