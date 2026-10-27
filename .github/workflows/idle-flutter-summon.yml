@@ -6,6 +6,7 @@ on:
       - fix/idle-summon-stats-ios-update
       - fix/idle-pvp-ios-combined-main
       - feature/idle-pvp-best-of-three-arena
+      - feature/idle-pvp-reward-readable-combat
     paths:
       - 'idle_flutter/**'
       - '.github/workflows/idle-flutter-summon.yml'
