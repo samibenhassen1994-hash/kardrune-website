@@ -24,6 +24,9 @@ class ArenaViewController extends ChangeNotifier {
   int hitSerial = 0;
   String actionText = '';
   bool attackWindup = false;
+  bool matchFinished = false;
+  String matchWinner = 'draw';
+  int roundsPlayed = 0;
   VoidCallback? onReady;
   Timer? _clock;
 
@@ -33,6 +36,7 @@ class ArenaViewController extends ChangeNotifier {
     lockedCard = popup = effect = null;
     playerCard = opponentCard = null;
     battleStarted = false;
+    matchFinished = false;
     attackActor = -1;
     automatic = false;
     battleStarted = false;
@@ -126,13 +130,19 @@ class ArenaViewController extends ChangeNotifier {
         ? 'ROUND LOST'
         : 'ROUND DRAW';
     if (json['score'] is List) score = List<int>.from(json['score'] as List);
+    roundsPlayed = (json['round'] as int?) ?? hand?.round ?? roundsPlayed;
     notifyListeners();
     await Future<void>.delayed(const Duration(seconds: 2));
     if (token == generation) onReady?.call();
   }
 
   void finish(String winner, List<int> value, {bool rewarded = false}) {
+    matchFinished = true;
+    matchWinner = winner;
     score = [...value];
+    roundsPlayed = hand?.round ?? roundsPlayed;
+    _clock?.cancel();
+    attackWindup = false;
     actionText = rewarded ? 'MATCH COMPLETE  ·  +100 SHARDS' : 'MATCH ENDED';
     popup = winner == 'you'
         ? 'VICTORY'
@@ -154,6 +164,9 @@ class ArenaViewController extends ChangeNotifier {
     attackActor = -1;
     automatic = false;
     battleStarted = false;
+    matchFinished = false;
+    matchWinner = 'draw';
+    roundsPlayed = 0;
     attackWindup = false;
     actionText = '';
     _replaying = false;
@@ -185,10 +198,12 @@ class LivePvpArena extends StatefulWidget {
     required this.controller,
     required this.onPlay,
     required this.onReady,
+    this.onComplete,
   });
   final ArenaViewController controller;
   final ValueChanged<String> onPlay;
   final VoidCallback onReady;
+  final VoidCallback? onComplete;
   @override
   State<LivePvpArena> createState() => _LivePvpArenaState();
 }
@@ -298,7 +313,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
               Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(
                 color: const Color(0xaa0c172c), borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: const Color(0xff496183))))),
-              if (!battle) Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+              if (!battle && !c.matchFinished) Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
                 _slot('RIVAL CARD', 'Opponent selects secretly', const Color(0xff9c718c), const Key('opponent-play-zone')),
                 const Text('VS', style: TextStyle(color: Color(0xffffd993), fontSize: 26, fontFamily: 'Georgia')),
                 DragTarget<String>(key: const Key('play-zone'),
@@ -310,7 +325,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                     candidate.isNotEmpty ? Colors.greenAccent : const Color(0xffd5ae61),
                     const Key('player-play-zone'))),
               ]),
-              if (battle) Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              if (battle && !c.matchFinished) Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                 const Text('BATTLE ARENA', style: TextStyle(color: Color(0xffffd993), fontWeight: FontWeight.bold, letterSpacing: 2)),
                 const SizedBox(height: 5),
                 Text(c.actionText, key: const Key('pvp-attack-direction'), textAlign: TextAlign.center,
@@ -318,8 +333,16 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                 const SizedBox(height: 5),
                 Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
                   Expanded(child: _fighter(c.playerCard!, c.playerHp, c.attackActor == 0 && c.attackWindup, c.hitSerial, motionDuration, 'you', c.attackActor == 1 && !c.attackWindup)),
-                  const Padding(padding: EdgeInsets.symmetric(horizontal: 6),
-                    child: Text('VS', style: TextStyle(fontSize: 23, color: Color(0xffffd993), fontWeight: FontWeight.bold))),
+                  SizedBox(width: 45, child: Center(child: c.attackWindup
+                    ? TweenAnimationBuilder<double>(
+                        key: ValueKey('attack-${c.hitSerial}'),
+                        tween: Tween(begin: c.attackActor == 0 ? -1.0 : 1.0, end: 0),
+                        duration: const Duration(milliseconds: 360),
+                        builder: (context, x, child) => Transform.translate(
+                          offset: Offset(x * 25, 0), child: child),
+                        child: Text(_attackGlyph(c.attackActor == 0 ? c.playerCard!.hero : c.opponentCard!.hero),
+                          key: const Key('pvp-attack-effect'), style: const TextStyle(fontSize: 30)))
+                    : const Text('VS', style: TextStyle(fontSize: 23, color: Color(0xffffd993), fontWeight: FontWeight.bold)))),
                   Expanded(child: _fighter(c.opponentCard!, c.opponentHp, c.attackActor == 1 && c.attackWindup, c.hitSerial, motionDuration, 'rival', c.attackActor == 0 && !c.attackWindup)),
                 ]),
                 const SizedBox(height: 5),
@@ -327,13 +350,27 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                     fontSize: 24, fontWeight: FontWeight.w900,
                     color: c.effect!.startsWith('CRITICAL!') ? const Color(0xffffd56c) : const Color(0xffff8787))),
               ]),
-              if (c.popup != null) Container(key: const Key('battle-announcement'),
+              if (c.matchFinished) Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Text(c.matchWinner == 'you' ? 'VICTORY' : c.matchWinner == 'opponent' ? 'DEFEAT' : 'DRAW',
+                  key: const Key('pvp-final-result'), style: const TextStyle(color: Color(0xffffd993), fontSize: 30, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 12),
+                Text('FINAL SCORE  ${c.score[0]} - ${c.score[1]}', key: const Key('pvp-final-score'),
+                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text('${c.roundsPlayed} / 3 ROUNDS PLAYED', style: const TextStyle(color: Color(0xffb7cceb), fontSize: 14)),
+                const SizedBox(height: 8),
+                Text(c.actionText, style: const TextStyle(color: Color(0xffffd993), fontSize: 13)),
+                const SizedBox(height: 24),
+                ElevatedButton(key: const Key('pvp-complete'), onPressed: widget.onComplete,
+                  child: const Text('COMPLETE', style: TextStyle(fontWeight: FontWeight.bold))),
+              ]),
+              if (!c.matchFinished && c.popup != null) Container(key: const Key('battle-announcement'),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
                 decoration: BoxDecoration(color: const Color(0xf009172d), borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: const Color(0xffffd993), width: 2)),
                 child: Text(c.popup!, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xffffd993)))),
             ]))),
-          Container(padding: const EdgeInsets.fromLTRB(10, 7, 10, 9),
+          if (!c.matchFinished) Container(padding: const EdgeInsets.fromLTRB(10, 7, 10, 9),
             decoration: const BoxDecoration(color: Color(0xff111f34),
               border: Border(top: BorderSide(color: Color(0xffd5ae61)))),
             child: Column(children: [
@@ -372,6 +409,14 @@ class _LivePvpArenaState extends State<LivePvpArena> {
       ))),
     );
   }
+  String _attackGlyph(String hero) => switch (hero) {
+    'sam' || 'tor' || 'kael' => '⚔️',
+    'rhea' || 'nyra' => '🏹',
+    'lira' || 'aria' || 'neris' => '✨',
+    'dren' => '🗡️',
+    _ => '⚡',
+  };
+
   Widget _slot(String title, String detail, Color accent, Key key) => Container(
     key: key, height: 104, width: double.infinity,
     margin: const EdgeInsets.symmetric(horizontal: 18),

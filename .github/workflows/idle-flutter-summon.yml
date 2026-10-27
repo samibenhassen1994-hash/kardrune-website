@@ -8,6 +8,7 @@ on:
       - feature/idle-pvp-best-of-three-arena
       - feature/idle-pvp-reward-readable-combat
       - fix/idle-pvp-iphone-animation-lag
+      - feature/idle-pvp-projectiles-bestof3-complete
     paths:
       - 'idle_flutter/**'
       - '.github/workflows/idle-flutter-summon.yml'

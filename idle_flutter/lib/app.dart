@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -88,7 +87,6 @@ class IdleShell extends StatefulWidget {
 class _IdleShellState extends State<IdleShell> {
   static const _motionKey = 'idle-motion-preference-v1';
   static const _pvpRewardKey = 'idle-pvp-completed-rewards-v1';
-  Timer? _matchExitTimer;
   int tab = 0, shards = 1500, page = 0, rewardsLeft = 10;
   String name = 'Runebearer', avatar = 'player';
   String battleStatus = '';
@@ -218,7 +216,6 @@ class _IdleShellState extends State<IdleShell> {
   }
 
   void _pvpFinished(String matchId, String reason) {
-    _matchExitTimer?.cancel();
     if (reason == 'completed' && _saveService != null) {
       final storage = _saveService.storage;
       final claimed = <String>[];
@@ -235,11 +232,7 @@ class _IdleShellState extends State<IdleShell> {
         _persist();
       }
     }
-    _matchExitTimer = Timer(const Duration(seconds: 5), () {
-      if (!mounted) return;
-      setState(() => tab = 0);
-      _pvp?.close();
-    });
+
   }
 
   void _pvpChanged() {
@@ -303,7 +296,6 @@ class _IdleShellState extends State<IdleShell> {
 
   @override
   void dispose() {
-    _matchExitTimer?.cancel();
     _cloud?.removeListener(_cloudChanged);
     _pvp?.removeListener(_pvpChanged);
     _pvp?.dispose();
@@ -346,6 +338,10 @@ class _IdleShellState extends State<IdleShell> {
                   controller: _pvp!.arena,
                   onPlay: _pvp!.play,
                   onReady: _pvp!.ready,
+                  onComplete: () {
+                    setState(() => tab = 0);
+                    _pvp?.close();
+                  },
                 ),
               ),
               Positioned(

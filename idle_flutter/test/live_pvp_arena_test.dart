@@ -9,6 +9,22 @@ const cards = [
   PvpCard(id: 'dren:1', hero: 'dren', stage: 1, attack: 65, crit: 7),
 ];
 void main() {
+  testWidgets('two round wins display final result until COMPLETE', (tester) async {
+    final c = ArenaViewController(hitDuration: Duration.zero);
+    var completed = false;
+    await tester.pumpWidget(MaterialApp(home: LivePvpArena(
+      controller: c, onPlay: (_) {}, onReady: () {}, onComplete: () => completed = true)));
+    c.startHand(const HandEvent(round: 2, opponent: 'Rival', score: [1, 0],
+      hand: cards, deckSize: 3, usedCount: 1, durationMs: 30000,
+      deadline: 30000, matchId: 'best-of-three'));
+    c.finish('you', [2, 0], rewarded: true);
+    await tester.pump();
+    expect(find.byKey(const Key('pvp-final-result')), findsOneWidget);
+    expect(find.text('FINAL SCORE  2 - 0'), findsOneWidget);
+    expect(find.text('2 / 3 ROUNDS PLAYED'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('pvp-complete')));
+    expect(completed, isTrue);
+  });
   testWidgets('three cards physically deal from deck and timer is visible', (
     tester,
   ) async {
