@@ -11,6 +11,7 @@ class CharacterCardArt extends StatelessWidget {
     this.statsKey,
     this.compact = false,
     this.imageOpacity = 1,
+    this.imageCacheWidth,
   });
 
   final String asset;
@@ -20,6 +21,8 @@ class CharacterCardArt extends StatelessWidget {
   final Key? statsKey;
   final bool compact;
   final double imageOpacity;
+  // Optional: decode small in-arena cards at their displayed resolution.
+  final int? imageCacheWidth;
 
   @override
   Widget build(BuildContext context) => Center(
@@ -30,7 +33,8 @@ class CharacterCardArt extends StatelessWidget {
         children: [
           Opacity(
             opacity: imageOpacity,
-            child: Image.asset(asset, key: artKey, fit: BoxFit.contain),
+            child: Image.asset(asset, key: artKey, fit: BoxFit.contain,
+              cacheWidth: imageCacheWidth),
           ),
           Positioned(
             left: compact ? 2 : 4,
