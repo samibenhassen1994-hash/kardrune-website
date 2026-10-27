@@ -19,6 +19,8 @@ class ArenaViewController extends ChangeNotifier {
   bool automatic = false;
   int seconds = 30, generation = 0;
   bool _replaying = false;
+  bool battleStarted = false;
+  int hitSerial = 0;
   VoidCallback? onReady;
   Timer? _clock;
 
@@ -26,21 +28,28 @@ class ArenaViewController extends ChangeNotifier {
     hand = value;
     score = [...value.score];
     lockedCard = popup = effect = null;
+    playerCard = opponentCard = null;
+    battleStarted = false;
+    attackActor = -1;
     automatic = false;
+    battleStarted = false;
+    hitSerial = 0;
     _replaying = false;
     seconds = (value.durationMs / 1000).ceil();
     generation++;
     _clock?.cancel();
     _clock = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (seconds == 0) return timer.cancel();
-      seconds--;
+      seconds = value.deadline > 1000000000000
+          ? ((value.deadline - DateTime.now().millisecondsSinceEpoch) / 1000).ceil().clamp(0, 30)
+          : (seconds - 1).clamp(0, 30);
       notifyListeners();
     });
     notifyListeners();
   }
 
   bool select(String id) {
-    if (lockedCard != null) return false;
+    if (hand == null || lockedCard != null || _replaying || used.contains(id) || !hand!.hand.any((c) => c.id == id)) return false;
     lock(id, automatic: false);
     return true;
   }
@@ -50,12 +59,18 @@ class ArenaViewController extends ChangeNotifier {
     lockedCard = id;
     this.automatic = automatic;
     used.add(id);
+    _clock?.cancel();
     notifyListeners();
   }
 
   Future<void> replay(Map<String, dynamic> json) async {
     if (_replaying) return;
     _replaying = true;
+    _clock?.cancel();
+    battleStarted = true;
+    popup = 'BATTLE START';
+    effect = null;
+    notifyListeners();
     final token = generation;
     if (json['cards'] is List && (json['cards'] as List).length >= 2) {
       final cards = json['cards'] as List;
@@ -69,11 +84,16 @@ class ArenaViewController extends ChangeNotifier {
       effect = null;
       notifyListeners();
     }
+    await Future<void>.delayed(const Duration(milliseconds: 550));
+    if (token != generation) return;
+    popup = null;
+    notifyListeners();
     for (final raw in (json['log'] as List? ?? const [])) {
       await Future<void>.delayed(hitDuration);
       if (token != generation) return;
       final log = Map<String, dynamic>.from(raw as Map);
       attackActor = log['actor'] as int? ?? -1;
+      hitSerial++;
       if (attackActor == 0) {
         opponentHp = log['hp'] as int;
       } else {
@@ -209,314 +229,155 @@ class _LivePvpArenaState extends State<LivePvpArena> {
     final reduced = MediaQuery.disableAnimationsOf(context);
     final motionDuration = reduced ? Duration.zero : c.hitDuration;
     final cards = c.hand?.hand ?? const <PvpCard>[];
+    final battle = c.battleStarted && c.playerCard != null && c.opponentCard != null;
+    final choosing = c.hand != null && c.lockedCard == null && !c.battleStarted;
+    final handCards = cards.where((card) => !c.used.contains(card.id)).toList();
     return Scaffold(
-      backgroundColor: const Color(0xff090d19),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Positioned.fill(child: CustomPaint(painter: _ArenaPainter())),
-            Align(
-              alignment: Alignment.topCenter,
-              child: Container(
-                height: 46,
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                decoration: const BoxDecoration(
-                  color: Color(0xff101d36),
-                  border: Border(bottom: BorderSide(color: Color(0x66d6b36a))),
-                ),
-                child: Row(
-                  children: [
-                    const Text(
-                      '⚔ LIVE ARENA',
-                      style: TextStyle(
-                        fontFamily: 'Georgia',
-                        color: Color(0xfff5d28b),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      'ROUND ${c.hand?.round ?? 1}',
-                      style: const TextStyle(
-                        color: Color(0xffa0b0c8),
-                        fontSize: 10,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Positioned(
-              top: 56,
-              left: 55,
-              right: 55,
-              child: Column(
-                children: [
-                  Text(
-                    '⚔ ${c.hand?.opponent ?? 'SEARCHING'}',
-                    style: const TextStyle(
-                      fontFamily: 'Georgia',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    height: 45,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xff15243a),
-                      border: Border.all(color: const Color(0x666884a0)),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      '✦  RIVAL HAND  ✦',
-                      style: TextStyle(
-                        color: Color(0xff91a1b9),
-                        fontSize: 10,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              right: 12,
-              top: 330,
-              child: Container(
-                key: const Key('deck-pile'),
-                width: 48,
-                height: 68,
-                decoration: BoxDecoration(
-                  color: const Color(0xff2c2350),
-                  border: Border.all(color: Colors.amber, width: 2),
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: const Icon(Icons.layers, color: Colors.white70),
-              ),
-            ),
-            Positioned(
-              right: 18,
-              top: 402,
-              child: Text(
-                '${c.hand?.deckSize ?? 0} LEFT',
-                key: const Key('deck-remaining'),
-                style: const TextStyle(color: Colors.white70, fontSize: 11),
-              ),
-            ),
-            Positioned(
-              left: 10,
-              top: 330,
-              child: SizedBox(
-                width: 82,
-                child: Column(
-                  children: [
-                    const Text(
-                      'USED',
-                      style: TextStyle(color: Colors.white54, fontSize: 10),
-                    ),
-                    for (final id in c.used)
-                      Text(
-                        id,
-                        key: const Key('used-card'),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 10,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            Align(
-              alignment: const Alignment(0, -.08),
-              child: DragTarget<String>(
-                key: const Key('play-zone'),
-                onAcceptWithDetails: (details) => _play(details.data),
-                builder: (context, candidate, rejected) => Container(
-                  width: 150,
-                  height: 138,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: candidate.isEmpty
-                          ? Colors.white24
-                          : Colors.greenAccent,
-                      width: 2,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: c.opponentCard == null
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'RUNE CLASH   ${c.score[0]} : ${c.score[1]}',
-                              style: const TextStyle(
-                                fontFamily: 'Georgia',
-                                color: Color(0xfff5d28b),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'PLAY CARD',
-                              style: TextStyle(color: Colors.white54),
-                            ),
-                          ],
-                        )
-                      : AnimatedSlide(
-                          offset: c.attackActor == 1
-                              ? const Offset(0, .18)
-                              : Offset.zero,
-                          duration: motionDuration,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _BattleCard(
-                                card: c.opponentCard!,
-                                selected: false,
-                              ),
-                              Text(
-                                '${c.opponentHp} HP',
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                            ],
-                          ),
-                        ),
-                ),
-              ),
-            ),
-            for (var i = 0; i < cards.length; i++)
-              AnimatedAlign(
-                duration: reduced
-                    ? Duration.zero
-                    : const Duration(milliseconds: 300),
-                curve: Curves.easeOutBack,
-                alignment: i < dealt
-                    ? Alignment(-0.7 + i * 0.7, .78)
-                    : const Alignment(.88, .72),
-                child: i < dealt
-                    ? GestureDetector(
-                        key: const Key('hand-card'),
-                        onTap: () => _play(cards[i].id),
-                        child: Draggable<String>(
-                          data: cards[i].id,
-                          feedback: Material(
-                            color: Colors.transparent,
-                            child: _BattleCard(card: cards[i], selected: true),
-                          ),
-                          childWhenDragging: Opacity(
-                            opacity: .25,
-                            child: _BattleCard(card: cards[i], selected: false),
-                          ),
-                          child: _BattleCard(
-                            key: ValueKey('hand-${cards[i].id}'),
-                            card: cards[i],
-                            selected: c.lockedCard == cards[i].id,
-                          ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-            Align(
-              alignment: const Alignment(0, .35),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (c.playerCard != null)
-                    AnimatedSlide(
-                      offset: c.attackActor == 0
-                          ? const Offset(0, -.18)
-                          : Offset.zero,
-                      duration: motionDuration,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _BattleCard(card: c.playerCard!, selected: false),
-                          Text(
-                            '${c.playerHp} HP',
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        ],
-                      ),
-                    ),
-                  Text(
-                    '${c.seconds}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 34,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (c.automatic)
-              const Align(
-                alignment: Alignment(0, .52),
-                child: Text(
-                  'TIME EXPIRED — RANDOM CARD SELECTED',
-                  style: TextStyle(color: Colors.orangeAccent, fontSize: 12),
-                ),
-              ),
-            if (c.effect != null)
-              Align(
-                child: TweenAnimationBuilder<double>(
-                  key: ValueKey(c.effect),
-                  tween: Tween(begin: .5, end: 1.15),
-                  duration: reduced
-                      ? Duration.zero
-                      : const Duration(milliseconds: 350),
-                  builder: (_, scale, child) =>
-                      Transform.scale(scale: scale, child: child),
-                  child: Text(
-                    c.effect!,
-                    style: const TextStyle(
-                      color: Colors.redAccent,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-              ),
-            if (c.popup != null)
-              Align(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 18,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black87,
-                    border: Border.all(color: Colors.amber, width: 2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    c.popup!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
+      backgroundColor: const Color(0xff091225),
+      body: SafeArea(child: LayoutBuilder(builder: (context, bounds) => Container(
+        decoration: const BoxDecoration(gradient: LinearGradient(
+          begin: Alignment.topCenter, end: Alignment.bottomCenter,
+          colors: [Color(0xff203959), Color(0xff091225), Color(0xff1a1232)])),
+        child: Column(children: [
+          Container(key: const Key('pvp-round-header'),
+            padding: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(color: Color(0xff121e33),
+              border: Border(bottom: BorderSide(color: Color(0xffdfb76c)))),
+            child: Column(children: [
+              Row(children: [
+                const Text('⚔ LIVE RUNE CLASH', style: TextStyle(color: Color(0xffffd993), fontSize: 16, fontWeight: FontWeight.w900)),
+                const Spacer(),
+                Text('ROUND ' + (c.hand?.round ?? 1).toString() + ' / 3',
+                  key: const Key('round-counter'), style: const TextStyle(fontWeight: FontWeight.w900)),
+              ]),
+              const SizedBox(height: 5),
+              Text('YOU  ' + c.score[0].toString() + '    •  FIRST TO 2  •    ' + c.score[1].toString() + '  RIVAL',
+                key: const Key('round-score'), style: const TextStyle(color: Color(0xffd7e5f2), fontWeight: FontWeight.w800)),
+            ])),
+          Container(key: const Key('pvp-timer'), margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
+            decoration: BoxDecoration(color: const Color(0xff162941),
+              border: Border.all(color: c.seconds <= 10 && choosing ? Colors.redAccent : const Color(0xffd7b26e)),
+              borderRadius: BorderRadius.circular(9)),
+            child: Row(children: [
+              const Icon(Icons.timer_outlined, color: Color(0xffffd993)),
+              const SizedBox(width: 8),
+              Text(choosing ? 'CHOOSE YOUR CARD' : battle ? 'BATTLE IN PROGRESS' : c.lockedCard != null ? 'WAITING FOR RIVAL' : 'READY',
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              Text(c.seconds.toString() + 's', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+            ])),
+          Text('⚔ ' + (c.hand?.opponent ?? 'SEARCHING'), style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xffc6d7ed))),
+          Expanded(child: Padding(padding: const EdgeInsets.fromLTRB(12, 7, 12, 5),
+            child: Stack(alignment: Alignment.center, children: [
+              Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(
+                color: const Color(0xaa0c172c), borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xff496183))))),
+              if (!battle) Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+                _slot('RIVAL CARD', 'Opponent selects secretly', const Color(0xff9c718c), const Key('opponent-play-zone')),
+                const Text('VS', style: TextStyle(color: Color(0xffffd993), fontSize: 26, fontFamily: 'Georgia')),
+                DragTarget<String>(key: const Key('play-zone'),
+                  onWillAcceptWithDetails: (_) => choosing,
+                  onAcceptWithDetails: (details) => _play(details.data),
+                  builder: (context, candidate, rejected) => _slot(
+                    c.lockedCard == null ? 'YOUR CARD SLOT' : 'CARD LOCKED',
+                    c.lockedCard == null ? 'DRAG HERE OR TAP A CARD' : 'Waiting for opponent',
+                    candidate.isNotEmpty ? Colors.greenAccent : const Color(0xffd5ae61),
+                    const Key('player-play-zone'))),
+              ]),
+              if (battle) Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                const Text('BATTLE ARENA', style: TextStyle(color: Color(0xffffd993), fontWeight: FontWeight.bold, letterSpacing: 2)),
+                const SizedBox(height: 12),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+                  Expanded(child: _fighter(c.playerCard!, c.playerHp, c.attackActor == 0, c.hitSerial, motionDuration, 'you')),
+                  const Padding(padding: EdgeInsets.symmetric(horizontal: 6),
+                    child: Text('VS', style: TextStyle(fontSize: 23, color: Color(0xffffd993), fontWeight: FontWeight.bold))),
+                  Expanded(child: _fighter(c.opponentCard!, c.opponentHp, c.attackActor == 1, c.hitSerial, motionDuration, 'rival')),
+                ]),
+                const SizedBox(height: 12),
+                if (c.effect != null) AnimatedSwitcher(duration: motionDuration,
+                  child: Text(c.effect!, key: ValueKey(c.hitSerial), style: TextStyle(
+                    fontSize: 24, fontWeight: FontWeight.w900,
+                    color: c.effect == 'CRITICAL!' ? const Color(0xffffd56c) : const Color(0xffff8787)))),
+              ]),
+              if (c.popup != null) Container(key: const Key('battle-announcement'),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                decoration: BoxDecoration(color: const Color(0xf009172d), borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xffffd993), width: 2)),
+                child: Text(c.popup!, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xffffd993)))),
+            ]))),
+          Container(padding: const EdgeInsets.fromLTRB(10, 7, 10, 9),
+            decoration: const BoxDecoration(color: Color(0xff111f34),
+              border: Border(top: BorderSide(color: Color(0xffd5ae61)))),
+            child: Column(children: [
+              Row(children: [
+                const Text('YOUR HAND', style: TextStyle(color: Color(0xffffd993), fontWeight: FontWeight.w900)),
+                const Spacer(),
+                const Icon(Icons.layers_outlined, key: Key('deck-pile'), size: 16),
+                const SizedBox(width: 3),
+                Text((c.hand == null ? 0 : c.hand!.deckSize - c.used.length).toString() + ' LEFT',
+                  key: const Key('deck-remaining')),
+                const SizedBox(width: 12),
+                Text('DISCARDED ' + c.used.length.toString(), key: const Key('discard-count')),
+              ]),
+              const SizedBox(height: 7),
+              SizedBox(height: bounds.maxHeight < 620 ? 95 : 124,
+                child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+                  for (final card in handCards) Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: GestureDetector(key: const Key('hand-card'),
+                      onTap: choosing ? () => _play(card.id) : null,
+                      child: Draggable<String>(
+                        data: card.id, maxSimultaneousDrags: choosing ? 1 : 0,
+                        feedback: Material(color: Colors.transparent,
+                          child: _BattleCard(card: card, selected: true)),
+                        childWhenDragging: Opacity(opacity: .3, child: _BattleCard(card: card, selected: false)),
+                        child: _BattleCard(key: ValueKey('hand-' + card.id), card: card, selected: false))))),
+                  if (handCards.isEmpty) const Expanded(child: Center(child: Text('CARD LOCKED / DISCARDED'))),
+                ])),
+              if (c.automatic) const Text('TIME EXPIRED — RANDOM CARD SELECTED',
+                style: TextStyle(color: Colors.orangeAccent, fontSize: 11)),
+              Text(c.used.isEmpty ? 'Each card can be used only once' : 'USED: ' + c.used.join(' · '),
+                key: const Key('used-card'), maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Color(0xffadbbce), fontSize: 10)),
+            ])),
+        ]),
+      ))),
     );
   }
+  Widget _slot(String title, String detail, Color accent, Key key) => Container(
+    key: key, height: 104, width: double.infinity,
+    margin: const EdgeInsets.symmetric(horizontal: 18),
+    decoration: BoxDecoration(color: const Color(0xff182940),
+      border: Border.all(color: accent, width: 2), borderRadius: BorderRadius.circular(13)),
+    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      const Icon(Icons.add_circle_outline, color: Color(0xffffd993), size: 24),
+      const SizedBox(height: 4),
+      Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+      Text(detail, style: const TextStyle(color: Color(0xffb3c7dd), fontSize: 11)),
+    ]));
+
+  Widget _fighter(PvpCard card, int hp, bool attacking, int serial, Duration duration, String side) =>
+    AnimatedSlide(key: ValueKey(side + serial.toString()),
+      offset: attacking ? Offset(side == 'you' ? .12 : -.12, 0) : Offset.zero,
+      duration: duration, curve: Curves.easeOutBack,
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text(side == 'you' ? 'YOU' : 'RIVAL',
+          style: const TextStyle(color: Color(0xffd9e4f2), fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
+        _BattleCard(card: card, selected: false, width: 140, height: 188, hp: hp),
+        const SizedBox(height: 6),
+        Text(hp.toString() + ' HP', key: Key('pvp-' + side + '-hp'),
+          style: const TextStyle(color: Color(0xff88c9ff), fontSize: 13, fontWeight: FontWeight.w900)),
+      ]));
+
 }
 
 class _BattleCard extends StatelessWidget {
-  const _BattleCard({super.key, required this.card, required this.selected});
+  const _BattleCard({super.key, required this.card, required this.selected, this.width = 88, this.height = 122, this.hp});
   final PvpCard card;
   final bool selected;
+  final double width, height;
+  final int? hp;
   String get asset {
     final hero = KardRuneCatalog.heroes.firstWhere(
       (item) => item.id == card.hero,
@@ -530,8 +391,8 @@ class _BattleCard extends StatelessWidget {
     scale: selected ? 1.08 : 1,
     duration: const Duration(milliseconds: 150),
     child: Container(
-      width: 78,
-      height: 108,
+      width: width,
+      height: height,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xff382867), Color(0xff171b34)],
@@ -546,7 +407,7 @@ class _BattleCard extends StatelessWidget {
         key: ValueKey('battle-card-frame-${card.id}'),
         asset: asset,
         artKey: ValueKey('card-art-${card.id}'),
-        hp: CombatRules.hpForStage(card.stage),
+        hp: hp ?? CombatRules.hpForStage(card.stage),
         attack: card.attack,
         crit: card.crit,
         compact: true,
