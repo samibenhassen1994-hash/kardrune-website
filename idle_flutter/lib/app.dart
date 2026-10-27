@@ -148,7 +148,7 @@ class _IdleShellState extends State<IdleShell> {
     rewardsLeft = GameRules.dailyRewardLimit - practiceCount;
     _pvp = widget.liveMatchCoordinator;
     _pvp?.addListener(_pvpChanged);
-    if (_pvp != null) _pvp!.onMatchFinished = _pvpFinished;
+    _pvp?.onMatchFinished = _pvpFinished;
     _updates = widget.updateController ?? createDefaultUpdateController();
     _ownsUpdates = widget.updateController == null && _updates != null;
     _updates?.addListener(_updateChanged);
