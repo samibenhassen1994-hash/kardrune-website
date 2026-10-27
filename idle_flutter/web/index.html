@@ -68,28 +68,74 @@
   -->
   <script src="flutter_bootstrap.js" async></script>
   <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('kardrune_service_worker.js', { scope: './', updateViaCache: 'none' }).then((registration) => {
-          const announce = () => window.dispatchEvent(new Event('kardrune-update-available'));
-          if (registration.waiting) announce();
-          registration.addEventListener('updatefound', () => {
-            const worker = registration.installing;
-            worker?.addEventListener('statechange', () => {
-              if (worker.state === 'installed' && navigator.serviceWorker.controller) announce();
-            });
-          });
-          let userRequestedUpdate = false;
-          window.addEventListener('kardrune-apply-update', () => {
-            userRequestedUpdate = true;
-            registration.waiting?.postMessage('SKIP_WAITING');
-          });
-          navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (userRequestedUpdate) window.location.reload();
-          });
-        });
+    // A version endpoint lets iOS home-screen PWAs detect deploys even without
+    // a service-worker updatefound event. Keep all game data in local storage.
+    (() => {
+      const releaseUrl = new URL('release-id.json', document.baseURI);
+      let checking = false, needsUpdate = false, pendingRelease = null;
+      let registration = null, requested = false;
+      function announce() {
+        needsUpdate = true;
+        window.dispatchEvent(new Event('kardrune-update-available'));
+      }
+      async function checkRelease() {
+        if (checking || requested) return;
+        checking = true;
+        try {
+          const url = new URL(releaseUrl);
+          url.searchParams.set('check', String(Date.now()));
+          const response = await fetch(url, { cache: 'no-store' });
+          if (!response.ok) return;
+          const data = await response.json();
+          const release = typeof data.release === 'string' ? data.release : '';
+          if (!release) return;
+          const key = 'idle-kardrune-active-release';
+          const previous = localStorage.getItem(key);
+          if (!previous) localStorage.setItem(key, release);
+          else if (previous !== release) {
+            pendingRelease = release;
+            announce();
+          }
+        } catch (_) { /* Offline: keep the running game intact. */ }
+        finally { checking = false; }
+      }
+      function refresh() {
+        if (needsUpdate) announce();
+        void checkRelease();
+        if (registration) void registration.update().catch(() => {});
+      }
+      window.addEventListener('focus', refresh);
+      window.addEventListener('pageshow', refresh);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) refresh();
       });
-    }
+      window.setInterval(refresh, 60000);
+      window.addEventListener('kardrune-apply-update', () => {
+        requested = true;
+        if (pendingRelease) {
+          try { localStorage.setItem('idle-kardrune-active-release', pendingRelease); }
+          catch (_) {}
+        }
+        if (registration?.waiting) registration.waiting.postMessage('SKIP_WAITING');
+        window.setTimeout(() => window.location.reload(), 450);
+      });
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('kardrune_service_worker.js',
+            { scope: './', updateViaCache: 'none' }).then((value) => {
+            registration = value;
+            if (value.waiting) announce();
+            value.addEventListener('updatefound', () => {
+              const worker = value.installing;
+              worker?.addEventListener('statechange', () => {
+                if (worker.state === 'installed' && navigator.serviceWorker.controller) announce();
+              });
+            });
+          }).catch(() => {});
+        });
+      }
+      window.addEventListener('load', () => window.setTimeout(refresh, 3000));
+    })();
   </script>
 </body>
 </html>
