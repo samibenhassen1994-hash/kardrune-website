@@ -20,6 +20,18 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Idle KardRune — collect, train and battle with KardRune heroes.">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#070e20">
+<meta name="color-scheme" content="dark">
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#070e20;color-scheme:dark}
+#flutter-host{position:relative;z-index:1;width:100%;height:100%;height:100dvh;margin:0 auto;overflow:hidden;background:#070e20}
+@media(min-width:900px){
+#flutter-host{max-width:520px;box-shadow:0 0 60px 25px #0009}
+body::before,body::after{content:"";position:fixed;top:-25px;bottom:-25px;width:calc((100vw - 520px)/2 + 25px);pointer-events:none;z-index:0;background-size:cover;background-repeat:no-repeat;filter:blur(18px) brightness(.46);opacity:.8}
+body::before{left:-25px;background-position:55% 30%;background-image:url("assets/assets/idle/cards/young_sam/Sam_Last_Guardian_stage_3.webp")}
+body::after{right:-25px;background-position:50% 35%;background-image:url("assets/assets/idle/cards/aria/Aria_Fallen_Arcanist_stage_3.webp")}
+}
+</style>
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -34,6 +46,7 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+<div id="flutter-host"></div>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
@@ -46,7 +59,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('kardrune_service_worker.js', { scope: './' }).then((registration) => {
+        navigator.serviceWorker.register('kardrune_service_worker.js', { scope: './', updateViaCache: 'none' }).then((registration) => {
           const announce = () => window.dispatchEvent(new Event('kardrune-update-available'));
           if (registration.waiting) announce();
           registration.addEventListener('updatefound', () => {
@@ -55,10 +68,13 @@
               if (worker.state === 'installed' && navigator.serviceWorker.controller) announce();
             });
           });
-          window.addEventListener('kardrune-apply-update', () => registration.waiting?.postMessage('SKIP_WAITING'));
-          let reloading = false;
+          let userRequestedUpdate = false;
+          window.addEventListener('kardrune-apply-update', () => {
+            userRequestedUpdate = true;
+            registration.waiting?.postMessage('SKIP_WAITING');
+          });
           navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (!reloading) { reloading = true; window.location.reload(); }
+            if (userRequestedUpdate) window.location.reload();
           });
         });
       });
