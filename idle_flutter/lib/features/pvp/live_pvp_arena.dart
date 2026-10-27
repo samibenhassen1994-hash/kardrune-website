@@ -395,7 +395,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
             borderRadius: BorderRadius.circular(12)),
           child: _BattleCard(card: card, selected: false,
           width: MediaQuery.sizeOf(context).width < 360 ? 104 : 135,
-          height: MediaQuery.sizeOf(context).height < 680 ? 138 : 158, hp: hp)),
+          height: MediaQuery.sizeOf(context).height < 900 ? 128 : 175, hp: hp)),
         const SizedBox(height: 6),
         Text(hp.toString() + ' HP', key: Key('pvp-' + side + '-hp'),
           style: const TextStyle(color: Color(0xff88c9ff), fontSize: 13, fontWeight: FontWeight.w900)),
