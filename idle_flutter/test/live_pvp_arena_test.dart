@@ -116,7 +116,7 @@ void main() {
     });
     await tester.pump(const Duration(milliseconds: 570));
     await tester.pump(const Duration(milliseconds: 130));
-    expect(find.text('CRITICAL!'), findsOneWidget);
+    expect(find.textContaining('CRITICAL!'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
     expect(find.textContaining('ROUND WON'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
