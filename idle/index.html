@@ -1,271 +1,68 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#080e1e">
-  <meta name="color-scheme" content="dark">
-  <meta name="description" content="Idle KardRune — a mobile-first fantasy idle tournament and card collection demo.">
-  <title>Idle KardRune | Pocket Arena</title>
-  <link rel="icon" type="image/svg+xml" href="./icon.svg">
-  <link rel="apple-touch-icon" href="../assets/app_icon.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Idle KardRune">
-  <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css">
-  <script src="./catalog.js" defer></script>
-  <script src="./game-rules.js" defer></script>
-  <script src="./combat-rules.js" defer></script>
-  <script src="./i18n.js" defer></script>
-  <script src="./cloud-sync-rules.js" defer></script>
-  <script src="./cloud.js" defer></script>
-  <script src="./pvp.js" defer></script>
-  <script src="./deck-layout.js" defer></script>
-  <script src="./deck-drag.js" defer></script>
-  <script src="./live-pvp.js" defer></script>
-  <script src="./pvp-arena.js" defer></script>
-  <script src="./app.js" defer></script>
-  <script src="./update.js" defer></script>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="/idle/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Idle KardRune — collect, train and battle with KardRune heroes.">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="KardRune">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Idle KardRune</title>
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
-  <svg class="svg-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v6a4 4 0 0 1-8 0V4ZM8 6H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4M12 14v4m-4 2h8m-6-2h4"/></symbol>
-    <symbol id="i-cards" viewBox="0 0 24 24"><rect x="7" y="3" width="13" height="17" rx="2"/><path d="M4 7H3a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1M13.5 8l2.5 3.5-2.5 3.5-2.5-3.5z"/></symbol>
-    <symbol id="i-summon" viewBox="0 0 24 24"><path d="m12 2 2.1 7.9L22 12l-7.9 2.1L12 22l-2.1-7.9L2 12l7.9-2.1L12 2Z"/><path d="m18 2 .7 2.3L21 5l-2.3.7L18 8l-.7-2.3L15 5l2.3-.7L18 2Z"/></symbol>
-    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2H4Z"/></symbol>
-    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
-    <symbol id="i-sword" viewBox="0 0 24 24"><path d="m4 20 7-7m-7 4 3 3m-4 1 3-3m5-5 9-9 1-1-5 1-9 9m5-1 3 3"/></symbol>
-  </svg>
-  <section class="desktop-gate" aria-labelledby="desktop-gate-title">
-    <div class="desktop-gate-content">
-      <div class="desktop-gate-emblem" aria-hidden="true">KR</div>
-      <p class="desktop-gate-eyebrow">THE POCKET REALM</p>
-      <h1 id="desktop-gate-title">IDLE <span>KARDRUNE</span></h1>
-      <p>Idle KardRune is designed exclusively for phones. Open this page on your iPhone or Android device to play and install the mini app.</p>
-      <div class="desktop-gate-code">kardrune.com/idle/</div>
-      <a href="../index.html" class="desktop-gate-back">← BACK TO KARDRUNE</a>
-    </div>
-  </section>
-  <div class="app-shell">
-    <header class="topbar">
-      <a class="brand" href="#tournament" aria-label="Idle KardRune home">
-        <span class="brand-symbol">KR</span>
-        <span class="brand-copy"><strong>IDLE <em>KARDRUNE</em></strong><small>THE POCKET REALM</small></span>
-      </a>
-      <button class="wallet wallet-edit" type="button" id="edit-shards-button" aria-label="Set local test Rune Shards" title="Set your test Rune Shards"><span class="shard-icon">◆</span><strong id="wallet-shards">1,500</strong><span class="wallet-plus" aria-hidden="true">＋</span></button>
-    </header>
-    <main id="main-content">
-      <section class="screen" id="screen-tournament" aria-labelledby="tournament-heading">
-        <div class="idle-update-banner" id="idle-update-banner" hidden role="status"><div><strong>✦ NEW VERSION AVAILABLE</strong><span>Update KardRune without reinstalling.</span></div><button id="idle-update-action" type="button">UPDATE</button></div>
-        <div class="eyebrow"><span class="eyebrow-line"></span> ARENA OF THE RUNES <span class="eyebrow-line"></span></div>
-        <h1 id="tournament-heading">TOURNAMENT <span class="gold-text">PvP</span></h1>
-        <p class="screen-intro">Build your team. Face your rivals. Rise to the top of the Rune Circuit.</p>
-        <div class="season-banner">
-          <div><small>SEASON PREVIEW</small><h2>THE RUNE <span>CIRCUIT</span></h2><p>First championship • Coming with online accounts</p></div>
-          <div class="crest" aria-hidden="true">♜</div>
-        </div>
-        <div class="section-heading"><div><span class="mini-label">YOUR NEXT BATTLE</span><h2>Practice Arena</h2></div><span class="chip chip-blue">SOLO DEMO</span></div>
-        <div class="duel-stage live-duel">
-          <div class="combatant">
-            <div class="combatant-frame battle-portrait">
-              <img id="duel-player-art" src="./media/cards/young_sam/young_sam_stage_1.webp" alt="Your selected hero">
-              <div class="battle-card-stats"><span class="card-atk" id="duel-player-attack">40</span><span class="card-crit" id="duel-player-crit">4%</span><span class="card-hp" id="duel-player-maxhp">240</span></div>
-            </div>
-            <strong id="duel-player-name">Sam · S1</strong><small>YOUR HERO</small>
-            <div class="duel-health"><span id="player-health-fill"></span></div>
-            <small>HP <b id="duel-player-hp">240</b></small>
-          </div>
-          <div class="vs-mark"><span>VS</span><i>⚔</i></div>
-          <div class="combatant">
-            <div class="combatant-frame battle-portrait enemy-frame">
-              <img id="duel-enemy-art" src="./media/cards/dren/dren_stage_1.webp" alt="Random rival">
-              <div class="battle-card-stats"><span class="card-atk" id="duel-enemy-attack">50</span><span class="card-crit" id="duel-enemy-crit">10%</span><span class="card-hp" id="duel-enemy-maxhp">120</span></div>
-            </div>
-            <strong id="duel-enemy-name">Rival</strong><small>RANDOM OPPONENT</small>
-            <div class="duel-health"><span id="enemy-health-fill"></span></div>
-            <small>HP <b id="duel-enemy-hp">120</b></small>
-          </div>
-        </div>
-        <p id="battle-live-status" class="battle-live-status" role="status" aria-live="polite">Ready for a real-time duel</p>
-        <p class="micro-note">HITS: <strong id="battle-turn-counter">0</strong> · 1 turn every 1.2s</p>
-        <button class="dark-button" id="reroll-enemy" type="button">↻ RANDOM OPPONENT</button>
-        <label class="select-label" for="active-hero-select">CHOOSE YOUR CHAMPION</label>
-        <select id="active-hero-select" class="field"></select>
-        <button type="button" class="gold-button" id="practice-button">⚔ START PRACTICE DUEL <svg><use href="#i-chevron"></use></svg></button>
-        <p class="micro-note">Turn-based battles play automatically in real time against randomized demo opponents. Rewarded duels remaining today: <strong id="practice-rewards-left">10</strong>/10 (local midnight reset). You can still practice afterward. Real PvP requires a separate online server.</p>
-        <section class="pvp-online-box live-pvp-box" aria-labelledby="live-pvp-heading">
-          <div class="section-heading"><div><span class="mini-label">REAL-TIME PVP · DECK BATTLE</span><h2 id="live-pvp-heading">Live Card Duel</h2></div><span class="chip chip-blue">BETA</span></div>
-          <p class="micro-note">Build a deck of up to 9 owned cards. Each round draw 3, play one, and watch both cards duel in real time. Friendly mode · no ranked rewards.</p>
-          <p id="live-pvp-auth-hint" class="micro-note">Sign in from your Profile to prepare a PvP deck.</p>
-          <div id="live-pvp-content" hidden>
-            <div class="live-deck-header"><strong>SELECTED DECK</strong><span id="live-deck-count">0 / 9</span></div>
-            <button class="dark-button" id="live-deck-edit" type="button">✦ EDIT DECK IN CARDS</button>
-            <p class="battle-live-status" id="live-pvp-state" role="status">Ready to connect</p>
-            <button class="gold-button" id="live-pvp-connect" type="button">⚔ FIND LIVE MATCH</button>
-            <button class="dark-button" id="live-pvp-disconnect" type="button">DISCONNECT</button>
-            <h3 id="live-hand-title">YOUR HAND</h3>
-            <div id="live-hand" class="live-hand"></div>
-            <div id="live-round-cards" class="live-hand"></div>
-            <div id="live-battle-replay" class="live-battle-replay" aria-live="polite"></div>
-            <p class="micro-note">SCORE: <span id="live-score">0 - 0</span></p>
-          </div>
-        </section>
-        <section class="pvp-online-box">
-          <div class="section-heading"><div><span class="mini-label">ONLINE FRIENDLY · NO RANKED REWARDS</span><h2>Challenge another player</h2></div></div>
-          <p id="pvp-sign-in-hint" class="micro-note">Sign in with Google or email under Profile to find another player online.</p>
-          <div id="pvp-online-controls" hidden>
-            <p id="pvp-online-status" role="status" class="battle-live-status">Ready to find an online opponent.</p>
-            <button class="gold-button" id="pvp-queue-button" type="button">⚔ FIND ONLINE RIVAL</button>
-            <button class="dark-button" id="pvp-leave-button" type="button" hidden>STOP SEARCH / NEW MATCH</button>
-            <div id="pvp-online-result" hidden>
-              <h3>Opponent: <span id="pvp-match-rival"></span></h3>
-              <p class="micro-note" id="pvp-match-stats"></p>
-              <pre class="pvp-replay" id="pvp-match-log"></pre>
-              <p class="micro-note">Friendly test only. Battles are simulated by the server; no ranked rewards or currency.</p>
-            </div>
-          </div>
-        </section>
-        <div class="section-heading bracket-heading"><div><span class="mini-label">COMPETITION ROADMAP</span><h2>Championship Bracket</h2></div></div>
-        <div class="bracket">
-          <div class="bracket-step"><span class="bracket-index">01</span><div><strong>Qualifiers</strong><small>Register your team</small></div><span class="bracket-lock">SOON</span></div>
-          <div class="bracket-step"><span class="bracket-index">02</span><div><strong>Playoffs</strong><small>Advance through the ranks</small></div><span class="bracket-lock">SOON</span></div>
-          <div class="bracket-step"><span class="bracket-index">03</span><div><strong>Grand Final</strong><small>One champion remains</small></div><span class="bracket-lock">SOON</span></div>
-        </div>
-      </section>
-      <section class="screen" id="screen-cards" aria-labelledby="cards-heading" hidden>
-        <h1 id="cards-heading">YOUR <span class="gold-text">CARDS</span></h1>
-        <section class="deck-builder" id="deck-builder" aria-labelledby="cards-deck-heading">
-          <div class="deck-builder-header">
-            <div><span class="deck-builder-eyebrow">⚔ PVP LOADOUT</span><h2 id="cards-deck-heading">MY DECK</h2></div>
-            <strong id="cards-deck-count">0 / 9</strong>
-          </div>
-          <p class="deck-builder-help">Drag cards from your collection below into these slots, or tap + DECK. Tap a filled slot to remove.</p>
-          <div class="deck-slots" id="cards-deck-slots" role="group" aria-label="Nine PvP deck slots"></div>
-          <div class="deck-builder-footer">
-            <p class="deck-builder-status" id="cards-deck-status" role="status" aria-live="polite">Prepare your deck before joining PvP.</p>
-            <button type="button" class="gold-button" id="cards-deck-save">SAVE DECK</button>
-          </div>
-        </section>
-        <div class="cards-view-tabs"><button type="button" class="filter active" id="card-view-grid">CARD GRID</button><button type="button" class="filter" id="card-view-heroes">BY HERO</button></div>
-        <div class="collection-banner"><div><small>COLLECTION PROGRESS</small><strong id="owned-count">1 <span>/ 27 CARDS</span></strong></div><div class="collection-progress"><span id="collection-bar" style="width:3.70%"></span></div></div>
-        <div class="filters" role="group" aria-label="Collection filter"><button class="filter" data-filter="all" type="button">All Heroes</button><button class="filter active" data-filter="owned" type="button">Owned</button><button class="filter" data-filter="missing" type="button">Locked</button></div>
-        <div class="hero-grid" id="hero-grid"></div>
-        <nav class="cards-pagination" id="cards-pagination" aria-label="Cards pages">
-          <button type="button" id="cards-prev" class="cards-page-arrow" aria-label="Previous cards page">‹</button>
-          <span id="cards-page-label" aria-live="polite">PAGE 1</span>
-          <button type="button" id="cards-next" class="cards-page-arrow" aria-label="Next cards page">›</button>
-        </nav>
-      </section>
-      <section class="screen" id="screen-summon" aria-labelledby="summon-heading" hidden>
-        <h1 id="summon-heading">HERO <span class="gold-text">SUMMON</span></h1>
-        <div class="summon-feature">
-          <span class="feature-tag">FEATURED HERO</span>
-          <div class="summon-art"><img src="./media/cards/dren/dren_stage_3.webp" alt="Dren featured summon hero"></div>
-          <div class="summon-feature-bottom"><span class="mini-label">EPIC · SHADOW</span><h2>DREN</h2><p>The darkness answers his call.</p></div>
-        </div>
-        <div class="summon-choice">
-          <div class="choice-head"><div><small>SUMMON PORTAL 01</small><h3>Standard Summon</h3></div><span class="portal-badge">✧</span></div>
-          <button type="button" class="dark-button" id="summon-standard">SUMMON 1 <span>◆ 300</span></button>
-        </div>
-        <div class="summon-choice featured-choice">
-          <div class="choice-head"><div><small>SUMMON PORTAL 02</small><h3>Featured Summon</h3></div><span class="portal-badge">✦</span></div>
-          <button type="button" class="gold-button" id="summon-featured">FEATURED PULL <span>◆ 600</span></button>
-        </div>
-        <div class="summon-quick-actions">
-          <button type="button" id="open-summon-roster" class="summon-mini-action">✦ ALL HEROES</button>
-          <button type="button" id="open-summon-info" class="summon-mini-action">ⓘ RATES & INFO</button>
-        </div>
-      </section>
-      <section class="screen" id="screen-profile" aria-labelledby="profile-heading" hidden>
-        <div class="eyebrow"><span class="eyebrow-line"></span> YOUR LEGEND BEGINS <span class="eyebrow-line"></span></div>
-        <h1 id="profile-heading">PLAYER <span class="gold-text">PROFILE</span></h1>
-        <p class="screen-intro">Your local adventurer profile. Online accounts will be introduced before real PvP.</p>
-        <div class="profile-panel">
-          <div class="profile-avatar"><img id="profile-avatar-image" src="./media/avatars/avatar_player.webp" alt="Player avatar"></div>
-          <span class="profile-label">RUNE ADVENTURER</span><h2 id="profile-display-name">Runebearer</h2>
-          <span class="chip chip-blue">LOCAL ACCOUNT · LEVEL 1</span>
-        </div>
-        <div class="avatar-chooser" aria-labelledby="avatar-chooser-label">
-          <h3 id="avatar-chooser-label">CHOOSE YOUR AVATAR</h3>
-          <div class="avatar-options" role="group" aria-label="Choose a profile avatar">
-            <button class="avatar-option selected" type="button" data-avatar="player" aria-label="Select player avatar" aria-pressed="true">
-              <img src="./media/avatars/avatar_player.webp" alt="" loading="lazy">
-              <span>PLAYER</span>
-            </button>
-            <button class="avatar-option" type="button" data-avatar="guard" aria-label="Select guard avatar" aria-pressed="false">
-              <img src="./media/avatars/avatar_guard.webp" alt="" loading="lazy">
-              <span>GUARD</span>
-            </button>
-            <button class="avatar-option" type="button" data-avatar="vassal" aria-label="Select vassal avatar" aria-pressed="false">
-              <img src="./media/avatars/avatar_vassal.webp" alt="" loading="lazy">
-              <span>VASSAL</span>
-            </button>
-            <button class="avatar-option" type="button" data-avatar="king" aria-label="Select king avatar" aria-pressed="false">
-              <img src="./media/avatars/avatar_king.webp" alt="" loading="lazy">
-              <span>KING</span>
-            </button>
-          </div>
-          <p class="micro-note">Your avatar choice is saved on this device.</p>
-        </div>
-        <div class="language-setting"><label class="select-label" for="language-select">LANGUAGE</label><select id="language-select" class="field"><option value="auto">Automatic (device)</option><option value="it">Italiano</option><option value="en">English</option></select></div>
-        <form id="name-form" class="profile-form"><label class="select-label" for="name-input">DISPLAY NAME</label><div class="name-row"><input id="name-input" class="field" name="nickname" minlength="2" maxlength="20" autocomplete="nickname" required><button class="dark-button" type="submit">SAVE</button></div></form>
-        <div class="stats-grid">
-          <div class="stat-card"><span>⚔</span><strong id="stat-duels">0</strong><small>PRACTICE DUELS</small></div>
-          <div class="stat-card"><span>★</span><strong id="stat-wins">0</strong><small>PRACTICE WINS</small></div>
-          <div class="stat-card"><span>✦</span><strong id="stat-pulls">0</strong><small>SUMMONS</small></div>
-          <div class="stat-card"><span>▣</span><strong id="stat-cards">1</strong><small>OWNED CARDS</small></div>
-        </div>
-        <div class="profile-actions"><button type="button" class="dark-button" id="install-button">＋ INSTALL IDLE KARDRUNE</button><p id="install-help" class="micro-note">Install to your home screen from your browser menu.</p><button type="button" class="plain-link" id="reset-button">Reset local demo progress</button></div>
-        <section class="cloud-panel" aria-label="Cloud account and saves">
-          <h2>☁ CLOUD ACCOUNT</h2>
-          <p class="micro-note">Sign in to back up your local demo progress on another device. Competitive progress will be separate.</p>
-          <p id="cloud-disabled" class="cloud-notice">Cloud login is not configured yet. Local play remains available.</p>
-          <div id="cloud-auth-form" hidden>
-            <button type="button" class="dark-button" id="cloud-google">Continue with Google</button>
-            <form id="cloud-email-form" class="cloud-email-form">
-              <label for="cloud-email">Email</label><input class="field" type="email" id="cloud-email" autocomplete="email" required>
-              <label for="cloud-password">Password</label><input class="field" type="password" id="cloud-password" autocomplete="current-password" minlength="6" required>
-              <label for="cloud-email-mode">Action</label>
-              <select class="field" id="cloud-email-mode"><option value="login">Sign in</option><option value="register">Create account</option></select>
-              <button type="submit" class="gold-button">Continue</button>
-            </form>
-          </div>
-          <div id="cloud-signed-in" hidden>
-            <p id="cloud-identity"></p><p class="micro-note" id="cloud-save-info"></p>
-            <p class="micro-note" id="cloud-auto-status" role="status" aria-live="polite">Checking cloud sync…</p>
-            <div class="cloud-actions"><button type="button" class="dark-button" id="cloud-upload">Upload local save</button><button type="button" class="dark-button" id="cloud-download">Load cloud save</button></div>
-            <button type="button" class="plain-link" id="cloud-admin" hidden>Admin debug status</button>
-            <button type="button" class="plain-link" id="cloud-sign-out">Sign out</button>
-          </div>
-          <p class="micro-note" id="cloud-message" role="status" aria-live="polite"></p>
-        </section>
-        <div class="data-separation">🛡 <span>Independent prototype: it does not access or modify your KardRune app account, purchases or database.</span></div>
-      </section>
-    </main>
-  </div>
-  <section id="pvp-battle-view" class="pvp-battle-view" hidden aria-label="Live PvP battle">
-    <header class="pvp-battle-header"><strong>⚔ LIVE ARENA</strong><span id="pvp-round-number">ROUND 1</span><button id="pvp-exit-battle" type="button" aria-label="Leave match">✕</button></header>
-    <div class="pvp-rival-zone"><div class="pvp-battle-name">⚔ <strong id="pvp-rival-name">Rival</strong><span id="pvp-rival-hp">HP —</span></div><div class="pvp-face-down" aria-hidden="true">✦ RIVAL HAND ✦</div></div>
-    <div class="pvp-arena-zone" id="pvp-arena-drop"><div class="pvp-arena-heading">RUNE CLASH <span id="pvp-score">0 : 0</span></div>
-      <div class="pvp-arena-piles"><div class="pvp-side-pile pvp-used-pile"><span>USED</span><div id="pvp-used-preview" class="pvp-used-preview"></div><strong id="pvp-used-count">0</strong></div><div class="pvp-side-pile pvp-draw-pile"><span>DECK</span><div id="pvp-deck-stack" class="pvp-deck-stack">✦</div><strong id="pvp-deck-remaining">0</strong></div></div>
-      <div class="pvp-fighter-row"><div id="pvp-rival-fighter" class="pvp-arena-fighter"></div><div class="pvp-arena-versus">VS</div><div id="pvp-own-fighter" class="pvp-arena-fighter"></div></div>
-      <div id="pvp-arena-effects" class="pvp-arena-effects" aria-live="off"></div>
-      <p id="pvp-phase" class="pvp-phase">Preparing arena…</p></div>
-    <div class="pvp-player-zone"><div class="pvp-battle-name">✦ YOU <span id="pvp-own-hp">HP —</span></div><div class="pvp-hand-top"><strong>YOUR HAND · DRAG A CARD UP</strong><span id="pvp-timer">30</span></div><div id="pvp-hand" class="pvp-hand-row"></div></div>
-    <div id="pvp-round-popup" class="pvp-round-popup" hidden role="status"><strong id="pvp-popup-title"></strong><span id="pvp-popup-description"></span></div>
-    <div id="pvp-finish" class="pvp-match-finish" hidden><h2 id="pvp-final-result">VICTORY</h2><button type="button" id="pvp-finish-back" class="gold-button">BACK TO TOURNAMENT</button></div>
-  </section>
-  <nav class="bottom-nav" id="bottom-nav" aria-label="Game sections">
-    <button type="button" class="nav-tab active" data-nav="tournament" aria-current="page"><svg><use href="#i-trophy"></use></svg><span>Tournament</span></button>
-    <button type="button" class="nav-tab" data-nav="cards"><svg><use href="#i-cards"></use></svg><span>Cards</span></button>
-    <button type="button" class="nav-tab" data-nav="summon"><svg><use href="#i-summon"></use></svg><span>Summon</span></button>
-    <button type="button" class="nav-tab" data-nav="profile"><svg><use href="#i-user"></use></svg><span>Profile</span></button>
-  </nav>
-  <dialog id="game-dialog" class="game-dialog" aria-labelledby="dialog-title"><div class="dialog-inner"><button type="button" class="dialog-close" id="dialog-close" aria-label="Close dialog">×</button><div id="dialog-content"></div><button type="button" id="dialog-done" class="gold-button">CONTINUE</button></div></dialog>
-  <div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
+
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('kardrune_service_worker.js', { scope: './' }).then((registration) => {
+          const announce = () => window.dispatchEvent(new Event('kardrune-update-available'));
+          if (registration.waiting) announce();
+          registration.addEventListener('updatefound', () => {
+            const worker = registration.installing;
+            worker?.addEventListener('statechange', () => {
+              if (worker.state === 'installed' && navigator.serviceWorker.controller) announce();
+            });
+          });
+          window.addEventListener('kardrune-apply-update', () => registration.waiting?.postMessage('SKIP_WAITING'));
+          let reloading = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!reloading) { reloading = true; window.location.reload(); }
+          });
+        });
+      });
+    }
+  </script>
 </body>
 </html>

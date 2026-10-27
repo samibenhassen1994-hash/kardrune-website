@@ -1,0 +1,18 @@
+{
+  "practice": [
+    {"power": 42, "stage": 1, "chance": 0.64},
+    {"power": 79, "stage": 3, "chance": 0.9},
+    {"power": -100, "stage": 1, "chance": 0.05}
+  ],
+  "legacy": [
+    {"id": "sam:1", "attack": 58, "crit": 13},
+    {"id": "aria:3", "attack": 41, "crit": 11}
+  ],
+  "summon": [
+    {"featured": false, "roll": 0.779999, "stage": 1},
+    {"featured": false, "roll": 0.78, "stage": 2},
+    {"featured": false, "roll": 0.97, "stage": 3},
+    {"featured": true, "roll": 0.6, "stage": 2},
+    {"featured": true, "roll": 0.9, "stage": 3}
+  ]
+}
