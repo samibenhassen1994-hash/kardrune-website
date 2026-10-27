@@ -43,7 +43,11 @@ void main() {
     final controller = ArenaViewController();
     await tester.pumpWidget(
       MaterialApp(
-        home: LivePvpArena(controller: controller, onPlay: (_) {}, onReady: () {}),
+        home: LivePvpArena(
+          controller: controller,
+          onPlay: (_) {},
+          onReady: () {},
+        ),
       ),
     );
     controller.startHand(
@@ -64,6 +68,10 @@ void main() {
       ),
     );
     await tester.pump(const Duration(seconds: 1));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 250)),
+    );
+    await tester.pump();
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/pvp_arena_390x844.png'),

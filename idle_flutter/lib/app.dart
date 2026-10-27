@@ -7,6 +7,7 @@ import 'game/combat_rules.dart';
 import 'game/game_rules.dart';
 import 'game/summon_rules.dart';
 import 'features/cards/deck_builder.dart';
+import 'features/cards/card_stat_badges.dart';
 import 'features/profile/cloud_account_controller.dart';
 import 'features/pvp/live_match_coordinator.dart';
 import 'features/pvp/live_pvp_arena.dart';
@@ -264,118 +265,126 @@ class _IdleShellState extends State<IdleShell> {
   @override
   Widget build(BuildContext context) {
     if (_pvp?.state == LiveMatchState.arena) {
-      return _motionWrap(_withUpdate(
-        Stack(
-          children: [
-            Positioned.fill(
-              child: LivePvpArena(
-                controller: _pvp!.arena,
-                onPlay: _pvp!.play,
-                onReady: _pvp!.ready,
-              ),
-            ),
-            Positioned(
-              top: 12,
-              left: 12,
-              child: SafeArea(
-                child: IconButton(
-                  key: const Key('close-live-arena'),
-                  onPressed: _pvp!.close,
-                  icon: const Icon(Icons.close, color: Colors.white),
+      return _motionWrap(
+        _withUpdate(
+          Stack(
+            children: [
+              Positioned.fill(
+                child: LivePvpArena(
+                  controller: _pvp!.arena,
+                  onPlay: _pvp!.play,
+                  onReady: _pvp!.ready,
                 ),
               ),
-            ),
-          ],
-        ),
-      ));
-    }
-    return _motionWrap(_withUpdate(
-      Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: DecoratedBox(
-            decoration: const BoxDecoration(
-              color: Color(0xff070e20),
-              gradient: RadialGradient(
-                center: Alignment(0, -1.12),
-                radius: 1.25,
-                colors: [Color(0xff1c3256), Color(0xff070e20)],
-                stops: [0, .58],
+              Positioned(
+                top: 12,
+                left: 12,
+                child: SafeArea(
+                  child: IconButton(
+                    key: const Key('close-live-arena'),
+                    onPressed: _pvp!.close,
+                    icon: const Icon(Icons.close, color: Colors.white),
+                  ),
+                ),
               ),
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
-                child: Column(
-                  children: [
-                    _Header(shards: shards),
-                    Expanded(
-                      child: IndexedStack(
-                        index: tab,
-                        children: [
-                        _Tournament(
-                          rewardsLeft: rewardsLeft,
-                          status: battleStatus,
-                          onStart: _train,
-                          onLive: _pvp?.findMatch,
-                          liveStatus: _pvp?.message,
-                          canLive: _pvp != null && deck.isNotEmpty,
+            ],
+          ),
+        ),
+      );
+    }
+    return _motionWrap(
+      _withUpdate(
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
+            child: DecoratedBox(
+              decoration: const BoxDecoration(
+                color: Color(0xff070e20),
+                gradient: RadialGradient(
+                  center: Alignment(0, -1.12),
+                  radius: 1.25,
+                  colors: [Color(0xff1c3256), Color(0xff070e20)],
+                  stops: [0, .58],
+                ),
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: Column(
+                    children: [
+                      _Header(shards: shards),
+                      Expanded(
+                        child: IndexedStack(
+                          index: tab,
+                          children: [
+                            _Tournament(
+                              rewardsLeft: rewardsLeft,
+                              status: battleStatus,
+                              onStart: _train,
+                              onLive: _pvp?.findMatch,
+                              liveStatus: _pvp?.message,
+                              canLive: _pvp != null && deck.isNotEmpty,
+                            ),
+                            _Cards(
+                              page: page,
+                              title: italian ? 'CARTE' : 'CARDS',
+                              owned: owned.toList(),
+                              deck: deck,
+                              active: active,
+                              attacks: attacks,
+                              crits: crits,
+                              onPage: (v) => setState(() => page = v),
+                              onDeck: _saveDeck,
+                              onSelect: (id) {
+                                setState(() => active = id);
+                                _persist();
+                              },
+                            ),
+                            _Summon(
+                              shards: shards,
+                              title: italian ? 'EVOCA' : 'SUMMON',
+                              onSummon: _summon,
+                            ),
+                            _Profile(
+                              name: name,
+                              avatar: avatar,
+                              onName: (v) {
+                                setState(() => name = v);
+                                _persist();
+                              },
+                              onAvatar: (v) {
+                                setState(() => avatar = v);
+                                _persist();
+                              },
+                              onLanguage: () =>
+                                  setState(() => italian = !italian),
+                              motion: motion,
+                              onMotion: (value) {
+                                setState(() => motion = value);
+                                _saveService?.storage.write(
+                                  _motionKey,
+                                  value.name,
+                                );
+                              },
+                              cloud: _cloud,
+                            ),
+                          ],
                         ),
-                        _Cards(
-                          page: page,
-                          title: italian ? 'CARTE' : 'CARDS',
-                          owned: owned.toList(),
-                          deck: deck,
-                          active: active,
-                          attacks: attacks,
-                          crits: crits,
-                          onPage: (v) => setState(() => page = v),
-                          onDeck: _saveDeck,
-                          onSelect: (id) {
-                            setState(() => active = id);
-                            _persist();
-                          },
-                        ),
-                        _Summon(
-                          shards: shards,
-                          title: italian ? 'EVOCA' : 'SUMMON',
-                          onSummon: _summon,
-                        ),
-                        _Profile(
-                          name: name,
-                          avatar: avatar,
-                          onName: (v) {
-                            setState(() => name = v);
-                            _persist();
-                          },
-                          onAvatar: (v) {
-                            setState(() => avatar = v);
-                            _persist();
-                          },
-                          onLanguage: () => setState(() => italian = !italian),
-                          motion: motion,
-                          onMotion: (value) {
-                            setState(() => motion = value);
-                            _saveService?.storage.write(_motionKey, value.name);
-                          },
-                          cloud: _cloud,
-                        ),
-                        ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        bottomNavigationBar: _RuneNavigation(
-          current: tab,
-          italian: italian,
-          onTap: (value) => setState(() => tab = value),
+          bottomNavigationBar: _RuneNavigation(
+            current: tab,
+            italian: italian,
+            onTap: (value) => setState(() => tab = value),
+          ),
         ),
       ),
-    ));
+    );
   }
 
   Widget _motionWrap(Widget child) {
@@ -385,7 +394,10 @@ class _IdleShellState extends State<IdleShell> {
       MotionPreference.full => false,
       MotionPreference.reduced => true,
     };
-    return MediaQuery(data: media.copyWith(disableAnimations: reduce), child: child);
+    return MediaQuery(
+      data: media.copyWith(disableAnimations: reduce),
+      child: child,
+    );
   }
 
   Widget _withUpdate(Widget child) => Stack(
@@ -628,7 +640,11 @@ class _Header extends StatelessWidget {
 }
 
 class _RuneNavigation extends StatelessWidget {
-  const _RuneNavigation({required this.current, required this.italian, required this.onTap});
+  const _RuneNavigation({
+    required this.current,
+    required this.italian,
+    required this.onTap,
+  });
   final int current;
   final bool italian;
   final ValueChanged<int> onTap;
@@ -667,15 +683,34 @@ class _RuneNavigation extends StatelessWidget {
                             top: 0,
                             child: SizedBox(
                               width: 38,
-                              child: Divider(color: Color(0xfff9d892), thickness: 2, height: 2),
+                              child: Divider(
+                                color: Color(0xfff9d892),
+                                thickness: 2,
+                                height: 2,
+                              ),
                             ),
                           ),
                         Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(items[i].$1, size: 23, color: current == i ? const Color(0xfff9d892) : const Color(0xff91a1b9)),
+                            Icon(
+                              items[i].$1,
+                              size: 23,
+                              color: current == i
+                                  ? const Color(0xfff9d892)
+                                  : const Color(0xff91a1b9),
+                            ),
                             const SizedBox(height: 4),
-                            Text(items[i].$2, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: current == i ? const Color(0xfff9d892) : const Color(0xff91a1b9))),
+                            Text(
+                              items[i].$2,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: current == i
+                                    ? const Color(0xfff9d892)
+                                    : const Color(0xff91a1b9),
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -710,7 +745,12 @@ class _Tournament extends StatelessWidget {
     builder: (context, box) {
       final compact = box.maxHeight < 560;
       return Padding(
-        padding: EdgeInsets.fromLTRB(compact ? 13 : 19, compact ? 8 : 16, compact ? 13 : 19, 7),
+        padding: EdgeInsets.fromLTRB(
+          compact ? 13 : 19,
+          compact ? 8 : 16,
+          compact ? 13 : 19,
+          7,
+        ),
         child: Column(
           children: [
             _Eyebrow(compact: compact),
@@ -718,7 +758,12 @@ class _Tournament extends StatelessWidget {
             Text.rich(
               const TextSpan(
                 text: 'TOURNAMENT ',
-                children: [TextSpan(text: 'PvP', style: TextStyle(color: Color(0xfff5d28b)))],
+                children: [
+                  TextSpan(
+                    text: 'PvP',
+                    style: TextStyle(color: Color(0xfff5d28b)),
+                  ),
+                ],
               ),
               style: TextStyle(
                 color: const Color(0xfff9f4e9),
@@ -732,7 +777,11 @@ class _Tournament extends StatelessWidget {
               const Text(
                 'Build your team. Face your rivals. Rise to the top of the Rune Circuit.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xffb9c5d8), fontSize: 12, height: 1.35),
+                style: TextStyle(
+                  color: Color(0xffb9c5d8),
+                  fontSize: 12,
+                  height: 1.35,
+                ),
               ),
               const SizedBox(height: 12),
             ] else
@@ -746,16 +795,45 @@ class _Tournament extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('YOUR NEXT BATTLE', style: TextStyle(color: Color(0xffeac981), fontSize: 8, letterSpacing: 1.2, fontWeight: FontWeight.w800)),
+                      Text(
+                        'YOUR NEXT BATTLE',
+                        style: TextStyle(
+                          color: Color(0xffeac981),
+                          fontSize: 8,
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                       SizedBox(height: 3),
-                      Text('PRACTICE ARENA', style: TextStyle(fontFamily: 'Georgia', fontSize: 18, fontWeight: FontWeight.w700)),
+                      Text(
+                        'PRACTICE ARENA',
+                        style: TextStyle(
+                          fontFamily: 'Georgia',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                  decoration: BoxDecoration(color: const Color(0x331c5478), border: Border.all(color: const Color(0x6678c5ff)), borderRadius: BorderRadius.circular(30)),
-                  child: const Text('SOLO DEMO', style: TextStyle(color: Color(0xffa6daff), fontSize: 8, fontWeight: FontWeight.w800)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0x331c5478),
+                    border: Border.all(color: const Color(0x6678c5ff)),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: const Text(
+                    'SOLO DEMO',
+                    style: TextStyle(
+                      color: Color(0xffa6daff),
+                      fontSize: 8,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -763,43 +841,93 @@ class _Tournament extends StatelessWidget {
             Expanded(
               child: Container(
                 constraints: const BoxConstraints(minHeight: 120),
-                padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 11, vertical: compact ? 5 : 10),
+                padding: EdgeInsets.symmetric(
+                  horizontal: compact ? 6 : 11,
+                  vertical: compact ? 5 : 10,
+                ),
                 decoration: BoxDecoration(
-                  gradient: const RadialGradient(colors: [Color(0xff203958), Color(0xff0b172f)]),
+                  gradient: const RadialGradient(
+                    colors: [Color(0xff203958), Color(0xff0b172f)],
+                  ),
                   border: Border.all(color: const Color(0x45d3ad5b)),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
                   children: [
-                    Expanded(child: _HomeCombatant(id: 'sam', label: 'SAM · S1', subtitle: 'YOUR HERO', compact: compact)),
+                    Expanded(
+                      child: _HomeCombatant(
+                        id: 'sam',
+                        label: 'SAM · S1',
+                        subtitle: 'YOUR HERO',
+                        compact: compact,
+                      ),
+                    ),
                     SizedBox(
                       width: compact ? 34 : 48,
                       child: const FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('VS', style: TextStyle(fontFamily: 'Georgia', color: Color(0xffe9c67d), fontSize: 21, fontWeight: FontWeight.w800)),
-                          Text('⚔', style: TextStyle(color: Color(0xffe9c67d), fontSize: 13)),
-                        ],
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'VS',
+                              style: TextStyle(
+                                fontFamily: 'Georgia',
+                                color: Color(0xffe9c67d),
+                                fontSize: 21,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            Text(
+                              '⚔',
+                              style: TextStyle(
+                                color: Color(0xffe9c67d),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    Expanded(child: _HomeCombatant(id: 'dren', label: 'DREN · S1', subtitle: 'RANDOM OPPONENT', compact: compact, enemy: true)),
+                    Expanded(
+                      child: _HomeCombatant(
+                        id: 'dren',
+                        label: 'DREN · S1',
+                        subtitle: 'RANDOM OPPONENT',
+                        compact: compact,
+                        enemy: true,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
             SizedBox(height: compact ? 5 : 8),
             if (status.isNotEmpty)
-              Text(status, key: const Key('battle-status'), style: const TextStyle(color: Color(0xff83dfa9), fontSize: 10)),
-            Text('Rewarded duels remaining today: $rewardsLeft/10', style: const TextStyle(color: Color(0xff93a6bc), fontSize: 10)),
+              Text(
+                status,
+                key: const Key('battle-status'),
+                style: const TextStyle(color: Color(0xff83dfa9), fontSize: 10),
+              ),
+            Text(
+              'Rewarded duels remaining today: $rewardsLeft/10',
+              style: const TextStyle(color: Color(0xff93a6bc), fontSize: 10),
+            ),
             SizedBox(height: compact ? 5 : 7),
-            _RuneButton(actionKey: const Key('start-practice-duel'), label: '⚔  START PRACTICE DUEL', onTap: onStart, gold: true),
+            _RuneButton(
+              actionKey: const Key('start-practice-duel'),
+              label: '⚔  START PRACTICE DUEL',
+              onTap: onStart,
+              gold: true,
+            ),
             const SizedBox(height: 5),
             if (liveStatus != null)
-              Text(liveStatus!, key: const Key('live-match-status'), style: const TextStyle(fontSize: 10, color: Color(0xffa6b9d0))),
+              Text(
+                liveStatus!,
+                key: const Key('live-match-status'),
+                style: const TextStyle(fontSize: 10, color: Color(0xffa6b9d0)),
+              ),
             _RuneButton(
               actionKey: const Key('find-live-match'),
               label: onLive == null ? 'SIGN IN FOR LIVE PVP' : deckLabel,
@@ -823,7 +951,15 @@ class _Eyebrow extends StatelessWidget {
     children: [
       const SizedBox(width: 27, child: Divider(color: Color(0x5ce8bd66))),
       const SizedBox(width: 10),
-      Text('ARENA OF THE RUNES', style: TextStyle(color: const Color(0xffe7bf68), fontSize: compact ? 8 : 9, letterSpacing: 1.5, fontWeight: FontWeight.w800)),
+      Text(
+        'ARENA OF THE RUNES',
+        style: TextStyle(
+          color: const Color(0xffe7bf68),
+          fontSize: compact ? 8 : 9,
+          letterSpacing: 1.5,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
       const SizedBox(width: 10),
       const SizedBox(width: 27, child: Divider(color: Color(0x5ce8bd66))),
     ],
@@ -837,12 +973,25 @@ class _SeasonBanner extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     width: double.infinity,
     height: compact ? 58 : 96,
-    padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 22, vertical: compact ? 8 : 12),
+    padding: EdgeInsets.symmetric(
+      horizontal: compact ? 14 : 22,
+      vertical: compact ? 8 : 12,
+    ),
     decoration: BoxDecoration(
-      gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xff253550), Color(0xff101e37)]),
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xff253550), Color(0xff101e37)],
+      ),
       border: Border.all(color: const Color(0x66dfbe77)),
       borderRadius: BorderRadius.circular(15),
-      boxShadow: const [BoxShadow(color: Color(0x66000000), blurRadius: 24, offset: Offset(0, 10))],
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x66000000),
+          blurRadius: 24,
+          offset: Offset(0, 10),
+        ),
+      ],
     ),
     child: Row(
       children: [
@@ -851,29 +1000,65 @@ class _SeasonBanner extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('SEASON PREVIEW', style: TextStyle(color: Color(0xffeac981), fontSize: 8, letterSpacing: 1.2, fontWeight: FontWeight.w800)),
+              const Text(
+                'SEASON PREVIEW',
+                style: TextStyle(
+                  color: Color(0xffeac981),
+                  fontSize: 8,
+                  letterSpacing: 1.2,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
               SizedBox(height: compact ? 3 : 6),
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Text.rich(
-                  const TextSpan(text: 'THE RUNE ', children: [TextSpan(text: 'CIRCUIT', style: TextStyle(color: Color(0xfff5d28b)))]),
+                  const TextSpan(
+                    text: 'THE RUNE ',
+                    children: [
+                      TextSpan(
+                        text: 'CIRCUIT',
+                        style: TextStyle(color: Color(0xfff5d28b)),
+                      ),
+                    ],
+                  ),
                   maxLines: 1,
-                  style: TextStyle(fontFamily: 'Georgia', fontSize: compact ? 17 : 22, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    fontFamily: 'Georgia',
+                    fontSize: compact ? 17 : 22,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              if (!compact) const Text('First championship • Coming with online accounts', style: TextStyle(color: Color(0xffacbddd), fontSize: 9)),
+              if (!compact)
+                const Text(
+                  'First championship • Coming with online accounts',
+                  style: TextStyle(color: Color(0xffacbddd), fontSize: 9),
+                ),
             ],
           ),
         ),
-        Text('♜', style: TextStyle(color: const Color(0xffe2c476), fontSize: compact ? 35 : 54)),
+        Text(
+          '♜',
+          style: TextStyle(
+            color: const Color(0xffe2c476),
+            fontSize: compact ? 35 : 54,
+          ),
+        ),
       ],
     ),
   );
 }
 
 class _HomeCombatant extends StatelessWidget {
-  const _HomeCombatant({required this.id, required this.label, required this.subtitle, required this.compact, this.enemy = false});
+  const _HomeCombatant({
+    required this.id,
+    required this.label,
+    required this.subtitle,
+    required this.compact,
+    this.enemy = false,
+  });
   final String id, label, subtitle;
   final bool compact, enemy;
   @override
@@ -883,20 +1068,52 @@ class _HomeCombatant extends StatelessWidget {
       children: [
         Expanded(
           child: Container(
-            decoration: BoxDecoration(color: const Color(0xff0b1529), border: Border.all(color: enemy ? const Color(0x75ab636b) : const Color(0x68bdac7a)), borderRadius: BorderRadius.circular(12)),
-            child: Image.asset(hero.cardAsset(hero.stages.first), fit: BoxFit.contain),
+            decoration: BoxDecoration(
+              color: const Color(0xff0b1529),
+              border: Border.all(
+                color: enemy
+                    ? const Color(0x75ab636b)
+                    : const Color(0x68bdac7a),
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Image.asset(
+              hero.cardAsset(hero.stages.first),
+              fit: BoxFit.contain,
+            ),
           ),
         ),
         SizedBox(height: compact ? 3 : 6),
-        Text(label, maxLines: 1, style: TextStyle(fontFamily: 'Georgia', fontSize: compact ? 11 : 14, fontWeight: FontWeight.w700)),
-        Text(subtitle, maxLines: 1, style: TextStyle(color: const Color(0xff93a5c1), fontSize: compact ? 7 : 8, letterSpacing: .7)),
+        Text(
+          label,
+          maxLines: 1,
+          style: TextStyle(
+            fontFamily: 'Georgia',
+            fontSize: compact ? 11 : 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Text(
+          subtitle,
+          maxLines: 1,
+          style: TextStyle(
+            color: const Color(0xff93a5c1),
+            fontSize: compact ? 7 : 8,
+            letterSpacing: .7,
+          ),
+        ),
       ],
     );
   }
 }
 
 class _RuneButton extends StatelessWidget {
-  const _RuneButton({this.actionKey, required this.label, required this.onTap, this.gold = false});
+  const _RuneButton({
+    this.actionKey,
+    required this.label,
+    required this.onTap,
+    this.gold = false,
+  });
   final Key? actionKey;
   final String label;
   final VoidCallback? onTap;
@@ -917,11 +1134,25 @@ class _RuneButton extends StatelessWidget {
           height: 36,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: gold ? const [Color(0xfff8dd9d), Color(0xffbc8a3b)] : const [Color(0xff1e344f), Color(0xff13213a)]),
-            border: Border.all(color: gold ? const Color(0x9cf6dd9b) : const Color(0x66c4aa66)),
+            gradient: LinearGradient(
+              colors: gold
+                  ? const [Color(0xfff8dd9d), Color(0xffbc8a3b)]
+                  : const [Color(0xff1e344f), Color(0xff13213a)],
+            ),
+            border: Border.all(
+              color: gold ? const Color(0x9cf6dd9b) : const Color(0x66c4aa66),
+            ),
             borderRadius: BorderRadius.circular(9),
           ),
-          child: Text(label, style: TextStyle(color: gold ? const Color(0xff251a0c) : const Color(0xfff7dba5), fontSize: 10, letterSpacing: .8, fontWeight: FontWeight.w800)),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: gold ? const Color(0xff251a0c) : const Color(0xfff7dba5),
+              fontSize: 10,
+              letterSpacing: .8,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ),
       ),
     ),
@@ -963,18 +1194,43 @@ class _Cards extends StatelessWidget {
         children: [
           Text(
             title == 'CARTE' ? 'LE TUE CARTE' : 'YOUR CARDS',
-            style: const TextStyle(fontFamily: 'Georgia', fontSize: 27, fontWeight: FontWeight.w700, color: Color(0xfff9f4e9)),
+            style: const TextStyle(
+              fontFamily: 'Georgia',
+              fontSize: 27,
+              fontWeight: FontWeight.w700,
+              color: Color(0xfff9f4e9),
+            ),
           ),
           const SizedBox(height: 10),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(color: const Color(0xff101d36), border: Border.all(color: const Color(0x66dfbe77)), borderRadius: BorderRadius.circular(13)),
+            decoration: BoxDecoration(
+              color: const Color(0xff101d36),
+              border: Border.all(color: const Color(0x66dfbe77)),
+              borderRadius: BorderRadius.circular(13),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('⚔ PVP LOADOUT', style: TextStyle(color: Color(0xffa0b0c8), fontSize: 8, letterSpacing: 1.1, fontWeight: FontWeight.w800)),
-                const Text('MY DECK', style: TextStyle(fontFamily: 'Georgia', color: Color(0xfff5d28b), fontSize: 16, fontWeight: FontWeight.w700)),
+                const Text(
+                  '⚔ PVP LOADOUT',
+                  style: TextStyle(
+                    color: Color(0xffa0b0c8),
+                    fontSize: 8,
+                    letterSpacing: 1.1,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const Text(
+                  'MY DECK',
+                  style: TextStyle(
+                    fontFamily: 'Georgia',
+                    color: Color(0xfff5d28b),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: 5),
                 Row(
                   children: [
@@ -985,17 +1241,35 @@ class _Cards extends StatelessWidget {
                           child: Container(
                             margin: const EdgeInsets.symmetric(horizontal: 1),
                             alignment: Alignment.center,
-                            decoration: BoxDecoration(color: const Color(0xff0b172f), border: Border.all(color: const Color(0x667a89a6)), borderRadius: BorderRadius.circular(4)),
+                            decoration: BoxDecoration(
+                              color: const Color(0xff0b172f),
+                              border: Border.all(
+                                color: const Color(0x667a89a6),
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
                             child: i < deck.length
-                                ? Image.asset(_assetForId(deck[i]), fit: BoxFit.contain)
-                                : Text('${i + 1}'.padLeft(2, '0'), style: const TextStyle(color: Color(0xff71819c), fontSize: 7)),
+                                ? Image.asset(
+                                    _assetForId(deck[i]),
+                                    fit: BoxFit.contain,
+                                  )
+                                : Text(
+                                    '${i + 1}'.padLeft(2, '0'),
+                                    style: const TextStyle(
+                                      color: Color(0xff71819c),
+                                      fontSize: 7,
+                                    ),
+                                  ),
                           ),
                         ),
                       ),
                   ],
                 ),
                 const SizedBox(height: 6),
-                _RuneButton(onTap: () => _openDeck(context), label: '✦  EDIT DECK IN CARDS'),
+                _RuneButton(
+                  onTap: () => _openDeck(context),
+                  label: '✦  EDIT DECK IN CARDS',
+                ),
               ],
             ),
           ),
@@ -1003,14 +1277,42 @@ class _Cards extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
-            decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xff1c3252), Color(0xff0c182e)]), border: Border.all(color: const Color(0x54bca766)), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xff1c3252), Color(0xff0c182e)],
+              ),
+              border: Border.all(color: const Color(0x54bca766)),
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('COLLECTION PROGRESS', style: TextStyle(color: Color(0xffafc2d6), letterSpacing: 1.2, fontSize: 8)),
-                Text('${owned.length} / 27 CARDS', style: const TextStyle(fontFamily: 'Georgia', fontSize: 17, fontWeight: FontWeight.w800)),
+                const Text(
+                  'COLLECTION PROGRESS',
+                  style: TextStyle(
+                    color: Color(0xffafc2d6),
+                    letterSpacing: 1.2,
+                    fontSize: 8,
+                  ),
+                ),
+                Text(
+                  '${owned.length} / 27 CARDS',
+                  style: const TextStyle(
+                    fontFamily: 'Georgia',
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
                 const SizedBox(height: 5),
-                ClipRRect(borderRadius: BorderRadius.circular(10), child: LinearProgressIndicator(value: owned.length / 27, minHeight: 6, backgroundColor: const Color(0xff071025), color: const Color(0xfff4d38c))),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: owned.length / 27,
+                    minHeight: 6,
+                    backgroundColor: const Color(0xff071025),
+                    color: const Color(0xfff4d38c),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1065,7 +1367,9 @@ class _Cards extends StatelessWidget {
 
   String _assetForId(String id) {
     final parts = id.split(':');
-    final hero = KardRuneCatalog.heroes.firstWhere((item) => item.id == parts.first);
+    final hero = KardRuneCatalog.heroes.firstWhere(
+      (item) => item.id == parts.first,
+    );
     return hero.cardAsset(hero.stages[int.parse(parts.last) - 1]);
   }
 
@@ -1073,7 +1377,10 @@ class _Cards extends StatelessWidget {
     context: context,
     builder: (dialogContext) => Dialog(
       backgroundColor: const Color(0xff101d36),
-      shape: RoundedRectangleBorder(side: const BorderSide(color: Color(0xffd5ad62)), borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        side: const BorderSide(color: Color(0xffd5ad62)),
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: SizedBox(
         width: 430,
         height: 650,
@@ -1134,9 +1441,9 @@ class _Cards extends StatelessWidget {
               Positioned(
                 left: 3,
                 right: 3,
-                bottom: 3,
+                top: 3,
                 child: IgnorePointer(
-                  child: _CardStats(
+                  child: CardStatBadges(
                     key: ValueKey('card-stats-$id'),
                     hp: CombatRules.hpForStage(stage),
                     attack: isOwned ? attacks[id] : null,
@@ -1147,7 +1454,14 @@ class _Cards extends StatelessWidget {
               if (!isOwned)
                 const IgnorePointer(
                   child: Center(
-                    child: Text('?', style: TextStyle(fontSize: 28, color: Color(0xfff5d28b), fontWeight: FontWeight.w800)),
+                    child: Text(
+                      '?',
+                      style: TextStyle(
+                        fontSize: 28,
+                        color: Color(0xfff5d28b),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                 ),
             ],
@@ -1175,22 +1489,45 @@ class _Cards extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('${hero.name.toString().toUpperCase()} · STAGE $stage', style: const TextStyle(fontFamily: 'Georgia', fontSize: 20, color: Color(0xfff5d28b), fontWeight: FontWeight.w700)),
+                Text(
+                  '${hero.name.toString().toUpperCase()} · STAGE $stage',
+                  style: const TextStyle(
+                    fontFamily: 'Georgia',
+                    fontSize: 20,
+                    color: Color(0xfff5d28b),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                SizedBox(height: 220, child: Image.asset(hero.cardAsset(hero.stages[stage - 1]), fit: BoxFit.contain)),
-                _CardStats(
+                SizedBox(
+                  height: 220,
+                  child: Image.asset(
+                    hero.cardAsset(hero.stages[stage - 1]),
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                CardStatBadges(
                   hp: CombatRules.hpForStage(stage),
                   attack: isOwned ? attacks[id] : null,
                   crit: isOwned ? crits[id] : null,
-                  large: true,
                 ),
                 const SizedBox(height: 12),
                 Text(
                   isOwned ? 'SELECTED CHAMPION' : 'NOT COLLECTED',
-                  style: TextStyle(color: isOwned ? const Color(0xff7fd7c3) : const Color(0xffa0b0c8), fontSize: 10, letterSpacing: 1.1, fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    color: isOwned
+                        ? const Color(0xff7fd7c3)
+                        : const Color(0xffa0b0c8),
+                    fontSize: 10,
+                    letterSpacing: 1.1,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 8),
-                _RuneButton(label: 'CLOSE', onTap: () => Navigator.pop(dialogContext)),
+                _RuneButton(
+                  label: 'CLOSE',
+                  onTap: () => Navigator.pop(dialogContext),
+                ),
               ],
             ),
           ),
@@ -1198,35 +1535,6 @@ class _Cards extends StatelessWidget {
       ),
     );
   }
-}
-
-class _CardStats extends StatelessWidget {
-  const _CardStats({super.key, required this.hp, this.attack, this.crit, this.large = false});
-  final int hp;
-  final int? attack, crit;
-  final bool large;
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: EdgeInsets.symmetric(horizontal: large ? 10 : 4, vertical: large ? 8 : 4),
-    decoration: BoxDecoration(color: const Color(0xe6091428), border: Border.all(color: const Color(0x88d5ad62)), borderRadius: BorderRadius.circular(7)),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        Expanded(child: _stat('HP $hp', const Color(0xff80cfff))),
-        Expanded(child: _stat('ATK ${attack ?? '—'}', const Color(0xffff8b83))),
-        Expanded(child: _stat('CRIT ${crit == null ? '—' : '$crit%'}', const Color(0xfff5d28b))),
-      ],
-    ),
-  );
-
-  Widget _stat(String value, Color color) => FittedBox(
-    fit: BoxFit.scaleDown,
-    child: Text(
-      value,
-      maxLines: 1,
-      style: TextStyle(color: color, fontSize: large ? 12 : 7, fontWeight: FontWeight.w800),
-    ),
-  );
 }
 
 class _FilterLabel extends StatelessWidget {
@@ -1238,8 +1546,20 @@ class _FilterLabel extends StatelessWidget {
     child: Container(
       height: 34,
       alignment: Alignment.center,
-      decoration: BoxDecoration(color: active ? const Color(0xff463c30) : const Color(0xff142541), border: Border.all(color: active ? const Color(0x88dabb77) : const Color(0x457484a1)), borderRadius: BorderRadius.circular(8)),
-      child: Text(label, style: TextStyle(color: active ? const Color(0xffffe3a4) : const Color(0xffacbfd6), fontSize: 8)),
+      decoration: BoxDecoration(
+        color: active ? const Color(0xff463c30) : const Color(0xff142541),
+        border: Border.all(
+          color: active ? const Color(0x88dabb77) : const Color(0x457484a1),
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: active ? const Color(0xffffe3a4) : const Color(0xffacbfd6),
+          fontSize: 8,
+        ),
+      ),
     ),
   );
 }
@@ -1259,19 +1579,103 @@ class _Summon extends StatelessWidget {
     child: Column(
       children: [
         Text.rich(
-          TextSpan(text: title == 'EVOCA' ? 'EVOCA ' : 'HERO ', children: [TextSpan(text: title == 'EVOCA' ? 'EROI' : 'SUMMON', style: const TextStyle(color: Color(0xfff5d28b)))]),
-          style: const TextStyle(fontFamily: 'Georgia', fontSize: 28, fontWeight: FontWeight.w700),
+          TextSpan(
+            text: title == 'EVOCA' ? 'EVOCA ' : 'HERO ',
+            children: [
+              TextSpan(
+                text: title == 'EVOCA' ? 'EROI' : 'SUMMON',
+                style: const TextStyle(color: Color(0xfff5d28b)),
+              ),
+            ],
+          ),
+          style: const TextStyle(
+            fontFamily: 'Georgia',
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         const SizedBox(height: 10),
         Expanded(
           child: Container(
             width: double.infinity,
-            decoration: BoxDecoration(gradient: const RadialGradient(center: Alignment(0, -.3), colors: [Color(0xff624966), Color(0xff152443)]), border: Border.all(color: const Color(0x88e1bc71)), borderRadius: BorderRadius.circular(16)),
+            decoration: BoxDecoration(
+              gradient: const RadialGradient(
+                center: Alignment(0, -.3),
+                colors: [Color(0xff624966), Color(0xff152443)],
+              ),
+              border: Border.all(color: const Color(0x88e1bc71)),
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Stack(
               children: [
-                Positioned.fill(child: Image.asset(KardRuneCatalog.heroes.firstWhere((hero) => hero.id == 'dren').cardAsset(KardRuneCatalog.heroes.firstWhere((hero) => hero.id == 'dren').stages[2]), fit: BoxFit.contain)),
-                Positioned(top: 14, left: 14, child: Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6), decoration: BoxDecoration(color: const Color(0xffd8b35f), borderRadius: BorderRadius.circular(5)), child: const Text('FEATURED HERO', style: TextStyle(color: Color(0xff241b13), fontSize: 8, letterSpacing: .8, fontWeight: FontWeight.w800)))),
-                const Positioned(left: 0, right: 0, bottom: 10, child: Column(children: [Text('EPIC · SHADOW', style: TextStyle(color: Color(0xffe9c880), fontSize: 8, letterSpacing: 1.1, fontWeight: FontWeight.w800)), Text('DREN', style: TextStyle(fontFamily: 'Georgia', fontSize: 25, fontWeight: FontWeight.w700)), Text('The darkness answers his call.', style: TextStyle(color: Color(0xffcad1e0), fontSize: 10))])),
+                Positioned.fill(
+                  child: Image.asset(
+                    KardRuneCatalog.heroes
+                        .firstWhere((hero) => hero.id == 'dren')
+                        .cardAsset(
+                          KardRuneCatalog.heroes
+                              .firstWhere((hero) => hero.id == 'dren')
+                              .stages[2],
+                        ),
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                Positioned(
+                  top: 14,
+                  left: 14,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xffd8b35f),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: const Text(
+                      'FEATURED HERO',
+                      style: TextStyle(
+                        color: Color(0xff241b13),
+                        fontSize: 8,
+                        letterSpacing: .8,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+                const Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 10,
+                  child: Column(
+                    children: [
+                      Text(
+                        'EPIC · SHADOW',
+                        style: TextStyle(
+                          color: Color(0xffe9c880),
+                          fontSize: 8,
+                          letterSpacing: 1.1,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Text(
+                        'DREN',
+                        style: TextStyle(
+                          fontFamily: 'Georgia',
+                          fontSize: 25,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        'The darkness answers his call.',
+                        style: TextStyle(
+                          color: Color(0xffcad1e0),
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -1301,20 +1705,59 @@ class _Summon extends StatelessWidget {
 }
 
 class _SummonChoice extends StatelessWidget {
-  const _SummonChoice({required this.eyebrow, required this.title, required this.symbol, required this.action, required this.enabled, required this.onTap, this.gold = false});
+  const _SummonChoice({
+    required this.eyebrow,
+    required this.title,
+    required this.symbol,
+    required this.action,
+    required this.enabled,
+    required this.onTap,
+    this.gold = false,
+  });
   final String eyebrow, title, symbol, action;
   final bool enabled, gold;
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(11),
-    decoration: BoxDecoration(color: gold ? const Color(0xff283248) : const Color(0xff12233d), border: Border.all(color: gold ? const Color(0x79d8b769) : const Color(0x5c6887a0)), borderRadius: BorderRadius.circular(13)),
+    decoration: BoxDecoration(
+      color: gold ? const Color(0xff283248) : const Color(0xff12233d),
+      border: Border.all(
+        color: gold ? const Color(0x79d8b769) : const Color(0x5c6887a0),
+      ),
+      borderRadius: BorderRadius.circular(13),
+    ),
     child: Column(
       children: [
         Row(
           children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(eyebrow, style: const TextStyle(color: Color(0xffe9c880), fontSize: 8, letterSpacing: 1)), Text(title, style: const TextStyle(fontFamily: 'Georgia', fontSize: 16, fontWeight: FontWeight.w700))])),
-            Text(symbol, style: const TextStyle(color: Color(0xffe1c07a), fontSize: 28)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    eyebrow,
+                    style: const TextStyle(
+                      color: Color(0xffe9c880),
+                      fontSize: 8,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontFamily: 'Georgia',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              symbol,
+              style: const TextStyle(color: Color(0xffe1c07a), fontSize: 28),
+            ),
           ],
         ),
         const SizedBox(height: 5),
@@ -1346,165 +1789,262 @@ class _Profile extends StatelessWidget {
     builder: (context, constraints) {
       final compact = constraints.maxHeight < 500;
       return Padding(
-    padding: const EdgeInsets.fromLTRB(19, 10, 19, 7),
-    child: Column(
-      children: [
-        if (!compact) ...[const _Eyebrow(compact: true), const SizedBox(height: 3)],
-        const Text.rich(
-          TextSpan(text: 'PLAYER ', children: [TextSpan(text: 'PROFILE', style: TextStyle(color: Color(0xfff5d28b)))]),
-          style: TextStyle(fontFamily: 'Georgia', fontSize: 25, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 7),
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(gradient: const RadialGradient(center: Alignment(0, -.5), colors: [Color(0xff365174), Color(0xff111e35)]), border: Border.all(color: const Color(0x6bc6aa65)), borderRadius: BorderRadius.circular(15)),
-            child: Column(
-              children: [
-                Expanded(child: Image.asset('assets/idle/avatars/avatar_$avatar.webp', fit: BoxFit.contain)),
-                const Text('RUNE ADVENTURER', style: TextStyle(color: Color(0xffe8c77d), fontSize: 8, letterSpacing: 1.3)),
-                Text(name, style: const TextStyle(fontFamily: 'Georgia', fontSize: 20, fontWeight: FontWeight.w700)),
-                const Text('LOCAL ACCOUNT · LEVEL 1', style: TextStyle(color: Color(0xffa6daff), fontSize: 8)),
-              ],
-            ),
-          ),
-        ),
-        if (!compact) ...[
-          const SizedBox(height: 5),
-          const Align(alignment: Alignment.centerLeft, child: Text('CHOOSE YOUR AVATAR', style: TextStyle(fontFamily: 'Georgia', fontSize: 11, fontWeight: FontWeight.w700))),
-          Wrap(
-            children: [
-              for (final id in ['player', 'guard', 'vassal', 'king'])
-                IconButton(
-                  onPressed: () => onAvatar(id),
-                  padding: const EdgeInsets.all(2),
-                  constraints: const BoxConstraints.tightFor(width: 38, height: 38),
-                  icon: CircleAvatar(
-                    backgroundImage: AssetImage(
-                      'assets/idle/avatars/avatar_$id.webp',
-                    ),
-                  ),
-                ),
+        padding: const EdgeInsets.fromLTRB(19, 10, 19, 7),
+        child: Column(
+          children: [
+            if (!compact) ...[
+              const _Eyebrow(compact: true),
+              const SizedBox(height: 3),
             ],
-          ),
-        ],
-        TextField(
-          maxLength: 20,
-          style: const TextStyle(fontSize: 12),
-          decoration: InputDecoration(
-            labelText: 'DISPLAY NAME',
-            counterText: '',
-            isDense: true,
-            filled: true,
-            fillColor: const Color(0xff0e1b35),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0x5e7a89a6)), borderRadius: BorderRadius.circular(9)),
-          ),
-          onSubmitted: onName,
-        ),
-        if (cloud != null) ...[
-          Text(
-            cloud!.identity?.email ??
-                cloud!.identity?.displayName ??
-                cloud!.message,
-            key: const Key('cloud-identity'),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            cloud!.message,
-            key: const Key('cloud-status'),
-            maxLines: 2,
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 9),
-          ),
-          if (cloud!.identity == null)
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    key: const Key('cloud-google'),
-                    onPressed: cloud!.signInGoogle,
-                    style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                    child: const Text('GOOGLE'),
-                  ),
-                ),
-                Expanded(
-                  child: TextButton(
-                    key: const Key('cloud-email'),
-                    onPressed: () => _emailDialog(context),
-                    style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                    child: const Text('EMAIL'),
-                  ),
-                ),
-              ],
-            )
-          else
-            Row(
-              children: [
-                if (cloud!.state == CloudAccountState.review) ...[
-                  Expanded(
-                    child: TextButton(
-                      onPressed: cloud!.uploadLocal,
-                      child: const Text('UPLOAD LOCAL'),
-                    ),
-                  ),
-                  Expanded(
-                    child: TextButton(
-                      onPressed: cloud!.loadCloud,
-                      child: const Text('LOAD CLOUD'),
-                    ),
+            const Text.rich(
+              TextSpan(
+                text: 'PLAYER ',
+                children: [
+                  TextSpan(
+                    text: 'PROFILE',
+                    style: TextStyle(color: Color(0xfff5d28b)),
                   ),
                 ],
-                IconButton(
-                  key: const Key('cloud-logout'),
-                  onPressed: cloud!.signOut,
-                  icon: const Icon(Icons.logout),
-                ),
-              ],
+              ),
+              style: TextStyle(
+                fontFamily: 'Georgia',
+                fontSize: 25,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-        ],
-        const Align(
-          alignment: Alignment.centerLeft,
-          child: Text('GRAPHICS SETTINGS · ANIMATIONS', style: TextStyle(color: Color(0xffeac981), fontSize: 8, letterSpacing: 1.1, fontWeight: FontWeight.w800)),
-        ),
-        const SizedBox(height: 5),
-        Row(
-          children: [
-            for (final value in MotionPreference.values) ...[
-              Expanded(
-                child: GestureDetector(
-                  key: ValueKey('motion-${value.name}${motion == value ? '-selected' : ''}'),
-                  onTap: () => onMotion(value),
-                  child: Container(
-                    height: 28,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: motion == value ? const Color(0xff463c30) : const Color(0xff142541),
-                      border: Border.all(color: motion == value ? const Color(0x88dabb77) : const Color(0x457484a1)),
-                      borderRadius: BorderRadius.circular(7),
+            const SizedBox(height: 7),
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: const RadialGradient(
+                    center: Alignment(0, -.5),
+                    colors: [Color(0xff365174), Color(0xff111e35)],
+                  ),
+                  border: Border.all(color: const Color(0x6bc6aa65)),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Image.asset(
+                        'assets/idle/avatars/avatar_$avatar.webp',
+                        fit: BoxFit.contain,
+                      ),
                     ),
-                    child: Text(
-                      switch (value) {
-                        MotionPreference.automatic => 'AUTOMATIC',
-                        MotionPreference.full => 'FULL',
-                        MotionPreference.reduced => 'REDUCED',
-                      },
-                      style: TextStyle(color: motion == value ? const Color(0xffffe3a4) : const Color(0xffacbfd6), fontSize: 7, fontWeight: FontWeight.w700),
+                    const Text(
+                      'RUNE ADVENTURER',
+                      style: TextStyle(
+                        color: Color(0xffe8c77d),
+                        fontSize: 8,
+                        letterSpacing: 1.3,
+                      ),
                     ),
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontFamily: 'Georgia',
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const Text(
+                      'LOCAL ACCOUNT · LEVEL 1',
+                      style: TextStyle(color: Color(0xffa6daff), fontSize: 8),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (!compact) ...[
+              const SizedBox(height: 5),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'CHOOSE YOUR AVATAR',
+                  style: TextStyle(
+                    fontFamily: 'Georgia',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-              if (value != MotionPreference.reduced) const SizedBox(width: 5),
+              Wrap(
+                children: [
+                  for (final id in ['player', 'guard', 'vassal', 'king'])
+                    IconButton(
+                      onPressed: () => onAvatar(id),
+                      padding: const EdgeInsets.all(2),
+                      constraints: const BoxConstraints.tightFor(
+                        width: 38,
+                        height: 38,
+                      ),
+                      icon: CircleAvatar(
+                        backgroundImage: AssetImage(
+                          'assets/idle/avatars/avatar_$id.webp',
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ],
+            TextField(
+              maxLength: 20,
+              style: const TextStyle(fontSize: 12),
+              decoration: InputDecoration(
+                labelText: 'DISPLAY NAME',
+                counterText: '',
+                isDense: true,
+                filled: true,
+                fillColor: const Color(0xff0e1b35),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Color(0x5e7a89a6)),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+              ),
+              onSubmitted: onName,
+            ),
+            if (cloud != null) ...[
+              Text(
+                cloud!.identity?.email ??
+                    cloud!.identity?.displayName ??
+                    cloud!.message,
+                key: const Key('cloud-identity'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                cloud!.message,
+                key: const Key('cloud-status'),
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 9),
+              ),
+              if (cloud!.identity == null)
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        key: const Key('cloud-google'),
+                        onPressed: cloud!.signInGoogle,
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        child: const Text('GOOGLE'),
+                      ),
+                    ),
+                    Expanded(
+                      child: TextButton(
+                        key: const Key('cloud-email'),
+                        onPressed: () => _emailDialog(context),
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        child: const Text('EMAIL'),
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Row(
+                  children: [
+                    if (cloud!.state == CloudAccountState.review) ...[
+                      Expanded(
+                        child: TextButton(
+                          onPressed: cloud!.uploadLocal,
+                          child: const Text('UPLOAD LOCAL'),
+                        ),
+                      ),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: cloud!.loadCloud,
+                          child: const Text('LOAD CLOUD'),
+                        ),
+                      ),
+                    ],
+                    IconButton(
+                      key: const Key('cloud-logout'),
+                      onPressed: cloud!.signOut,
+                      icon: const Icon(Icons.logout),
+                    ),
+                  ],
+                ),
+            ],
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'GRAPHICS SETTINGS · ANIMATIONS',
+                style: TextStyle(
+                  color: Color(0xffeac981),
+                  fontSize: 8,
+                  letterSpacing: 1.1,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(height: 5),
+            Row(
+              children: [
+                for (final value in MotionPreference.values) ...[
+                  Expanded(
+                    child: GestureDetector(
+                      key: ValueKey(
+                        'motion-${value.name}${motion == value ? '-selected' : ''}',
+                      ),
+                      onTap: () => onMotion(value),
+                      child: Container(
+                        height: 28,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: motion == value
+                              ? const Color(0xff463c30)
+                              : const Color(0xff142541),
+                          border: Border.all(
+                            color: motion == value
+                                ? const Color(0x88dabb77)
+                                : const Color(0x457484a1),
+                          ),
+                          borderRadius: BorderRadius.circular(7),
+                        ),
+                        child: Text(
+                          switch (value) {
+                            MotionPreference.automatic => 'AUTOMATIC',
+                            MotionPreference.full => 'FULL',
+                            MotionPreference.reduced => 'REDUCED',
+                          },
+                          style: TextStyle(
+                            color: motion == value
+                                ? const Color(0xffffe3a4)
+                                : const Color(0xffacbfd6),
+                            fontSize: 7,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (value != MotionPreference.reduced)
+                    const SizedBox(width: 5),
+                ],
+              ],
+            ),
+            TextButton(
+              style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+              onPressed: onLanguage,
+              child: const Text(
+                'LANGUAGE · ITALIANO',
+                style: TextStyle(color: Color(0xffa6b9d0), fontSize: 9),
+              ),
+            ),
           ],
         ),
-        TextButton(style: TextButton.styleFrom(visualDensity: VisualDensity.compact), onPressed: onLanguage, child: const Text('LANGUAGE · ITALIANO', style: TextStyle(color: Color(0xffa6b9d0), fontSize: 9))),
-      ],
-    ),
-  );
+      );
     },
   );
 

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../game/catalog.dart';
 import '../../game/combat_rules.dart';
 import '../../services/live_pvp_socket.dart';
+import '../cards/card_stat_badges.dart';
 
 class ArenaViewController extends ChangeNotifier {
   ArenaViewController({this.hitDuration = const Duration(milliseconds: 650)});
@@ -174,11 +175,14 @@ class _LivePvpArenaState extends State<LivePvpArena> {
       final reduced = MediaQuery.disableAnimationsOf(context);
       for (var i = 0; i < widget.controller.hand!.hand.length; i++) {
         _deals.add(
-          Timer(reduced ? Duration.zero : Duration(milliseconds: 250 * (i + 1)), () {
-            if (mounted && seenGeneration == widget.controller.generation) {
-              setState(() => dealt = i + 1);
-            }
-          }),
+          Timer(
+            reduced ? Duration.zero : Duration(milliseconds: 250 * (i + 1)),
+            () {
+              if (mounted && seenGeneration == widget.controller.generation) {
+                setState(() => dealt = i + 1);
+              }
+            },
+          ),
         );
       }
     }
@@ -216,12 +220,30 @@ class _LivePvpArenaState extends State<LivePvpArena> {
               child: Container(
                 height: 46,
                 padding: const EdgeInsets.symmetric(horizontal: 15),
-                decoration: const BoxDecoration(color: Color(0xff101d36), border: Border(bottom: BorderSide(color: Color(0x66d6b36a)))),
+                decoration: const BoxDecoration(
+                  color: Color(0xff101d36),
+                  border: Border(bottom: BorderSide(color: Color(0x66d6b36a))),
+                ),
                 child: Row(
                   children: [
-                    const Text('⚔ LIVE ARENA', style: TextStyle(fontFamily: 'Georgia', color: Color(0xfff5d28b), fontSize: 14, fontWeight: FontWeight.w800)),
+                    const Text(
+                      '⚔ LIVE ARENA',
+                      style: TextStyle(
+                        fontFamily: 'Georgia',
+                        color: Color(0xfff5d28b),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                     const Spacer(),
-                    Text('ROUND ${c.hand?.round ?? 1}', style: const TextStyle(color: Color(0xffa0b0c8), fontSize: 10, letterSpacing: 1)),
+                    Text(
+                      'ROUND ${c.hand?.round ?? 1}',
+                      style: const TextStyle(
+                        color: Color(0xffa0b0c8),
+                        fontSize: 10,
+                        letterSpacing: 1,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -232,13 +254,31 @@ class _LivePvpArenaState extends State<LivePvpArena> {
               right: 55,
               child: Column(
                 children: [
-                  Text('⚔ ${c.hand?.opponent ?? 'SEARCHING'}', style: const TextStyle(fontFamily: 'Georgia', fontSize: 15, fontWeight: FontWeight.w700)),
+                  Text(
+                    '⚔ ${c.hand?.opponent ?? 'SEARCHING'}',
+                    style: const TextStyle(
+                      fontFamily: 'Georgia',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   Container(
                     height: 45,
                     alignment: Alignment.center,
-                    decoration: BoxDecoration(color: const Color(0xff15243a), border: Border.all(color: const Color(0x666884a0)), borderRadius: BorderRadius.circular(8)),
-                    child: const Text('✦  RIVAL HAND  ✦', style: TextStyle(color: Color(0xff91a1b9), fontSize: 10, letterSpacing: 1.2)),
+                    decoration: BoxDecoration(
+                      color: const Color(0xff15243a),
+                      border: Border.all(color: const Color(0x666884a0)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      '✦  RIVAL HAND  ✦',
+                      style: TextStyle(
+                        color: Color(0xff91a1b9),
+                        fontSize: 10,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -313,9 +353,20 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                       ? Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text('RUNE CLASH   ${c.score[0]} : ${c.score[1]}', style: const TextStyle(fontFamily: 'Georgia', color: Color(0xfff5d28b), fontSize: 12, fontWeight: FontWeight.w800)),
+                            Text(
+                              'RUNE CLASH   ${c.score[0]} : ${c.score[1]}',
+                              style: const TextStyle(
+                                fontFamily: 'Georgia',
+                                color: Color(0xfff5d28b),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                             const SizedBox(height: 8),
-                            const Text('PLAY CARD', style: TextStyle(color: Colors.white54)),
+                            const Text(
+                              'PLAY CARD',
+                              style: TextStyle(color: Colors.white54),
+                            ),
                           ],
                         )
                       : AnimatedSlide(
@@ -342,7 +393,9 @@ class _LivePvpArenaState extends State<LivePvpArena> {
             ),
             for (var i = 0; i < cards.length; i++)
               AnimatedAlign(
-                duration: reduced ? Duration.zero : const Duration(milliseconds: 300),
+                duration: reduced
+                    ? Duration.zero
+                    : const Duration(milliseconds: 300),
                 curve: Curves.easeOutBack,
                 alignment: i < dealt
                     ? Alignment(-0.7 + i * 0.7, .78)
@@ -416,7 +469,9 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                 child: TweenAnimationBuilder<double>(
                   key: ValueKey(c.effect),
                   tween: Tween(begin: .5, end: 1.15),
-                  duration: reduced ? Duration.zero : const Duration(milliseconds: 350),
+                  duration: reduced
+                      ? Duration.zero
+                      : const Duration(milliseconds: 350),
                   builder: (_, scale, child) =>
                       Transform.scale(scale: scale, child: child),
                   child: Text(
@@ -463,10 +518,13 @@ class _BattleCard extends StatelessWidget {
   final PvpCard card;
   final bool selected;
   String get asset {
-    final hero = KardRuneCatalog.heroes.firstWhere((item) => item.id == card.hero);
+    final hero = KardRuneCatalog.heroes.firstWhere(
+      (item) => item.id == card.hero,
+    );
     final index = (card.stage - 1).clamp(0, hero.stages.length - 1);
     return hero.cardAsset(hero.stages[index]);
   }
+
   @override
   Widget build(BuildContext context) => AnimatedScale(
     scale: selected ? 1.08 : 1,
@@ -484,24 +542,30 @@ class _BattleCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(9),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(7)),
-              child: Image.asset(
-                asset,
-                key: ValueKey('card-art-${card.id}'),
-                fit: BoxFit.cover,
-                width: double.infinity,
-              ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(7),
+            child: Image.asset(
+              asset,
+              key: ValueKey('card-art-${card.id}'),
+              fit: BoxFit.cover,
+              width: double.infinity,
             ),
           ),
-          Text(card.hero, style: const TextStyle(color: Colors.white, fontSize: 11)),
-          Text(
-            'ATK ${card.attack}',
-            style: const TextStyle(color: Colors.amber),
+          Positioned(
+            left: 2,
+            right: 2,
+            top: 2,
+            child: IgnorePointer(
+              child: CardStatBadges(
+                hp: CombatRules.hpForStage(card.stage),
+                attack: card.attack,
+                crit: card.crit,
+                compact: true,
+              ),
+            ),
           ),
         ],
       ),
