@@ -23,6 +23,7 @@ abstract interface class CloudAuthPort implements AuthTokenProvider {
     String password, {
     required bool register,
   });
+  Future<void> sendPasswordReset(String email);
   Future<void> signOutAccount();
 }
 
@@ -239,13 +240,41 @@ class CloudAccountController extends ChangeNotifier {
     );
   }
 
-  Future<void> signInGoogle() => auth.signInGoogle();
-  Future<void> signInEmail(
+  Future<bool> _authAction(Future<void> Function() action) async {
+    state = CloudAccountState.loading;
+    message = 'Contacting Firebase…';
+    notifyListeners();
+    try {
+      await action();
+      message = 'Authentication complete. Loading account…';
+      notifyListeners();
+      return true;
+    } catch (_) {
+      state = CloudAccountState.error;
+      message = 'Authentication failed. Check your details and try again.';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> signInGoogle() => _authAction(auth.signInGoogle);
+  Future<bool> signInEmail(
     String email,
     String password, {
     required bool register,
-  }) => auth.signInEmail(email, password, register: register);
-  Future<void> signOut() => auth.signOutAccount();
+  }) =>
+      _authAction(() => auth.signInEmail(email, password, register: register));
+  Future<bool> sendPasswordReset(String email) async {
+    final sent = await _authAction(() => auth.sendPasswordReset(email));
+    if (sent) {
+      state = CloudAccountState.signedOut;
+      message = 'Password reset email sent.';
+      notifyListeners();
+    }
+    return sent;
+  }
+
+  Future<bool> signOut() => _authAction(auth.signOutAccount);
 
   String _errorText(Object error) => error is ApiFailure
       ? error.message

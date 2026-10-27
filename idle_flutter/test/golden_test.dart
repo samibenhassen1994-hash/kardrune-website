@@ -16,13 +16,13 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      await tester.pumpWidget(const KardRuneApp());
+      await tester.pumpWidget(const KardRuneApp(enableCloudBootstrap: false));
       await tester.pumpAndSettle();
       if (target.value != null) {
         await tester.tap(find.text(target.value!).last);
         await tester.pumpAndSettle();
       }
-      if (target.key == 'cards') {
+      if (target.key == 'cards' || target.key == 'profile') {
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 250)),
         );

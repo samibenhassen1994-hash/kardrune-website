@@ -93,6 +93,9 @@ class FirebaseAuthService implements CloudAuthPort {
 
   @override
   Future<void> signOutAccount() => signOut();
+  @override
+  Future<void> sendPasswordReset(String email) =>
+      auth.sendPasswordResetEmail(email: email);
 
   static Future<FirebaseAuthService?> initialize(ApiClient client) async {
     final config = FirebaseWebConfig.fromApi(
@@ -114,6 +117,8 @@ class FirebaseAuthService implements CloudAuthPort {
               authDomain: config.authDomain,
             ),
           );
-    return FirebaseAuthService(FirebaseAuth.instanceFor(app: app));
+    final auth = FirebaseAuth.instanceFor(app: app);
+    await auth.setPersistence(Persistence.LOCAL);
+    return FirebaseAuthService(auth);
   }
 }

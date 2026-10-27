@@ -33,6 +33,7 @@ class KardRuneApp extends StatelessWidget {
     this.cloudController,
     this.liveMatchCoordinator,
     this.updateController,
+    this.enableCloudBootstrap = true,
     this.nowMs,
   });
   final RandomRoll? random;
@@ -40,6 +41,7 @@ class KardRuneApp extends StatelessWidget {
   final CloudAccountController? cloudController;
   final LiveMatchCoordinator? liveMatchCoordinator;
   final AppUpdateController? updateController;
+  final bool enableCloudBootstrap;
   final int Function()? nowMs;
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -52,6 +54,7 @@ class KardRuneApp extends StatelessWidget {
       cloudController: cloudController,
       liveMatchCoordinator: liveMatchCoordinator,
       updateController: updateController,
+      enableCloudBootstrap: enableCloudBootstrap,
       nowMs: nowMs ?? (() => DateTime.now().millisecondsSinceEpoch),
     ),
   );
@@ -65,6 +68,7 @@ class IdleShell extends StatefulWidget {
     this.cloudController,
     this.liveMatchCoordinator,
     this.updateController,
+    required this.enableCloudBootstrap,
     required this.nowMs,
   });
   final RandomRoll random;
@@ -72,6 +76,7 @@ class IdleShell extends StatefulWidget {
   final CloudAccountController? cloudController;
   final LiveMatchCoordinator? liveMatchCoordinator;
   final AppUpdateController? updateController;
+  final bool enableCloudBootstrap;
   final int Function() nowMs;
   @override
   State<IdleShell> createState() => _IdleShellState();
@@ -95,6 +100,8 @@ class _IdleShellState extends State<IdleShell> {
   MotionPreference motion = MotionPreference.automatic;
   late final LocalSaveService? _saveService;
   CloudAccountController? _cloud;
+  bool _cloudInitializing = false;
+  String _cloudInitializationMessage = 'Connecting account services…';
   LiveMatchCoordinator? _pvp;
   bool _ownsCloud = false;
   late final AppUpdateController? _updates;
@@ -140,22 +147,48 @@ class _IdleShellState extends State<IdleShell> {
     if (_cloud != null) {
       _cloud!.addListener(_cloudChanged);
       _cloud!.start();
-    } else if (_saveService != null) {
+    } else if (_saveService != null && widget.enableCloudBootstrap) {
       _initializeCloud();
+    } else {
+      _cloudInitializationMessage =
+          'Account services unavailable. Local progress is safe.';
     }
   }
 
   Future<void> _initializeCloud() async {
-    final controller = await createDefaultCloudController(
-      _saveService!,
-      _applyRemoteSave,
-    );
-    if (!mounted || controller == null) return;
-    _cloud = controller;
-    _ownsCloud = true;
-    controller.addListener(_cloudChanged);
-    controller.start();
-    setState(() {});
+    if (_cloudInitializing || _cloud != null) return;
+    setState(() {
+      _cloudInitializing = true;
+      _cloudInitializationMessage = 'Connecting account services…';
+    });
+    try {
+      final controller = await createDefaultCloudController(
+        _saveService!,
+        _applyRemoteSave,
+      );
+      if (!mounted) return;
+      if (controller == null) {
+        setState(() {
+          _cloudInitializationMessage =
+              'Account services unavailable. Local progress is safe.';
+        });
+        return;
+      }
+      _cloud = controller;
+      _ownsCloud = true;
+      controller.addListener(_cloudChanged);
+      controller.start();
+      setState(() {});
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _cloudInitializationMessage =
+              'Account services unavailable. Local progress is safe.';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _cloudInitializing = false);
+    }
   }
 
   void _cloudChanged() {
@@ -367,6 +400,8 @@ class _IdleShellState extends State<IdleShell> {
                                 );
                               },
                               cloud: _cloud,
+                              cloudMessage: _cloudInitializationMessage,
+                              onCloudRetry: _initializeCloud,
                             ),
                           ],
                         ),
@@ -1764,6 +1799,8 @@ class _Profile extends StatelessWidget {
     required this.motion,
     required this.onMotion,
     required this.cloud,
+    required this.cloudMessage,
+    required this.onCloudRetry,
   });
   final String name, avatar;
   final ValueChanged<String> onName, onAvatar;
@@ -1771,6 +1808,8 @@ class _Profile extends StatelessWidget {
   final MotionPreference motion;
   final ValueChanged<MotionPreference> onMotion;
   final CloudAccountController? cloud;
+  final String cloudMessage;
+  final VoidCallback onCloudRetry;
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
@@ -1896,73 +1935,129 @@ class _Profile extends StatelessWidget {
               ),
               onSubmitted: onName,
             ),
-            if (cloud != null) ...[
-              Text(
-                cloud!.identity?.email ??
-                    cloud!.identity?.displayName ??
-                    cloud!.message,
-                key: const Key('cloud-identity'),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+            Container(
+              key: const Key('account-section'),
+              width: double.infinity,
+              margin: const EdgeInsets.only(top: 5, bottom: 5),
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 3),
+              decoration: BoxDecoration(
+                color: const Color(0xcc0e1b35),
+                border: Border.all(color: const Color(0x668ca7c5)),
+                borderRadius: BorderRadius.circular(9),
               ),
-              Text(
-                cloud!.message,
-                key: const Key('cloud-status'),
-                maxLines: 2,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 9),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'ACCOUNT',
+                      style: TextStyle(
+                        color: Color(0xffeac981),
+                        fontSize: 8,
+                        letterSpacing: 1.1,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  if (cloud == null) ...[
+                    Text(
+                      cloudMessage,
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 9),
+                    ),
+                    TextButton(
+                      key: const Key('cloud-retry'),
+                      onPressed: onCloudRetry,
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      child: const Text('RETRY'),
+                    ),
+                  ] else ...[
+                    Text(
+                      cloud!.identity?.email ??
+                          cloud!.identity?.displayName ??
+                          cloud!.message,
+                      key: const Key('cloud-identity'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      cloud!.message,
+                      key: const Key('cloud-status'),
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 9),
+                    ),
+                    if (cloud!.identity == null)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              key: const Key('cloud-google'),
+                              onPressed: cloud!.signInGoogle,
+                              style: TextButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              child: const Text('GOOGLE'),
+                            ),
+                          ),
+                          Expanded(
+                            child: TextButton(
+                              key: const Key('cloud-email'),
+                              onPressed: () => _emailDialog(context),
+                              style: TextButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              child: const Text('EMAIL'),
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (cloud!.identity?.displayName case final name?)
+                            Text(
+                              name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                          if (cloud!.state == CloudAccountState.review) ...[
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextButton(
+                                    onPressed: cloud!.uploadLocal,
+                                    child: const Text('UPLOAD LOCAL'),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: TextButton(
+                                    onPressed: cloud!.loadCloud,
+                                    child: const Text('LOAD CLOUD'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                          TextButton.icon(
+                            key: const Key('cloud-logout'),
+                            onPressed: cloud!.signOut,
+                            icon: const Icon(Icons.logout, size: 14),
+                            label: const Text('LOGOUT'),
+                          ),
+                        ],
+                      ),
+                  ],
+                ],
               ),
-              if (cloud!.identity == null)
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        key: const Key('cloud-google'),
-                        onPressed: cloud!.signInGoogle,
-                        style: TextButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                        ),
-                        child: const Text('GOOGLE'),
-                      ),
-                    ),
-                    Expanded(
-                      child: TextButton(
-                        key: const Key('cloud-email'),
-                        onPressed: () => _emailDialog(context),
-                        style: TextButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                        ),
-                        child: const Text('EMAIL'),
-                      ),
-                    ),
-                  ],
-                )
-              else
-                Row(
-                  children: [
-                    if (cloud!.state == CloudAccountState.review) ...[
-                      Expanded(
-                        child: TextButton(
-                          onPressed: cloud!.uploadLocal,
-                          child: const Text('UPLOAD LOCAL'),
-                        ),
-                      ),
-                      Expanded(
-                        child: TextButton(
-                          onPressed: cloud!.loadCloud,
-                          child: const Text('LOAD CLOUD'),
-                        ),
-                      ),
-                    ],
-                    IconButton(
-                      key: const Key('cloud-logout'),
-                      onPressed: cloud!.signOut,
-                      icon: const Icon(Icons.logout),
-                    ),
-                  ],
-                ),
-            ],
+            ),
             const Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -2059,6 +2154,7 @@ class _Profile extends StatelessWidget {
                 decoration: const InputDecoration(labelText: 'PASSWORD'),
               ),
               CheckboxListTile(
+                key: const Key('cloud-register-mode'),
                 value: register,
                 onChanged: (value) =>
                     setDialogState(() => register = value ?? false),
@@ -2067,6 +2163,15 @@ class _Profile extends StatelessWidget {
             ],
           ),
           actions: [
+            TextButton(
+              key: const Key('cloud-forgot-password'),
+              onPressed: () async {
+                final value = email.text.trim();
+                if (!value.contains('@')) return;
+                await cloud!.sendPasswordReset(value);
+              },
+              child: const Text('FORGOT PASSWORD'),
+            ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text('CANCEL'),
@@ -2077,12 +2182,12 @@ class _Profile extends StatelessWidget {
                 if (password.text.length < 6 || !email.text.contains('@')) {
                   return;
                 }
-                await cloud!.signInEmail(
+                final success = await cloud!.signInEmail(
                   email.text.trim(),
                   password.text,
                   register: register,
                 );
-                if (dialogContext.mounted) {
+                if (success && dialogContext.mounted) {
                   Navigator.pop(dialogContext);
                 }
               },

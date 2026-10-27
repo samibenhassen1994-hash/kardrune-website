@@ -13,7 +13,8 @@ Future<CloudAccountController?> createDefaultCloudController(
   LocalSaveService local,
   void Function(PlayerSave) onRemoteSave,
 ) async {
-  final transport = HttpApiTransport();
+  const apiOrigin = String.fromEnvironment('IDLE_API_ORIGIN');
+  final transport = HttpApiTransport(apiOrigin: apiOrigin);
   final auth = await FirebaseAuthService.initialize(
     ApiClient(_PublicOnlyAuth(), transport),
   );

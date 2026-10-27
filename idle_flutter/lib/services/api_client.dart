@@ -24,11 +24,19 @@ abstract interface class ApiTransport {
 }
 
 class HttpApiTransport implements ApiTransport {
-  HttpApiTransport({http.Client? client}) : client = client ?? http.Client();
+  HttpApiTransport({http.Client? client, String apiOrigin = ''})
+    : client = client ?? http.Client(),
+      apiOrigin = apiOrigin.isEmpty ? null : Uri.parse(apiOrigin);
   final http.Client client;
+  final Uri? apiOrigin;
+  Uri resolve(String path) {
+    final uri = Uri.parse(path);
+    return uri.hasScheme || apiOrigin == null ? uri : apiOrigin!.resolve(path);
+  }
+
   @override
   Future<ApiResponse> send(ApiRequest r) async {
-    final request = http.Request(r.method, Uri.parse(r.path));
+    final request = http.Request(r.method, resolve(r.path));
     request.headers.addAll(r.headers);
     if (r.body != null) request.body = r.body!;
     final streamed = await client.send(request);
