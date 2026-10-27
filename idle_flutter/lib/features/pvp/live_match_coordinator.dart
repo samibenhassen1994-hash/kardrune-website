@@ -16,7 +16,7 @@ class LiveMatchCoordinator extends ChangeNotifier {
   LiveMatchCoordinator({
     required this.repository,
     required this.connect,
-    Duration hitDuration = const Duration(milliseconds: 650),
+    Duration hitDuration = const Duration(milliseconds: 1250),
   }) : arena = ArenaViewController(hitDuration: hitDuration) {
     arena.onReady = ready;
   }
@@ -30,6 +30,7 @@ class LiveMatchCoordinator extends ChangeNotifier {
   LiveMatchState state = LiveMatchState.idle;
   String message = 'Ready for a live match.';
   bool _closing = false;
+  void Function(String matchId, String reason)? onMatchFinished;
 
   Future<List<String>> loadDeck() => repository.loadDeck();
   Future<void> saveDeck(List<String> cards) => repository.saveDeck(cards);
@@ -82,6 +83,8 @@ class LiveMatchCoordinator extends ChangeNotifier {
         arena.replay(event.json);
       case FinishedEvent():
         arena.finish(event.winner, event.score);
+        final id = _protocol?.matchId;
+        if (id != null) onMatchFinished?.call(id, event.reason);
       case ErrorEvent():
         message = event.message;
         state = LiveMatchState.error;
