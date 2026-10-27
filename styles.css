@@ -3204,3 +3204,10 @@ footer {
   .page-home .download-box .home-download-button { padding: 7px 8px; gap: 5px; }
   .page-home .home-download-text strong { font-size: 10px; }
 }
+
+/* Browser play joins the existing KardRune choices. */
+.page-home .home-download-browser{background:linear-gradient(145deg,#203c51,#10243b);color:#dcf7ff;border-color:#78c9e699}
+.page-home .home-download-browser:hover{border-color:#b0eeff}
+.page-home .home-download-browser .home-download-icon{font-size:22px}
+@media(min-width:768px){.page-home .home-download-actions{max-width:980px}}
+@media(max-width:767px){.page-home .hero-shell-main .home-download-actions,.page-home .download-box .home-download-actions{grid-template-columns:1fr 1fr}.page-home .home-download-browser{grid-column:1 / -1;max-width:360px!important;justify-self:center}}
