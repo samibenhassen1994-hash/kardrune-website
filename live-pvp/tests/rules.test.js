@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildHand,resolveDuel,pickWinner,hpByStage} from '../src/rules.js';
+import {buildHand,resolveDuel,pickWinner,matchComplete,hpByStage} from '../src/rules.js';
 test('three options, unplayed cards remain available',()=>{
  const deck=Array.from({length:9},(_,i)=>({id:'card:'+i}));
  assert.deepEqual(buildHand(deck,[],1).map(x=>x.id),['card:0','card:1','card:2']);
@@ -17,6 +17,11 @@ test('exact ATK and double critical in server round',()=>{
  assert.equal(result.log[0].hp,182);
  assert.equal(result.log[2].damage,58);
  assert.equal(result.log[4].damage,116);
+});
+test('best of three finishes at two wins or after three rounds',()=>{
+ assert.equal(matchComplete([2,0],2),true);
+ assert.equal(matchComplete([1,1],2),false);
+ assert.equal(matchComplete([1,1],3),true);
 });
 test('match score winner and ties',()=>{
  assert.equal(pickWinner([5,4]),0);
