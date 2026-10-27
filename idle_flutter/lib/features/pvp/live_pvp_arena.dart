@@ -60,7 +60,7 @@ class ArenaViewController extends ChangeNotifier {
     lockedCard = id;
     this.automatic = automatic;
     used.add(id);
-    _clock?.cancel();
+    // Keep the server deadline visible while the opponent is choosing.
     notifyListeners();
   }
 
