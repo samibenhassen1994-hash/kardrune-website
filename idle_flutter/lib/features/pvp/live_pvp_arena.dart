@@ -22,6 +22,8 @@ class ArenaViewController extends ChangeNotifier {
   bool _replaying = false;
   bool battleStarted = false;
   int hitSerial = 0;
+  String actionText = '';
+  bool attackWindup = false;
   VoidCallback? onReady;
   Timer? _clock;
 
@@ -35,6 +37,8 @@ class ArenaViewController extends ChangeNotifier {
     automatic = false;
     battleStarted = false;
     hitSerial = 0;
+    actionText = '';
+    attackWindup = false;
     _replaying = false;
     seconds = (value.durationMs / 1000).ceil();
     generation++;
@@ -70,6 +74,7 @@ class ArenaViewController extends ChangeNotifier {
     _clock?.cancel();
     battleStarted = true;
     popup = 'BATTLE START';
+    actionText = 'Prepare for combat';
     effect = null;
     notifyListeners();
     final token = generation;
@@ -96,7 +101,13 @@ class ArenaViewController extends ChangeNotifier {
       if (token != generation) return;
       final log = Map<String, dynamic>.from(raw as Map);
       attackActor = log['actor'] as int? ?? -1;
+      actionText = attackActor == 0 ? 'YOU ATTACK → RIVAL' : 'RIVAL ATTACK → YOU';
+      attackWindup = true;
       hitSerial++;
+      notifyListeners();
+      await Future<void>.delayed(hitDuration > Duration.zero ? const Duration(milliseconds: 440) : Duration.zero);
+      if (token != generation) return;
+      attackWindup = false;
       if (attackActor == 0) {
         opponentHp = log['hp'] as int;
       } else {
@@ -108,6 +119,7 @@ class ArenaViewController extends ChangeNotifier {
       notifyListeners();
     }
     if (token != generation) return;
+    actionText = 'ROUND COMPLETE';
     popup = json['winner'] == 0
         ? 'ROUND WON'
         : json['winner'] == 1
@@ -121,6 +133,7 @@ class ArenaViewController extends ChangeNotifier {
 
   void finish(String winner, List<int> value) {
     score = [...value];
+    actionText = 'MATCH COMPLETE  ·  +100 SHARDS';
     popup = winner == 'you'
         ? 'VICTORY'
         : winner == 'opponent'
@@ -140,6 +153,9 @@ class ArenaViewController extends ChangeNotifier {
     playerHp = opponentHp = 240;
     attackActor = -1;
     automatic = false;
+    battleStarted = false;
+    attackWindup = false;
+    actionText = '';
     _replaying = false;
     seconds = 30;
     notifyListeners();
@@ -295,11 +311,14 @@ class _LivePvpArenaState extends State<LivePvpArena> {
               if (battle) Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                 const Text('BATTLE ARENA', style: TextStyle(color: Color(0xffffd993), fontWeight: FontWeight.bold, letterSpacing: 2)),
                 const SizedBox(height: 5),
+                Text(c.actionText, key: const Key('pvp-attack-direction'), textAlign: TextAlign.center,
+                  style: const TextStyle(color: Color(0xffffe2a4), fontSize: 15, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 5),
                 Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                  Expanded(child: _fighter(c.playerCard!, c.playerHp, c.attackActor == 0, c.hitSerial, motionDuration, 'you')),
+                  Expanded(child: _fighter(c.playerCard!, c.playerHp, c.attackActor == 0 && c.attackWindup, c.hitSerial, motionDuration, 'you', c.attackActor == 1 && !c.attackWindup)),
                   const Padding(padding: EdgeInsets.symmetric(horizontal: 6),
                     child: Text('VS', style: TextStyle(fontSize: 23, color: Color(0xffffd993), fontWeight: FontWeight.bold))),
-                  Expanded(child: _fighter(c.opponentCard!, c.opponentHp, c.attackActor == 1, c.hitSerial, motionDuration, 'rival')),
+                  Expanded(child: _fighter(c.opponentCard!, c.opponentHp, c.attackActor == 1 && c.attackWindup, c.hitSerial, motionDuration, 'rival', c.attackActor == 0 && !c.attackWindup)),
                 ]),
                 const SizedBox(height: 5),
                 if (c.effect != null) AnimatedSwitcher(duration: motionDuration,
@@ -364,16 +383,19 @@ class _LivePvpArenaState extends State<LivePvpArena> {
       Text(detail, style: const TextStyle(color: Color(0xffb3c7dd), fontSize: 11)),
     ]));
 
-  Widget _fighter(PvpCard card, int hp, bool attacking, int serial, Duration duration, String side) =>
+  Widget _fighter(PvpCard card, int hp, bool attacking, int serial, Duration duration, String side, bool hit) =>
     AnimatedSlide(offset: attacking ? Offset(side == 'you' ? .12 : -.12, 0) : Offset.zero,
       duration: duration, curve: Curves.easeOutBack,
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Text(side == 'you' ? 'YOU' : 'RIVAL',
           style: const TextStyle(color: Color(0xffd9e4f2), fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
-        _BattleCard(card: card, selected: false,
+        AnimatedContainer(duration: duration, padding: EdgeInsets.all(hit ? 3 : 0),
+          decoration: BoxDecoration(border: Border.all(color: hit ? Colors.redAccent : Colors.transparent, width: 3),
+            borderRadius: BorderRadius.circular(12)),
+          child: _BattleCard(card: card, selected: false,
           width: MediaQuery.sizeOf(context).width < 360 ? 104 : 135,
-          height: MediaQuery.sizeOf(context).height < 680 ? 146 : 175, hp: hp),
+          height: MediaQuery.sizeOf(context).height < 680 ? 146 : 175, hp: hp)),
         const SizedBox(height: 6),
         Text(hp.toString() + ' HP', key: Key('pvp-' + side + '-hp'),
           style: const TextStyle(color: Color(0xff88c9ff), fontSize: 13, fontWeight: FontWeight.w900)),
