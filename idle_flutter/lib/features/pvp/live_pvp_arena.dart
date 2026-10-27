@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_interpolation_to_compose_strings
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -416,29 +417,3 @@ class _BattleCard extends StatelessWidget {
   );
 }
 
-class _ArenaPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()
-        ..shader = const RadialGradient(
-          colors: [Color(0xff263052), Color(0xff090d19)],
-        ).createShader(Offset.zero & size),
-    );
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(size.width / 2, size.height * .48),
-        width: size.width * .88,
-        height: size.height * .32,
-      ),
-      Paint()
-        ..color = Colors.white.withValues(alpha: .06)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
