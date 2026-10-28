@@ -62,24 +62,10 @@ class CharacterCardArt extends StatelessWidget {
               child: IgnorePointer(
                 child: Align(
                   alignment: const Alignment(0, .58),
-                  child: FractionallySizedBox(widthFactor: .72, child: Container(
-                    constraints: const BoxConstraints(maxWidth: 145),
-                    padding: EdgeInsets.symmetric(horizontal: compact ? 2 : 4, vertical: compact ? 2 : 3),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [
-                        Color(0x99071124), Color(0xc0071124), Color(0x99071124)]),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(skill.name.toUpperCase(),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: skill.color, fontSize: compact ? 7 : 10,
-                        fontWeight: FontWeight.w800, shadows: [
-                          Shadow(color: skill.color.withValues(alpha: .8), blurRadius: 7),
-                          const Shadow(color: Colors.black, blurRadius: 3),
-                        ])),
-                  )),
+                  child: FractionallySizedBox(
+                    widthFactor: .88,
+                    child: SkillRarityBadge(skill: skill, compact: compact),
+                  ),
                 ),
               ),
             ),
@@ -87,6 +73,85 @@ class CharacterCardArt extends StatelessWidget {
       ),
     ),
   );
+}
+
+
+/// A legible fantasy plate with rarity-colored enamel and a luminous rim.
+/// Purely presentational: the parent card stays responsible for inspection taps.
+class SkillRarityBadge extends StatelessWidget {
+  const SkillRarityBadge({super.key, required this.skill, this.compact = false});
+  final SkillDefinition skill;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = skill.color;
+    final ultra = skill.rarity == 'ultra';
+    final radius = BorderRadius.circular(compact ? 5 : 8);
+    final gradient = ultra
+        ? const LinearGradient(colors: [
+            Color(0xfff24d8b), Color(0xffffca48), Color(0xff49e6ae),
+            Color(0xff54a9ff), Color(0xffbe75ff),
+          ])
+        : LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color.lerp(color, Colors.white, .23)!,
+              color,
+              Color.lerp(color, const Color(0xff071222), .57)!,
+            ],
+          );
+    return Semantics(
+      label: '${skill.name}, ${skill.rarity}',
+      child: Container(
+        padding: EdgeInsets.all(compact ? 1.2 : 1.7),
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: radius,
+          boxShadow: [
+            BoxShadow(color: color.withValues(alpha: .65),
+                blurRadius: compact ? 5 : 10, spreadRadius: compact ? 0 : 1),
+            const BoxShadow(color: Color(0x99000000), blurRadius: 5,
+                offset: Offset(0, 2)),
+          ],
+        ),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+              horizontal: compact ? 3 : 7, vertical: compact ? 3 : 5),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(compact ? 4 : 6),
+            gradient: LinearGradient(colors: [
+              Color.lerp(color, const Color(0xff101328), .43)!,
+              Color.lerp(color, const Color(0xff07101b), .72)!,
+            ]),
+            border: Border.all(color: Colors.white.withValues(alpha: .60),
+                width: .6),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.auto_awesome, color: Colors.white,
+                size: compact ? 8 : 12),
+            SizedBox(width: compact ? 2 : 5),
+            Flexible(child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(skill.name.toUpperCase(), maxLines: 1,
+                softWrap: false,
+                style: TextStyle(color: Colors.white,
+                  fontSize: compact ? 9 : 12, fontWeight: FontWeight.w900,
+                  letterSpacing: compact ? .1 : .45,
+                  shadows: [
+                    Shadow(color: color, blurRadius: 6),
+                    const Shadow(color: Color(0xff000000), blurRadius: 2),
+                  ])),
+            )),
+            SizedBox(width: compact ? 2 : 5),
+            Icon(Icons.auto_awesome, color: Colors.white,
+                size: compact ? 8 : 12),
+          ]),
+        ),
+      ),
+    );
+  }
 }
 
 class CardStatBadges extends StatelessWidget {
