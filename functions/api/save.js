@@ -51,12 +51,12 @@ async function handle({request,env},write){
   normalized.shards=wallet?.shards??1500;
   normalized.practiceDaily=daily?{day:daily.day,count:daily.count}:{day:'',count:0};
   await env.DB.prepare('INSERT OR IGNORE INTO players (uid,display_name) VALUES (?,?)').bind(user.uid,user.name).run();
-  const write=env.DB.prepare(`INSERT INTO demo_saves(uid,save_json,revision) VALUES (?,?,1)
+  const saveStatement=env.DB.prepare(`INSERT INTO demo_saves(uid,save_json,revision) VALUES (?,?,1)
    ON CONFLICT(uid) DO UPDATE SET save_json=excluded.save_json,revision=demo_saves.revision+1,updated_at=CURRENT_TIMESTAMP
    WHERE demo_saves.revision=?`).bind(user.uid,JSON.stringify(normalized),input.revision);
   let result;
   if(!existing){
-   const statements=[write,
+   const statements=[saveStatement,
     env.DB.prepare('INSERT INTO skill_wallets(uid,shards,updated_at) VALUES(?,?,?)')
      .bind(user.uid,1500,Date.now()),
     env.DB.prepare('INSERT INTO practice_daily(uid,day,count) VALUES(?,?,0)')
@@ -66,7 +66,7 @@ async function handle({request,env},write){
      VALUES(?,?,?,?,?,?,?,?,?,?)`).bind(user.uid,grant.card_id,grant.attack,grant.crit,
       grant.skill_id,grant.rarity,SKILL_VERSION,'initial',null,Date.now()));}
    [result]=await env.DB.batch(statements);
-  }else result=await write.run();
+  }else result=await saveStatement.run();
   if(result.meta?.changes!==1)return json({error:'Save conflict'},409);
   return json({revision:current+1,saved:true,competitive:false,save:normalized});
  }catch(e){return failure(e)}
