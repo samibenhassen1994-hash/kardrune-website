@@ -10,6 +10,7 @@ on:
       - fix/idle-pvp-iphone-animation-lag
       - feature/idle-pvp-projectiles-bestof3-complete
       - feature/idle-pvp-slash-sprite
+      - fix/remove-idle-pvp-slash-animation
     paths:
       - 'idle_flutter/**'
       - '.github/workflows/idle-flutter-summon.yml'
