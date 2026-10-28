@@ -210,12 +210,15 @@ class LivePvpArena extends StatefulWidget {
     required this.onPlay,
     required this.onReady,
     this.audio,
+    this.playerName = 'Runebearer',
+    this.playerAvatar = 'player',
     this.onComplete,
   });
   final ArenaViewController controller;
   final ValueChanged<String> onPlay;
   final VoidCallback onReady;
   final FlameBattleAudio? audio;
+  final String playerName, playerAvatar;
   final VoidCallback? onComplete;
   @override
   State<LivePvpArena> createState() => _LivePvpArenaState();
@@ -330,8 +333,20 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                   key: const Key('round-counter'), style: const TextStyle(fontWeight: FontWeight.w900)),
               ]),
               const SizedBox(height: 5),
-              Text('YOU  ' + c.score[0].toString() + '    •  FIRST TO 2  •    ' + c.score[1].toString() + '  RIVAL',
-                key: const Key('round-score'), style: const TextStyle(color: Color(0xffd7e5f2), fontWeight: FontWeight.w800)),
+              Row(key: const Key('round-score'), children: [
+                Expanded(child: _profileScore(
+                  label: 'TU', name: c.hand?.playerName ?? widget.playerName,
+                  avatar: c.hand?.playerAvatar ?? widget.playerAvatar,
+                  wins: c.score[0], imageKey: const Key('player-avatar'))),
+                const Padding(padding: EdgeInsets.symmetric(horizontal: 5),
+                  child: Text('VS', style: TextStyle(color: Color(0xffffd993),
+                    fontFamily: 'Georgia', fontWeight: FontWeight.w900))),
+                Expanded(child: _profileScore(
+                  label: 'RIVALE', name: c.hand?.opponent ?? 'SEARCHING',
+                  avatar: c.hand?.opponentAvatar ?? 'player',
+                  wins: c.score[1], imageKey: const Key('opponent-avatar'),
+                  reverse: true)),
+              ]),
             ])),
           Container(key: const Key('pvp-timer'), margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
             padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
@@ -347,7 +362,6 @@ class _LivePvpArenaState extends State<LivePvpArena> {
               const SizedBox(width: 8),
               Text(c.seconds.toString() + 's', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
             ])),
-          Text('⚔ ' + (c.hand?.opponent ?? 'SEARCHING'), style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xffc6d7ed))),
           Expanded(child: Padding(padding: const EdgeInsets.fromLTRB(12, 7, 12, 5),
             child: Stack(alignment: Alignment.center, children: [
               Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(
@@ -473,6 +487,37 @@ class _LivePvpArenaState extends State<LivePvpArena> {
       Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
       Text(detail, style: const TextStyle(color: Color(0xffb3c7dd), fontSize: 11)),
     ]));
+
+  Widget _profileScore({required String label, required String name,
+    required String avatar, required int wins, required Key imageKey,
+    bool reverse = false}) {
+    final safeAvatar = const ['player', 'guard', 'vassal', 'king'].contains(avatar)
+        ? avatar : 'player';
+    final portrait = Container(key: imageKey, width: 34, height: 34,
+      decoration: BoxDecoration(shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xffd9b66d), width: 1.5),
+        image: DecorationImage(image: AssetImage(
+          'assets/idle/avatars/avatar_$safeAvatar.webp'), fit: BoxFit.cover)));
+    final identity = Expanded(child: Column(
+      crossAxisAlignment: reverse ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min, children: [
+      Text(label, style: const TextStyle(color: Color(0xffb9cbdf),
+        fontSize: 8, fontWeight: FontWeight.w800)),
+      Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
+        textAlign: reverse ? TextAlign.right : TextAlign.left,
+        style: const TextStyle(color: Color(0xffffe4a3), fontSize: 11,
+          fontWeight: FontWeight.w900)),
+    ]));
+    final score = Container(width: 25, height: 29, alignment: Alignment.center,
+      decoration: BoxDecoration(color: const Color(0xff263f5f),
+        border: Border.all(color: const Color(0xffd9b66d)),
+        borderRadius: BorderRadius.circular(6)),
+      child: Text('$wins', style: const TextStyle(color: Colors.white,
+        fontSize: 17, fontWeight: FontWeight.w900)));
+    return Row(children: reverse
+      ? [score, const SizedBox(width: 4), identity, const SizedBox(width: 4), portrait]
+      : [portrait, const SizedBox(width: 4), identity, const SizedBox(width: 4), score]);
+  }
 
 }
 

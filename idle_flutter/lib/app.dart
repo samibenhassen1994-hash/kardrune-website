@@ -356,6 +356,8 @@ class _IdleShellState extends State<IdleShell> {
                 child: LivePvpArena(
                   controller: _pvp!.arena,
                   audio: _flameAudio,
+                  playerName: name,
+                  playerAvatar: avatar,
                   onPlay: _pvp!.play,
                   onReady: _pvp!.ready,
                   onComplete: () {

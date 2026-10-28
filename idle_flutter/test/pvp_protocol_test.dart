@@ -18,6 +18,9 @@ void main() {
       'type': 'hand',
       'round': 2,
       'opponent': 'Rival',
+      'playerName': 'Sam',
+      'playerAvatar': 'guard',
+      'opponentAvatar': 'king',
       'score': [1, 0],
       'hand': [
         {'id': 'sam:1', 'hero': 'sam', 'stage': 1, 'attack': 40, 'crit': 4},
@@ -31,6 +34,9 @@ void main() {
     expect(e, isA<HandEvent>());
     final h = e as HandEvent;
     expect(h.round, 2);
+    expect(h.playerName, 'Sam');
+    expect(h.playerAvatar, 'guard');
+    expect(h.opponentAvatar, 'king');
     expect(h.durationMs, 30000);
     expect(h.hand.single.id, 'sam:1');
   });

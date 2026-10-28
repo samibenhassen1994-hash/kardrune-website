@@ -89,7 +89,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byType(LivePvpArena), findsOneWidget);
-    expect(find.text('⚔ Rival'), findsOneWidget);
+    expect(find.text('Rival'), findsOneWidget);
     expect(find.byKey(const Key('pvp-round-header')), findsOneWidget);
     expect(find.text('ROUND 1 / 3'), findsOneWidget);
     expect(find.byKey(const Key('round-score')), findsOneWidget);

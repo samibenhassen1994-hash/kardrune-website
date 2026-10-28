@@ -24,6 +24,27 @@ void main() {
     expect(find.byKey(const Key('hand-card')), findsNWidgets(3));
     expect(tester.takeException(), isNull);
   });
+  testWidgets('header shows both names, profile images and round wins', (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final c = ArenaViewController();
+    await tester.pumpWidget(MaterialApp(home: LivePvpArena(
+      controller: c, onPlay: (_) {}, onReady: () {})));
+    c.startHand(const HandEvent(round: 2, opponent: 'Rival', score: [1, 0],
+      playerName: 'Sam', playerAvatar: 'guard', opponentAvatar: 'king',
+      hand: cards, deckSize: 9, usedCount: 1, durationMs: 30000,
+      deadline: 30000, matchId: 'score'));
+    await tester.pump();
+    expect(find.text('Sam'), findsOneWidget);
+    expect(find.text('Rival'), findsOneWidget);
+    expect(find.byKey(const Key('player-avatar')), findsOneWidget);
+    expect(find.byKey(const Key('opponent-avatar')), findsOneWidget);
+    expect(find.text('1'), findsOneWidget);
+    expect(find.byKey(const Key('round-score')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
   testWidgets('live hand and Flame stage fit a small iPhone viewport', (tester) async {
     tester.view.physicalSize = const Size(320, 568);
     tester.view.devicePixelRatio = 1;

@@ -29,7 +29,8 @@ export default {
    deck.push({id,hero,stage,attack,crit});
   }
   const id=env.LOBBY.idFromName('friendly-global-v1');
-  return env.LOBBY.get(id).fetch('https://lobby/connect',{headers:{Upgrade:'websocket','X-Player':row.uid,'X-Name':deckRow.display_name,'X-Deck':JSON.stringify(deck)}});
+  const avatar=['player','guard','vassal','king'].includes(save.avatar)?save.avatar:'player';
+  return env.LOBBY.get(id).fetch('https://lobby/connect',{headers:{Upgrade:'websocket','X-Player':row.uid,'X-Name':deckRow.display_name,'X-Avatar':avatar,'X-Deck':JSON.stringify(deck)}});
  }
 };
 export class PvpLobby {
@@ -39,13 +40,13 @@ export class PvpLobby {
  }
  async fetch(request){
   if(request.headers.get('Upgrade')?.toLowerCase()!=='websocket')return new Response('WebSocket required',{status:426});
-  const uid=request.headers.get('X-Player'),name=request.headers.get('X-Name'),deck=JSON.parse(request.headers.get('X-Deck')||'[]');
+  const uid=request.headers.get('X-Player'),name=request.headers.get('X-Name'),avatar=request.headers.get('X-Avatar')||'player',deck=JSON.parse(request.headers.get('X-Deck')||'[]');
   if(!uid||deck.length<MAX_ROUNDS||deck.length>9)return new Response('Invalid match participant',{status:400});
   const pair=new WebSocketPair(),client=pair[0],server=pair[1];server.accept();
   const previous=this.sockets.get(uid);
   if(previous){this.drop(previous);try{previous.ws.close(4000,'Reconnected')}catch{}}
   for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]]}
-  const player={uid,name,deck,ws:server,used:[],chosen:null,match:null,lastSeen:Date.now()};
+  const player={uid,name,avatar,deck,ws:server,used:[],chosen:null,match:null,lastSeen:Date.now()};
   this.sockets.set(uid,player);
   server.addEventListener('message',event=>{
    if(this.sockets.get(uid)!==player)return;
@@ -97,8 +98,8 @@ export class PvpLobby {
   if(!handA.length||!handB.length){this.finish(match,'completed');return}
   match.awaiting=null;match.round++;a.chosen=null;b.chosen=null;
   const deadline=Date.now()+CHOOSE_MS;
-  send(a.ws,{type:'hand',round:match.round,opponent:b.name,score:match.scores,hand:handA,deckSize:a.deck.length,usedCount:a.used.length,durationMs:CHOOSE_MS,deadline,matchId:match.id});
-  send(b.ws,{type:'hand',round:match.round,opponent:a.name,score:[...match.scores].reverse(),hand:handB,deckSize:b.deck.length,usedCount:b.used.length,durationMs:CHOOSE_MS,deadline,matchId:match.id});
+  send(a.ws,{type:'hand',round:match.round,playerName:a.name,playerAvatar:a.avatar,opponent:b.name,opponentAvatar:b.avatar,score:match.scores,hand:handA,deckSize:a.deck.length,usedCount:a.used.length,durationMs:CHOOSE_MS,deadline,matchId:match.id});
+  send(b.ws,{type:'hand',round:match.round,playerName:b.name,playerAvatar:b.avatar,opponent:a.name,opponentAvatar:a.avatar,score:[...match.scores].reverse(),hand:handB,deckSize:b.deck.length,usedCount:b.used.length,durationMs:CHOOSE_MS,deadline,matchId:match.id});
   match.selectTimer=setTimeout(()=>{
    if(!this.matches.has(match.id)||match.awaiting)return;
    for(const p of match.players){
