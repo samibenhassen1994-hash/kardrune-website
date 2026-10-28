@@ -116,10 +116,9 @@ class _SummonResultState extends State<SummonResult> with SingleTickerProviderSt
         Padding(padding:const EdgeInsets.only(top:47),child:Image.asset(widget.asset,
           fit:BoxFit.contain,alignment:Alignment.center)),
         if (SkillCatalog.byId(old ? widget.oldSkillId : widget.newSkillId) case final skill?)
-          Align(alignment:const Alignment(0,.65),child:Container(
-            color:const Color(0xee071124),padding:const EdgeInsets.all(3),
-            child:Text(skill.name,maxLines:1,overflow:TextOverflow.ellipsis,
-              style:TextStyle(color:skill.color,fontSize:10,fontWeight:FontWeight.w900)))),
+          Align(alignment: const Alignment(0, .65),
+            child: FractionallySizedBox(widthFactor: .90,
+              child: SkillRarityBadge(skill: skill, compact: true))),
         Positioned(top:3,left:3,right:3,child:Row(children:[
           Expanded(child:_cardStat('ATK','$atk',old?null:atk-widget.oldAttack!)),
           const SizedBox(width:3),
