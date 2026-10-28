@@ -13,6 +13,7 @@ import 'features/summon/summon_result.dart';
 import 'features/profile/cloud_account_controller.dart';
 import 'features/pvp/live_match_coordinator.dart';
 import 'features/pvp/live_pvp_arena.dart';
+import 'features/pvp/flame_pvp_demo.dart';
 import 'models/player_save.dart';
 import 'services/local_save_service.dart';
 import 'services/live_pvp_socket.dart';
@@ -108,6 +109,7 @@ class _IdleShellState extends State<IdleShell> {
   bool _cloudInitializing = false;
   String _cloudInitializationMessage = 'Connecting account services…';
   LiveMatchCoordinator? _pvp;
+  bool _showFlameDemo = false;
   bool _ownsCloud = false;
   late final AppUpdateController? _updates;
   bool _ownsUpdates = false;
@@ -131,7 +133,11 @@ class _IdleShellState extends State<IdleShell> {
     attacks.addAll(save.attacks);
     crits.addAll(save.crits);
     _pendingDuplicate = save.pendingDuplicate;
-    if (_pendingDuplicate != null) WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _resumeDuplicate(); });
+    if (_pendingDuplicate != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _resumeDuplicate();
+      });
+    }
     deck = _saveService?.loadDeck().where(owned.contains).toList() ?? [];
     motion = MotionPreference.values.firstWhere(
       (value) => value.name == _saveService?.storage.read(_motionKey),
@@ -232,7 +238,6 @@ class _IdleShellState extends State<IdleShell> {
         _persist();
       }
     }
-
   }
 
   void _pvpChanged() {
@@ -328,6 +333,16 @@ class _IdleShellState extends State<IdleShell> {
 
   @override
   Widget build(BuildContext context) {
+    if (_showFlameDemo) {
+      return _motionWrap(
+        FlamePvpDemo(
+          onBack: () => setState(() {
+            _showFlameDemo = false;
+            tab = 0;
+          }),
+        ),
+      );
+    }
     if (_pvp?.state == LiveMatchState.arena) {
       return _motionWrap(
         _withUpdate(
@@ -392,6 +407,8 @@ class _IdleShellState extends State<IdleShell> {
                               onLive: _pvp?.findMatch,
                               liveStatus: _pvp?.message,
                               canLive: _pvp != null && deck.length >= 3,
+                              onFlameDemo: () =>
+                                  setState(() => _showFlameDemo = true),
                             ),
                             _Cards(
                               page: page,
@@ -526,10 +543,17 @@ class _IdleShellState extends State<IdleShell> {
   }
 
   void _summon(bool featured) {
-    if (_pendingDuplicate != null) { _resumeDuplicate(); return; }
+    if (_pendingDuplicate != null) {
+      _resumeDuplicate();
+      return;
+    }
     if (_summonOpen || shards < SummonRules.cost(featured)) return;
     final stage = SummonRules.stageFor(featured, widget.random());
-    final index = SummonRules.heroIndex(featured, widget.random(), widget.random());
+    final index = SummonRules.heroIndex(
+      featured,
+      widget.random(),
+      widget.random(),
+    );
     final hero = KardRuneCatalog.heroes[index];
     final id = '${hero.id}:$stage';
     final duplicate = owned.contains(id);
@@ -577,16 +601,19 @@ class _IdleShellState extends State<IdleShell> {
       _persist();
       Navigator.of(dialogContext).pop();
     }
+
     showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => SummonResult(
-        heroName: hero.name, stage: stage,
+        heroName: hero.name,
+        stage: stage,
         asset: hero.cardAsset(hero.stages[stage - 1]),
         hp: CombatRules.hpForStage(stage),
         oldAttack: duplicate ? attacks[id] : null,
         oldCrit: duplicate ? crits[id] : null,
-        newAttack: attack, newCrit: crit,
+        newAttack: attack,
+        newCrit: crit,
         onKeep: () => decide(dialogContext, false),
         onReplace: () => decide(dialogContext, true),
         onContinue: () => Navigator.of(dialogContext).pop(),
@@ -594,11 +621,12 @@ class _IdleShellState extends State<IdleShell> {
     ).whenComplete(() {
       _summonOpen = false;
       if (mounted && _pendingDuplicate != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _resumeDuplicate(); });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _resumeDuplicate();
+        });
       }
     });
   }
-
 }
 
 class _Header extends StatelessWidget {
@@ -799,6 +827,7 @@ class _Tournament extends StatelessWidget {
     required this.onLive,
     required this.liveStatus,
     required this.canLive,
+    required this.onFlameDemo,
   });
   final int rewardsLeft;
   final String status;
@@ -806,6 +835,7 @@ class _Tournament extends StatelessWidget {
   final VoidCallback? onLive;
   final String? liveStatus;
   final bool canLive;
+  final VoidCallback onFlameDemo;
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, box) {
@@ -994,10 +1024,25 @@ class _Tournament extends StatelessWidget {
                 key: const Key('live-match-status'),
                 style: const TextStyle(fontSize: 10, color: Color(0xffa6b9d0)),
               ),
-            _RuneButton(
-              actionKey: const Key('find-live-match'),
-              label: onLive == null ? 'SIGN IN FOR LIVE PVP' : deckLabel,
-              onTap: canLive ? onLive : null,
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: _RuneButton(
+                    actionKey: const Key('find-live-match'),
+                    label: onLive == null ? 'SIGN IN FOR LIVE PVP' : deckLabel,
+                    onTap: canLive ? onLive : null,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: _RuneButton(
+                    actionKey: const Key('test-flame'),
+                    label: 'TEST FLAME',
+                    onTap: onFlameDemo,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
