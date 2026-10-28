@@ -28,11 +28,18 @@ class DeckBuilder extends StatefulWidget {
 
 class _DeckBuilderState extends State<DeckBuilder> {
   late List<String?> slots;
+  final ScrollController _ownedScroll = ScrollController();
   int? hover;
   @override
   void initState() {
     super.initState();
     slots = DeckRules.normalize(widget.initial, widget.owned);
+  }
+
+  @override
+  void dispose() {
+    _ownedScroll.dispose();
+    super.dispose();
   }
 
   void put(String id, int? index) =>
@@ -68,11 +75,13 @@ class _DeckBuilderState extends State<DeckBuilder> {
             ),
             const SizedBox(height: 7),
             SizedBox(
-              height: 188,
+              height: 240,
               child: GridView.count(
                 physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
                 crossAxisCount: 3,
-                childAspectRatio: 1.25,
+                // Three complete rows within the fixed 240px slot area.
+                childAspectRatio: 1.8,
                 mainAxisSpacing: 5,
                 crossAxisSpacing: 5,
                 children: [
@@ -105,7 +114,17 @@ class _DeckBuilderState extends State<DeckBuilder> {
                           borderRadius: BorderRadius.circular(9),
                         ),
                         child: slots[index] == null
-                            ? Center(child: Text('${index + 1}'.padLeft(2, '0')))
+                            ? Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.add_circle_outline,
+                                    color: KardRuneTheme.gold, size: 20),
+                                  const SizedBox(height: 3),
+                                  Text('SLOT ${index + 1}', style: const TextStyle(
+                                    color: Color(0xffffd993), fontSize: 10,
+                                    fontWeight: FontWeight.w800)),
+                                ],
+                              )
                             : _draggable(
                                 slots[index]!,
                                 onTap: () => setState(
@@ -149,8 +168,10 @@ class _DeckBuilderState extends State<DeckBuilder> {
             const SizedBox(height: 5),
             Expanded(
               child: Scrollbar(
+                controller: _ownedScroll,
                 thumbVisibility: true,
                 child: GridView.builder(
+                  controller: _ownedScroll,
                   key: const Key('deck-owned-scroll-grid'),
                   padding: const EdgeInsets.fromLTRB(2, 2, 8, 10),
                   physics: const BouncingScrollPhysics(),
