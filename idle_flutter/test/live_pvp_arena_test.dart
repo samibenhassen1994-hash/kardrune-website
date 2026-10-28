@@ -50,6 +50,27 @@ void main() {
     expect(find.byKey(const Key('round-score')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('surrender button stays clear of the avatar on a small iPhone', (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final c = ArenaViewController();
+    var surrendered = false;
+    await tester.pumpWidget(MaterialApp(home: LivePvpArena(
+      controller: c, onPlay: (_) {}, onReady: () {},
+      onSurrender: () => surrendered = true)));
+    c.startHand(const HandEvent(round: 1, opponent: 'Rival', score: [0, 0],
+      hand: cards, deckSize: 9, usedCount: 0, durationMs: 30000,
+      deadline: 30000, matchId: 'surrender'));
+    await tester.pump();
+    final button = tester.getRect(find.byKey(const Key('surrender-live-arena')));
+    final avatar = tester.getRect(find.byKey(const Key('player-avatar')));
+    expect(button.overlaps(avatar), isFalse);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byKey(const Key('surrender-live-arena')));
+    expect(surrendered, isTrue);
+  });
   testWidgets('live hand and Flame stage fit a small iPhone viewport', (tester) async {
     tester.view.physicalSize = const Size(320, 568);
     tester.view.devicePixelRatio = 1;

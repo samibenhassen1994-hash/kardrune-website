@@ -47,6 +47,7 @@ void main() {
           controller: controller,
           onPlay: (_) {},
           onReady: () {},
+          onSurrender: () {},
         ),
       ),
     );

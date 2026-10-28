@@ -212,6 +212,7 @@ class LivePvpArena extends StatefulWidget {
     this.audio,
     this.playerName = 'Runebearer',
     this.playerAvatar = 'player',
+    this.onSurrender,
     this.onComplete,
   });
   final ArenaViewController controller;
@@ -219,6 +220,7 @@ class LivePvpArena extends StatefulWidget {
   final VoidCallback onReady;
   final FlameBattleAudio? audio;
   final String playerName, playerAvatar;
+  final VoidCallback? onSurrender;
   final VoidCallback? onComplete;
   @override
   State<LivePvpArena> createState() => _LivePvpArenaState();
@@ -367,6 +369,24 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                 child: Text(choosing ? 'CHOOSE YOUR CARD' : battle ? 'BATTLE IN PROGRESS' : c.lockedCard != null ? 'WAITING FOR RIVAL' : 'READY',
                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)))),
               const SizedBox(width: 8),
+              if (widget.onSurrender != null && !c.matchFinished) ...[
+                GestureDetector(
+                  key: const Key('surrender-live-arena'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: widget.onSurrender,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: const Color(0xff49212b),
+                      border: Border.all(color: const Color(0xffff7777)),
+                      borderRadius: BorderRadius.circular(7)),
+                    child: const Text('ARRENDITI', style: TextStyle(
+                      color: Color(0xffffc7c7), fontSize: 10,
+                      fontWeight: FontWeight.w900)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
               Text(c.seconds.toString() + 's', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
             ])),
           Expanded(child: Padding(padding: const EdgeInsets.fromLTRB(12, 7, 12, 5),

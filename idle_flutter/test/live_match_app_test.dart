@@ -93,7 +93,7 @@ void main() {
     expect(find.byKey(const Key('pvp-round-header')), findsOneWidget);
     expect(find.text('ROUND 1 / 3'), findsOneWidget);
     expect(find.byKey(const Key('round-score')), findsOneWidget);
-    await tester.tap(find.byKey(const Key('close-live-arena')));
+    await tester.tap(find.byKey(const Key('surrender-live-arena')));
     await tester.pumpAndSettle();
     expect(find.byType(LivePvpArena), findsNothing);
   });

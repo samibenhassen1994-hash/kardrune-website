@@ -350,34 +350,18 @@ class _IdleShellState extends State<IdleShell> {
     if (_pvp?.state == LiveMatchState.arena) {
       return _motionWrap(
         _withUpdate(
-          Stack(
-            children: [
-              Positioned.fill(
-                child: LivePvpArena(
+          LivePvpArena(
                   controller: _pvp!.arena,
                   audio: _flameAudio,
                   playerName: name,
                   playerAvatar: avatar,
                   onPlay: _pvp!.play,
                   onReady: _pvp!.ready,
+                  onSurrender: _pvp!.close,
                   onComplete: () {
                     setState(() => tab = 0);
                     _pvp?.close();
                   },
-                ),
-              ),
-              Positioned(
-                top: 12,
-                left: 12,
-                child: SafeArea(
-                  child: IconButton(
-                    key: const Key('close-live-arena'),
-                    onPressed: _pvp!.close,
-                    icon: const Icon(Icons.close, color: Colors.white),
-                  ),
-                ),
-              ),
-            ],
           ),
         ),
       );
