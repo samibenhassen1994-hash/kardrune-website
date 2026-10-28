@@ -16,6 +16,9 @@ on:
       - 'idle_flutter/**'
       - '.github/workflows/idle-flutter-summon.yml'
   workflow_dispatch:
+concurrency:
+  group: idle-flutter-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: write
 jobs:
