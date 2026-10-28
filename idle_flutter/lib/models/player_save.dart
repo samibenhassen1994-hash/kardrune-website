@@ -1,6 +1,7 @@
 import '../game/catalog.dart';
 import '../game/combat_rules.dart';
 import '../game/game_rules.dart';
+import '../game/skill_catalog.dart';
 
 class PlayerSave {
   PlayerSave({
@@ -16,12 +17,14 @@ class PlayerSave {
     required this.practiceCount,
     required this.attacks,
     required this.crits,
+    this.skills = const {},
     this.pendingDuplicate,
   });
   final String name, avatar, active, practiceDay;
   final int shards, duels, wins, pulls, practiceCount;
   final List<String> owned;
   final Map<String, int> attacks, crits;
+  final Map<String, String> skills;
   final Map<String, Object?>? pendingDuplicate;
   factory PlayerSave.initial() => PlayerSave(
     name: 'Runebearer',
@@ -36,6 +39,7 @@ class PlayerSave {
     practiceCount: 0,
     attacks: {'sam:1': 40},
     crits: {'sam:1': 4},
+    skills: const {},
   );
   factory PlayerSave.fromJson(Map<String, Object?>? json, {int? nowMs}) {
     if (json == null) return PlayerSave.initial();
@@ -65,6 +69,7 @@ class PlayerSave {
         v is int && v >= min && v <= max ? v : fallback;
     final a = json['attacks'] is Map ? json['attacks'] as Map : const {},
         c = json['crits'] is Map ? json['crits'] as Map : const {};
+    final rawSkills = json['skills'] is Map ? json['skills'] as Map : const {};
     final dailyRaw = json['practiceDaily'] is Map
         ? json['practiceDaily'] as Map
         : const {};
@@ -93,6 +98,12 @@ class PlayerSave {
           0,
           25,
         ),
+        if (p['skillId'] is String && SkillCatalog.validForStage(
+          p['skillId'] as String, int.parse(id.split(':').last)))
+          'skillId': p['skillId'] as String,
+        if (p['skillVersion'] == SkillCatalog.version)
+          'skillVersion': SkillCatalog.version,
+        if (p['rollId'] is String) 'rollId': p['rollId'] as String,
       };
     }
     return PlayerSave(
@@ -123,6 +134,16 @@ class PlayerSave {
         for (final id in owned)
           id: bounded(c[id], CombatRules.legacyCrit(id), 0, 25),
       },
+      skills: {
+        for (final id in owned)
+          if (rawSkills[id] is Map &&
+              (rawSkills[id] as Map)['id'] is String &&
+              (rawSkills[id] as Map)['v'] == SkillCatalog.version &&
+              SkillCatalog.validForStage(
+                (rawSkills[id] as Map)['id'] as String,
+                int.parse(id.split(':').last)))
+            id: (rawSkills[id] as Map)['id'] as String,
+      },
       pendingDuplicate: pending,
     );
   }
@@ -138,6 +159,11 @@ class PlayerSave {
     'practiceDaily': {'day': practiceDay, 'count': practiceCount},
     'attacks': attacks,
     'crits': crits,
+    'skills': {
+      for (final entry in skills.entries)
+        if (SkillCatalog.byId(entry.value) case final skill?)
+          entry.key: {'id': skill.id, 'rarity': skill.rarity, 'v': SkillCatalog.version},
+    },
     'pendingDuplicate': pendingDuplicate,
   };
   PlayerSave copyWith({
@@ -153,6 +179,7 @@ class PlayerSave {
     int? practiceCount,
     Map<String, int>? attacks,
     Map<String, int>? crits,
+    Map<String, String>? skills,
     Map<String, Object?>? pendingDuplicate,
     bool clearPending = false,
   }) => PlayerSave(
@@ -168,6 +195,7 @@ class PlayerSave {
     practiceCount: practiceCount ?? this.practiceCount,
     attacks: attacks ?? this.attacks,
     crits: crits ?? this.crits,
+    skills: skills ?? this.skills,
     pendingDuplicate: clearPending
         ? null
         : pendingDuplicate ?? this.pendingDuplicate,
