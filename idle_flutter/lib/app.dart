@@ -15,7 +15,6 @@ import 'features/summon/summon_result.dart';
 import 'features/profile/cloud_account_controller.dart';
 import 'features/pvp/live_match_coordinator.dart';
 import 'features/pvp/live_pvp_arena.dart';
-import 'features/pvp/flame_pvp_demo.dart';
 import 'features/pvp/flame_battle_audio.dart';
 import 'models/player_save.dart';
 import 'services/local_save_service.dart';
@@ -91,9 +90,8 @@ class IdleShell extends StatefulWidget {
 class _IdleShellState extends State<IdleShell> {
   static const _motionKey = 'idle-motion-preference-v1';
   static const _pvpRewardKey = 'idle-pvp-completed-rewards-v1';
-  int tab = 0, shards = 1500, page = 0, rewardsLeft = 10;
+  int tab = 0, shards = 1500, page = 0;
   String name = 'Runebearer', avatar = 'player';
-  String battleStatus = '';
   bool italian = false;
   final owned = <String>{};
   final attacks = <String, int>{}, crits = <String, int>{};
@@ -110,14 +108,12 @@ class _IdleShellState extends State<IdleShell> {
   bool _snoozeDuplicate = false;
   bool _summonRequestPending = false;
   String? _pendingOnlineRollId;
-  String? _pendingPracticeRollId;
   MotionPreference motion = MotionPreference.automatic;
   late final LocalSaveService? _saveService;
   CloudAccountController? _cloud;
   bool _cloudInitializing = false;
   String _cloudInitializationMessage = 'Connecting account services…';
   LiveMatchCoordinator? _pvp;
-  bool _showFlameDemo = false;
   late final FlameBattleAudio _flameAudio = createFlameBattleAudio();
   bool _ownsCloud = false;
   late final AppUpdateController? _updates;
@@ -169,7 +165,6 @@ class _IdleShellState extends State<IdleShell> {
     );
     practiceDay = daily.day;
     practiceCount = daily.count;
-    rewardsLeft = GameRules.dailyRewardLimit - practiceCount;
     _pvp = widget.liveMatchCoordinator;
     _pvp?.addListener(_pvpChanged);
     _pvp?.onMatchFinished = _pvpFinished;
@@ -280,8 +275,8 @@ class _IdleShellState extends State<IdleShell> {
       } catch (error) {
         if (attempt == 5) {
           if (mounted) {
-            setState(() => battleStatus =
-              'PvP reward pending. Cloud result: $error');
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('PvP reward pending. Cloud result: $error')));
           }
           return;
         }
@@ -316,7 +311,8 @@ class _IdleShellState extends State<IdleShell> {
         await _pvp!.saveDeck(deck);
       } catch (error) {
         if (mounted) {
-          setState(() => battleStatus = 'Deck saved locally · Cloud: $error');
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Deck saved locally · Cloud: $error')));
         }
       }
     }
@@ -334,8 +330,7 @@ class _IdleShellState extends State<IdleShell> {
       pulls = save.pulls;
       practiceDay = save.practiceDay;
       practiceCount = save.practiceCount;
-      rewardsLeft = GameRules.dailyRewardLimit - practiceCount;
-      owned
+        owned
         ..clear()
         ..addAll(save.owned);
       attacks
@@ -388,17 +383,6 @@ class _IdleShellState extends State<IdleShell> {
 
   @override
   Widget build(BuildContext context) {
-    if (_showFlameDemo) {
-      return _motionWrap(
-        FlamePvpDemo(
-          audio: _flameAudio,
-          onBack: () => setState(() {
-            _showFlameDemo = false;
-            tab = 0;
-          }),
-        ),
-      );
-    }
     if (_pvp?.state == LiveMatchState.arena) {
       return _motionWrap(
         _withUpdate(
@@ -443,21 +427,11 @@ class _IdleShellState extends State<IdleShell> {
                         child: IndexedStack(
                           index: tab,
                           children: [
-                            _Tournament(
-                              activeCard: active,
-                              attack: attacks[active],
-                              crit: crits[active],
-                              skillId: skills[active],
-                              rewardsLeft: rewardsLeft,
-                              status: battleStatus,
-                              onStart: _train,
+                            _ArenaHome(
+                              italian: italian,
                               onLive: _pvp?.findMatch,
                               liveStatus: _pvp?.message,
                               canLive: _pvp != null && deck.length >= 3,
-                              onFlameDemo: () {
-                                _flameAudio.unlock();
-                                setState(() => _showFlameDemo = true);
-                              },
                             ),
                             _Cards(
                               page: page,
@@ -568,64 +542,6 @@ class _IdleShellState extends State<IdleShell> {
         ),
     ],
   );
-
-  void _train() {
-    if (_cloud?.identity != null) {
-      if (_cloud!.state != CloudAccountState.synced) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Review or sync your cloud save before training.')));
-        return;
-      }
-      _trainOnline();
-      return;
-    }
-    final parts = active.split(':');
-    final stage = int.tryParse(parts.last) ?? 1;
-    final result = GameRules.resolvePractice(
-      DailyRewardState(day: practiceDay, count: practiceCount),
-      attacks[active] ?? CombatRules.legacyAttack(active),
-      stage,
-      widget.random(),
-      widget.nowMs(),
-    );
-    setState(() {
-      shards += result.reward;
-      duels++;
-      if (result.win) wins++;
-      practiceDay = result.daily.day;
-      practiceCount = result.daily.count;
-      rewardsLeft = GameRules.dailyRewardLimit - practiceCount;
-      battleStatus =
-          '${result.win ? 'VICTORY' : 'DEFEAT'} · +${result.reward} SHARDS';
-    });
-    _persist();
-  }
-
-  Future<void> _trainOnline() async {
-    if (_summonRequestPending) return;
-    final cloud = _cloud!;
-    final accountUid = cloud.identity?.uid;
-    _summonRequestPending = true;
-    final rollId = _pendingPracticeRollId ??= _newRollId();
-    try {
-      if (!await cloud.prepareServerMutation()) throw StateError('Cloud save needs review');
-      final result = await cloud.api.post('/api/practice', {
-        'rollId': rollId, 'revision': cloud.revision,
-      });
-      if (!mounted || cloud.identity?.uid != accountUid) return;
-      cloud.applyServerSave(result);
-      _pendingPracticeRollId = null;
-      setState(() => battleStatus =
-        '${result['win'] == true ? 'VICTORY' : 'DEFEAT'} · +${result['reward']} SHARDS');
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Practice unavailable: $error')));
-      }
-    } finally {
-      _summonRequestPending = false;
-    }
-  }
 
   void _summon(bool featured) {
     if (_pendingDuplicate != null) {
@@ -920,7 +836,7 @@ class _RuneNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <(IconData, String)>[
-      (Icons.emoji_events_outlined, 'TOURNAMENT'),
+      (Icons.shield_outlined, 'ARENA'),
       (Icons.style_outlined, italian ? 'CARTE' : 'CARDS'),
       (Icons.auto_awesome_outlined, italian ? 'EVOCA' : 'SUMMON'),
       (Icons.person_outline, italian ? 'PROFILO' : 'PROFILE'),
@@ -994,249 +910,62 @@ class _RuneNavigation extends StatelessWidget {
   }
 }
 
-class _Tournament extends StatelessWidget {
-  const _Tournament({
-    required this.activeCard,
-    this.attack,
-    this.crit,
-    this.skillId,
-    required this.rewardsLeft,
-    required this.status,
-    required this.onStart,
+class _ArenaHome extends StatelessWidget {
+  const _ArenaHome({
+    required this.italian,
     required this.onLive,
     required this.liveStatus,
     required this.canLive,
-    required this.onFlameDemo,
   });
-  final int rewardsLeft;
-  final String activeCard;
-  final int? attack, crit;
-  final String? skillId;
-  final String status;
-  final VoidCallback onStart;
+  final bool italian, canLive;
   final VoidCallback? onLive;
   final String? liveStatus;
-  final bool canLive;
-  final VoidCallback onFlameDemo;
+
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, box) {
-      final compact = box.maxHeight < 560;
-      return Padding(
-        padding: EdgeInsets.fromLTRB(
-          compact ? 13 : 19,
-          compact ? 8 : 16,
-          compact ? 13 : 19,
-          7,
-        ),
-        child: Column(
-          children: [
-            _Eyebrow(compact: compact),
-            SizedBox(height: compact ? 3 : 7),
-            Text.rich(
-              const TextSpan(
-                text: 'TOURNAMENT ',
-                children: [
-                  TextSpan(
-                    text: 'PvP',
-                    style: TextStyle(color: Color(0xfff5d28b)),
-                  ),
-                ],
-              ),
-              style: TextStyle(
-                color: const Color(0xfff9f4e9),
-                fontFamily: 'Georgia',
-                fontSize: compact ? 24 : 32,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            if (!compact) ...[
-              const SizedBox(height: 5),
-              const Text(
-                'Build your team. Face your rivals. Rise to the top of the Rune Circuit.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xffb9c5d8),
-                  fontSize: 12,
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 12),
-            ] else
-              const SizedBox(height: 5),
-            _SeasonBanner(compact: compact),
-            SizedBox(height: compact ? 8 : 13),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'YOUR NEXT BATTLE',
-                        style: TextStyle(
-                          color: Color(0xffeac981),
-                          fontSize: 8,
-                          letterSpacing: 1.2,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      SizedBox(height: 3),
-                      Text(
-                        'PRACTICE ARENA',
-                        style: TextStyle(
-                          fontFamily: 'Georgia',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0x331c5478),
-                    border: Border.all(color: const Color(0x6678c5ff)),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: const Text(
-                    'SOLO DEMO',
-                    style: TextStyle(
-                      color: Color(0xffa6daff),
-                      fontSize: 8,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: compact ? 6 : 9),
-            Expanded(
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 120),
-                padding: EdgeInsets.symmetric(
-                  horizontal: compact ? 6 : 11,
-                  vertical: compact ? 5 : 10,
-                ),
-                decoration: BoxDecoration(
-                  gradient: const RadialGradient(
-                    colors: [Color(0xff203958), Color(0xff0b172f)],
-                  ),
-                  border: Border.all(color: const Color(0x45d3ad5b)),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _HomeCombatant(
-                        id: activeCard.split(':').first,
-                        stage: int.tryParse(activeCard.split(':').last) ?? 1,
-                        attack: attack,
-                        crit: crit,
-                        skillId: skillId,
-                        label: '${activeCard.split(':').first.toUpperCase()} · S${activeCard.split(':').last}',
-                        subtitle: 'YOUR HERO',
-                        compact: compact,
-                      ),
-                    ),
-                    SizedBox(
-                      width: compact ? 34 : 48,
-                      child: const FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'VS',
-                              style: TextStyle(
-                                fontFamily: 'Georgia',
-                                color: Color(0xffe9c67d),
-                                fontSize: 21,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            Text(
-                              '⚔',
-                              style: TextStyle(
-                                color: Color(0xffe9c67d),
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: _HomeCombatant(
-                        id: 'dren',
-                        label: 'DREN · S1',
-                        subtitle: 'RANDOM OPPONENT',
-                        compact: compact,
-                        enemy: true,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: compact ? 5 : 8),
-            if (status.isNotEmpty)
-              Text(
-                status,
-                key: const Key('battle-status'),
-                style: const TextStyle(color: Color(0xff83dfa9), fontSize: 10),
-              ),
-            Text(
-              'Rewarded duels remaining today: $rewardsLeft/10',
-              style: const TextStyle(color: Color(0xff93a6bc), fontSize: 10),
-            ),
-            SizedBox(height: compact ? 5 : 7),
-            _RuneButton(
-              actionKey: const Key('start-practice-duel'),
-              label: '⚔  START PRACTICE DUEL',
-              onTap: onStart,
-              gold: true,
-            ),
-            const SizedBox(height: 5),
-            if (liveStatus != null)
-              Text(
-                liveStatus!,
-                key: const Key('live-match-status'),
-                style: const TextStyle(fontSize: 10, color: Color(0xffa6b9d0)),
-              ),
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: _RuneButton(
-                    actionKey: const Key('find-live-match'),
-                    label: onLive == null ? 'SIGN IN FOR LIVE PVP' : deckLabel,
-                    onTap: canLive ? onLive : null,
-                  ),
-                ),
-                const SizedBox(width: 5),
-                Expanded(
-                  child: _RuneButton(
-                    actionKey: const Key('test-flame'),
-                    label: 'TEST FLAME',
-                    onTap: onFlameDemo,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    },
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        const Icon(Icons.shield_outlined, color: Color(0xfff3cc81), size: 48),
+        const SizedBox(height: 12),
+        const Text('KARDRUNE ARENA',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Color(0xffffd993), fontFamily: 'Georgia',
+            fontSize: 27, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 28),
+        SizedBox(width: double.infinity, height: 58,
+          child: ElevatedButton.icon(
+            key: const Key('find-live-match'),
+            onPressed: canLive ? onLive : null,
+            icon: const Icon(Icons.sports_martial_arts, size: 23),
+            label: Text(italian ? 'SFIDA AVVERSARIO' : 'CHALLENGE OPPONENT',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 15,
+                fontWeight: FontWeight.w900, letterSpacing: .8)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xffe9c17a),
+              foregroundColor: const Color(0xff231b13),
+              disabledBackgroundColor: const Color(0xff455063),
+              disabledForegroundColor: const Color(0xffd6dce4),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(13))),
+          )),
+        if (!canLive) Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Text(onLive == null
+            ? (italian ? 'Accedi per giocare online.' : 'Sign in to play online.')
+            : (italian ? 'Prepara almeno 3 carte nel mazzo PvP.'
+                       : 'Add at least 3 cards to your PvP deck.'),
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Color(0xffbdcbe0), fontSize: 12))),
+        if (liveStatus != null && liveStatus!.isNotEmpty) Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Text(liveStatus!, key: const Key('live-match-status'),
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Color(0xffdae4f1), fontSize: 12))),
+      ]),
+    ),
   );
-  String get deckLabel =>
-      canLive ? 'FIND LIVE MATCH' : 'SAVE 3+ CARDS TO PLAY LIVE';
 }
 
 class _Eyebrow extends StatelessWidget {
@@ -1261,166 +990,6 @@ class _Eyebrow extends StatelessWidget {
       const SizedBox(width: 27, child: Divider(color: Color(0x5ce8bd66))),
     ],
   );
-}
-
-class _SeasonBanner extends StatelessWidget {
-  const _SeasonBanner({required this.compact});
-  final bool compact;
-  @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    height: compact ? 58 : 96,
-    padding: EdgeInsets.symmetric(
-      horizontal: compact ? 14 : 22,
-      vertical: compact ? 8 : 12,
-    ),
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xff253550), Color(0xff101e37)],
-      ),
-      border: Border.all(color: const Color(0x66dfbe77)),
-      borderRadius: BorderRadius.circular(15),
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x66000000),
-          blurRadius: 24,
-          offset: Offset(0, 10),
-        ),
-      ],
-    ),
-    child: Row(
-      children: [
-        Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'SEASON PREVIEW',
-                style: TextStyle(
-                  color: Color(0xffeac981),
-                  fontSize: 8,
-                  letterSpacing: 1.2,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              SizedBox(height: compact ? 3 : 6),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text.rich(
-                  const TextSpan(
-                    text: 'THE RUNE ',
-                    children: [
-                      TextSpan(
-                        text: 'CIRCUIT',
-                        style: TextStyle(color: Color(0xfff5d28b)),
-                      ),
-                    ],
-                  ),
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontFamily: 'Georgia',
-                    fontSize: compact ? 17 : 22,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              if (!compact)
-                const Text(
-                  'First championship • Coming with online accounts',
-                  style: TextStyle(color: Color(0xffacbddd), fontSize: 9),
-                ),
-            ],
-          ),
-        ),
-        Text(
-          '♜',
-          style: TextStyle(
-            color: const Color(0xffe2c476),
-            fontSize: compact ? 35 : 54,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _HomeCombatant extends StatelessWidget {
-  const _HomeCombatant({
-    required this.id,
-    required this.label,
-    required this.subtitle,
-    required this.compact,
-    this.stage = 1,
-    this.attack,
-    this.crit,
-    this.skillId,
-    this.enemy = false,
-  });
-  final String id, label, subtitle;
-  final bool compact, enemy;
-  final int stage;
-  final int? attack, crit;
-  final String? skillId;
-  @override
-  Widget build(BuildContext context) {
-    final hero = KardRuneCatalog.heroes.firstWhere((item) => item.id == id);
-    return Column(
-      children: [
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xff0b1529),
-              border: Border.all(
-                color: enemy
-                    ? const Color(0x75ab636b)
-                    : const Color(0x68bdac7a),
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: enemy ? Image.asset(hero.cardAsset(hero.stages.first),fit:BoxFit.contain)
-              : GestureDetector(onTap: () {
-                  final skill = SkillCatalog.byId(skillId);
-                  if(skill == null)return;
-                  showDialog<void>(context:context,builder:(dialogContext)=>Dialog(
-                    backgroundColor:const Color(0xff111e35),
-                    child:Padding(padding:const EdgeInsets.all(16),child:Column(
-                      mainAxisSize:MainAxisSize.min,children:[
-                        Text(skill.name.toUpperCase(),style:TextStyle(color:skill.color,fontWeight:FontWeight.w900)),
-                        Text(skill.description,textAlign:TextAlign.center),
-                        Text('${skill.trigger} · ${skill.limit}',textAlign:TextAlign.center),
-                        SkillPreviewButton(skill:skill),
-                        TextButton(onPressed:()=>Navigator.pop(dialogContext),child:const Text('CLOSE')),
-                      ]))));
-                },child:CharacterCardArt(asset:hero.cardAsset(hero.stages[stage-1]),
-                  hp:CombatRules.hpForStage(stage),attack:attack,crit:crit,skillId:skillId)),
-          ),
-        ),
-        SizedBox(height: compact ? 3 : 6),
-        Text(
-          label,
-          maxLines: 1,
-          style: TextStyle(
-            fontFamily: 'Georgia',
-            fontSize: compact ? 11 : 14,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        Text(
-          subtitle,
-          maxLines: 1,
-          style: TextStyle(
-            color: const Color(0xff93a5c1),
-            fontSize: compact ? 7 : 8,
-            letterSpacing: .7,
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 class _RuneButton extends StatelessWidget {
