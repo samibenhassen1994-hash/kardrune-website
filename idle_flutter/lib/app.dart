@@ -1799,9 +1799,7 @@ class _CardsState extends State<_Cards> {
                 ),
                 const SizedBox(height: 12),
                 if (isOwned) if (SkillCatalog.byId(skills[id]) case final skill?) ...[
-                  Text('${skill.name.toUpperCase()} · ${skill.rarity.toUpperCase()}',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: skill.color, fontWeight: FontWeight.w900)),
+                  Center(child: SkillRarityBadge(skill: skill)),
                   const SizedBox(height: 4),
                   Text(skill.description, textAlign: TextAlign.center,
                     style: const TextStyle(color: Color(0xffd2dced), fontSize: 11)),

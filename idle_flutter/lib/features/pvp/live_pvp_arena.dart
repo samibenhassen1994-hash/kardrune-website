@@ -404,8 +404,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
           textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
         if (skill != null) ...[
           const SizedBox(height: 8),
-          Text('${skill.name.toUpperCase()} · ${skill.rarity.toUpperCase()}',
-            textAlign: TextAlign.center,style: TextStyle(color:skill.color,fontWeight:FontWeight.w900)),
+          Center(child: SkillRarityBadge(skill: skill)),
           Text(skill.description,textAlign: TextAlign.center,
             style: const TextStyle(color: Color(0xffd1dfed),fontSize: 11)),
           Text('${skill.trigger} · ${skill.limit}',textAlign: TextAlign.center,

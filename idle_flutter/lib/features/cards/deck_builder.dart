@@ -273,8 +273,7 @@ class _DeckBuilderState extends State<DeckBuilder> {
             crit:widget.crits[id],skillId:widget.skills[id])),
           Text(id.toUpperCase(),style:const TextStyle(color:KardRuneTheme.gold,fontWeight:FontWeight.w900)),
           if(skill!=null)...[
-            Text('${skill.name.toUpperCase()} · ${skill.rarity.toUpperCase()}',
-              style:TextStyle(color:skill.color,fontWeight:FontWeight.w900)),
+            Center(child: SkillRarityBadge(skill: skill)),
             Text(skill.description,textAlign:TextAlign.center),
             Text('${skill.trigger} · ${skill.limit}',textAlign:TextAlign.center),
             SkillPreviewButton(skill:skill),
