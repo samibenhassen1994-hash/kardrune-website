@@ -1234,26 +1234,51 @@ class _CardsState extends State<_Cards> {
 
   void _openDeck(BuildContext context) => showDialog<void>(
     context: context,
-    builder: (dialogContext) => Dialog(
-      backgroundColor: const Color(0xff101d36),
-      shape: RoundedRectangleBorder(
-        side: const BorderSide(color: Color(0xffd5ad62)),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: SizedBox(
-        width: 430,
-        height: 650,
-        child: DeckBuilder(
-          owned: owned,
-          initial: deck,
-          attacks: attacks,
-          crits: crits,
-          skills: skills,
-          onSave: (value) {
-            onDeck(value);
-            Navigator.pop(dialogContext);
-          },
-        ),
+    useSafeArea: false,
+    builder: (dialogContext) => Dialog.fullscreen(
+      backgroundColor: const Color(0xff0c1528),
+      child: SafeArea(
+        child: Column(children: [
+          Container(
+            decoration: const BoxDecoration(
+              color: Color(0xff101e37),
+              border: Border(bottom: BorderSide(color: Color(0xffb89a61))),
+            ),
+            child: Row(children: [
+              const SizedBox(width: 12),
+              Expanded(child: Text(
+                _t('MODIFICA IL MAZZO', 'EDIT MY DECK'),
+                style: const TextStyle(
+                  fontFamily: 'Georgia', fontSize: 21,
+                  color: Color(0xfff5d28b), fontWeight: FontWeight.w800),
+              )),
+              IconButton(
+                key: const Key('close-deck-editor'),
+                tooltip: _t('Chiudi', 'Close'),
+                onPressed: () => Navigator.pop(dialogContext),
+                icon: const Icon(Icons.close, color: Colors.white, size: 28),
+              ),
+              const SizedBox(width: 8),
+            ]),
+          ),
+          Expanded(child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 850),
+              child: DeckBuilder(
+                italian: title == 'CARTE',
+                owned: owned,
+                initial: deck,
+                attacks: attacks,
+                crits: crits,
+                skills: skills,
+                onSave: (value) {
+                  onDeck(value);
+                  Navigator.pop(dialogContext);
+                },
+              ),
+            ),
+          )),
+        ]),
       ),
     ),
   );

@@ -117,9 +117,11 @@ class SkillRarityBadge extends StatelessWidget {
           );
     return Semantics(
       label: '${skill.name}, ${skill.rarity}',
-      child: Container(
+      child: SizedBox(
+        width: compact ? 124 : 152,
         height: compact ? 13 : 18,
-        padding: EdgeInsets.all(compact ? 1 : 1.5),
+        child: Container(
+          padding: EdgeInsets.all(compact ? 1 : 1.5),
         decoration: BoxDecoration(
           gradient: gradient,
           borderRadius: radius,
@@ -163,6 +165,7 @@ class SkillRarityBadge extends StatelessWidget {
               ),
             ),
           ),
+        ),
         ),
       ),
     );

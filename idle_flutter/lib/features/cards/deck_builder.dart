@@ -14,11 +14,13 @@ class DeckBuilder extends StatefulWidget {
     required this.owned,
     required this.initial,
     required this.onSave,
+    this.italian = false,
     this.attacks = const {},
     this.crits = const {},
     this.skills = const {},
   });
   final List<String> owned, initial;
+  final bool italian;
   final Map<String,int> attacks, crits;
   final Map<String,String> skills;
   final ValueChanged<List<String>> onSave;
@@ -30,6 +32,25 @@ class _DeckBuilderState extends State<DeckBuilder> {
   late List<String?> slots;
   final ScrollController _ownedScroll = ScrollController();
   int? hover;
+  String _t(String it, String en) => widget.italian ? it : en;
+
+  void _removeSlot(int index) =>
+      setState(() => slots = DeckRules.remove(slots, index, widget.owned));
+
+  void _clearDeck() =>
+      setState(() => slots = List<String?>.filled(DeckRules.size, null));
+
+  void _addToDeck(String id) {
+    if (slots.contains(id)) return;
+    if (!slots.contains(null)) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_t('Il mazzo è pieno. Rimuovi una carta.',
+                         'Deck full. Remove a card first.'))));
+      return;
+    }
+    put(id, null);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -53,176 +74,190 @@ class _DeckBuilderState extends State<DeckBuilder> {
   @override
   Widget build(BuildContext context) {
     final reduced = MediaQuery.disableAnimationsOf(context);
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: RadialGradient(
-          center: Alignment(0, -.8),
-          colors: [Color(0xff253b60), Color(0xff0c1528)],
+    return LayoutBuilder(builder: (context, limits) {
+      final slotsHeight = (limits.maxHeight * .44).clamp(188.0, 415.0);
+      final cardColumns = limits.maxWidth >= 650 ? 4 : 2;
+      return Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, -.8),
+            colors: [Color(0xff253b60), Color(0xff0c1528)],
+          ),
         ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
-        child: Column(
-          children: [
-            const Text(
-              'PVP LOADOUT · MY DECK',
-              style: TextStyle(
-                color: KardRuneTheme.gold,
-                fontFamily: 'Georgia',
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 7, 10, 8),
+          child: Column(children: [
+            Row(children: [
+              Expanded(child: Text(
+                _t('MAZZO PVP', 'PVP DECK') + '  ${slots.whereType<String>().length}/9',
+                style: const TextStyle(
+                  color: KardRuneTheme.gold, fontFamily: 'Georgia',
+                  fontSize: 17, fontWeight: FontWeight.bold),
+              )),
+              TextButton.icon(
+                key: const Key('clear-deck'),
+                onPressed: slots.any((id) => id != null) ? _clearDeck : null,
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: Text(_t('SVUOTA TUTTO', 'CLEAR ALL')),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xffffbdac),
+                  textStyle: const TextStyle(fontSize: 11,
+                    fontWeight: FontWeight.w800)),
               ),
-            ),
-            const SizedBox(height: 7),
+            ]),
             SizedBox(
-              height: 240,
-              child: GridView.count(
+              height: slotsHeight,
+              child: GridView.builder(
+                key: const Key('deck-slots-grid'),
                 physics: const NeverScrollableScrollPhysics(),
                 padding: EdgeInsets.zero,
-                crossAxisCount: 3,
-                // Three complete rows within the fixed 240px slot area.
-                childAspectRatio: 1.8,
-                mainAxisSpacing: 5,
-                crossAxisSpacing: 5,
-                children: [
-                  for (var index = 0; index < 9; index++)
-                    DragTarget<String>(
-                      key: ValueKey('deck-slot-$index'),
-                      onWillAcceptWithDetails: (_) {
-                        setState(() => hover = index);
-                        return true;
-                      },
-                      onLeave: (_) => setState(() => hover = null),
-                      onAcceptWithDetails: (details) {
-                        put(details.data, index);
-                        setState(() => hover = null);
-                      },
-                      builder: (context, candidates, rejected) => AnimatedContainer(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  mainAxisExtent: (slotsHeight - 10) / 3,
+                  mainAxisSpacing: 5,
+                  crossAxisSpacing: 5,
+                ),
+                itemCount: DeckRules.size,
+                itemBuilder: (context, index) {
+                  final id = slots[index];
+                  return DragTarget<String>(
+                    key: ValueKey('deck-slot-$index'),
+                    onWillAcceptWithDetails: (_) {
+                      setState(() => hover = index);
+                      return true;
+                    },
+                    onLeave: (_) => setState(() => hover = null),
+                    onAcceptWithDetails: (details) {
+                      put(details.data, index);
+                      setState(() => hover = null);
+                    },
+                    builder: (context, candidates, rejected) =>
+                      AnimatedContainer(
                         key: const Key('deck-slot'),
-                        duration: reduced
-                            ? Duration.zero
-                            : const Duration(milliseconds: 160),
+                        duration: reduced ? Duration.zero :
+                          const Duration(milliseconds: 160),
                         decoration: BoxDecoration(
                           color: hover == index
                               ? Colors.blue.withValues(alpha: .35)
                               : const Color(0x66153b66),
                           border: Border.all(
-                            color: hover == index
-                                ? Colors.lightBlueAccent
-                                : KardRuneTheme.gold,
-                          ),
-                          borderRadius: BorderRadius.circular(9),
+                            color: hover == index ? Colors.lightBlueAccent
+                              : KardRuneTheme.gold),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        child: slots[index] == null
-                            ? Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                        child: id == null
+                            ? Column(mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   const Icon(Icons.add_circle_outline,
                                     color: KardRuneTheme.gold, size: 20),
-                                  const SizedBox(height: 3),
-                                  Text('SLOT ${index + 1}', style: const TextStyle(
-                                    color: Color(0xffffd993), fontSize: 10,
-                                    fontWeight: FontWeight.w800)),
-                                ],
-                              )
-                            : _draggable(
-                                slots[index]!,
-                                onTap: () => setState(
-                                  () => slots = DeckRules.remove(
-                                    slots,
-                                    index,
-                                    widget.owned,
-                                  ),
+                                  Text('SLOT ${index + 1}',
+                                    style: const TextStyle(
+                                      color: Color(0xffffd993),
+                                      fontSize: 10, fontWeight: FontWeight.w800)),
+                                ])
+                            : Stack(fit: StackFit.expand, children: [
+                                _draggable(
+                                  id,
+                                  onTap: () => _removeSlot(index),
+                                  slot: true,
                                 ),
-                                slot: true,
-                              ),
+                                Positioned(top: 1, right: 1,
+                                  child: InkWell(
+                                    key: Key('remove-deck-slot-$index'),
+                                    onTap: () => _removeSlot(index),
+                                    borderRadius: BorderRadius.circular(18),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(2),
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Color(0xe0a53b45),
+                                      ),
+                                      child: const Icon(Icons.close,
+                                        color: Colors.white, size: 15),
+                                    ),
+                                  )),
+                              ]),
                       ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'YOUR CARDS',
-                    style: TextStyle(
-                      color: KardRuneTheme.gold,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: .8,
-                    ),
-                  ),
-                ),
-                Text(
-                  '${widget.owned.length} CARDS',
-                  style: const TextStyle(
-                    color: Color(0xffb9c9dd),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            Expanded(
-              child: Scrollbar(
-                controller: _ownedScroll,
-                thumbVisibility: true,
-                child: GridView.builder(
-                  controller: _ownedScroll,
-                  key: const Key('deck-owned-scroll-grid'),
-                  padding: const EdgeInsets.fromLTRB(2, 2, 8, 10),
-                  physics: const BouncingScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    childAspectRatio: .72,
-                    mainAxisSpacing: 7,
-                    crossAxisSpacing: 7,
-                  ),
-                  itemCount: widget.owned.length,
-                  itemBuilder: (context, index) {
-                    final id = widget.owned[index];
-                    return _draggable(
-                      id,
-                      onTap: () => put(id, null),
-                      slot: false,
-                    );
-                  },
-                ),
+                  );
+                },
               ),
             ),
             const SizedBox(height: 7),
-            GestureDetector(
-              key: const Key('save-deck'),
-              onTap: () => widget.onSave(slots.whereType<String>().toList()),
-              child: Container(
-                width: double.infinity,
-                height: 45,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xfff8dd9d), Color(0xffbc8a3b)],
-                  ),
-                  border: Border.all(color: const Color(0x9cf6dd9b)),
-                  borderRadius: BorderRadius.circular(9),
+            Row(children: [
+              Expanded(child: Text(
+                _t('LE TUE CARTE', 'YOUR CARDS'),
+                style: const TextStyle(
+                  color: KardRuneTheme.gold, fontSize: 12,
+                  fontWeight: FontWeight.w900, letterSpacing: .7),
+              )),
+              Text('${widget.owned.length} ' + _t('CARTE', 'CARDS'),
+                style: const TextStyle(
+                  color: Color(0xffb9c9dd), fontSize: 11,
+                  fontWeight: FontWeight.w700)),
+            ]),
+            const SizedBox(height: 4),
+            Expanded(child: Scrollbar(
+              controller: _ownedScroll,
+              thumbVisibility: true,
+              child: GridView.builder(
+                controller: _ownedScroll,
+                key: const Key('deck-owned-scroll-grid'),
+                padding: const EdgeInsets.fromLTRB(2, 2, 9, 14),
+                physics: const BouncingScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: cardColumns,
+                  childAspectRatio: .73,
+                  mainAxisSpacing: 9,
+                  crossAxisSpacing: 9,
                 ),
-                child: const Text(
-                  'SAVE DECK',
-                  style: TextStyle(
-                    color: Color(0xff251a0c),
-                    fontSize: 11,
-                    letterSpacing: 1,
-                    fontWeight: FontWeight.w800,
-                  ),
+                itemCount: widget.owned.length,
+                itemBuilder: (context, index) {
+                  final id = widget.owned[index];
+                  final hero = KardRuneCatalog.heroes.firstWhere(
+                    (h) => h.id == id.split(':').first);
+                  return Column(children: [
+                    Expanded(child: _draggable(id,
+                      onTap: () => _addToDeck(id), slot: false)),
+                    SizedBox(height: 29, child: Row(children: [
+                      Expanded(child: Text(
+                        '${hero.name.toUpperCase()} · S${id.split(':').last}',
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Color(0xffe8d9b1),
+                          fontSize: 11, fontWeight: FontWeight.w800))),
+                      InkWell(
+                        key: Key('add-deck-card-$id'),
+                        onTap: () => _addToDeck(id),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 4),
+                          child: Icon(Icons.add_circle,
+                            color: KardRuneTheme.gold, size: 23)),
+                      ),
+                    ])),
+                  ]);
+                },
+              ),
+            )),
+            const SizedBox(height: 6),
+            SizedBox(height: 46, width: double.infinity,
+              child: ElevatedButton(
+                key: const Key('save-deck'),
+                onPressed: () =>
+                  widget.onSave(slots.whereType<String>().toList()),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xffe6be77),
+                  foregroundColor: const Color(0xff241b12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(9)),
                 ),
+                child: Text(_t('SALVA MAZZO', 'SAVE DECK'),
+                  style: const TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w900)),
               ),
             ),
-          ],
+          ]),
         ),
-      ),
-    );
+      );
+    });
   }
   Widget _draggable(
     String id, {
@@ -239,7 +274,7 @@ class _DeckBuilderState extends State<DeckBuilder> {
       compact: slot,
       imageCacheWidth: slot ? 220 : 420,
     );
-    return Draggable<String>(
+    return LongPressDraggable<String>(
       data: id,
       feedback: Material(
         type: MaterialType.transparency,
