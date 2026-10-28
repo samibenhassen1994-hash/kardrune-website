@@ -9,6 +9,7 @@ on:
       - feature/idle-pvp-reward-readable-combat
       - fix/idle-pvp-iphone-animation-lag
       - feature/idle-pvp-projectiles-bestof3-complete
+      - feature/idle-pvp-slash-sprite
     paths:
       - 'idle_flutter/**'
       - '.github/workflows/idle-flutter-summon.yml'
