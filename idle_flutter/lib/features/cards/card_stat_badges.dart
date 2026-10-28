@@ -57,16 +57,16 @@ class CharacterCardArt extends StatelessWidget {
             Positioned(
               left: 4,
               right: 4,
-              top: 0,
-              bottom: 0,
+              bottom: compact ? 5 : 18,
               child: IgnorePointer(
-                child: Align(
-                  alignment: const Alignment(0, .58),
-                  child: LayoutBuilder(builder: (context, limits) => ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: limits.maxWidth * (compact ? .74 : .70)),
-                    child: SkillRarityBadge(skill: skill, compact: compact),
-                  )),
+                child: SizedBox(
+                  height: compact ? 15 : 24,
+                  child: Center(
+                    child: FractionallySizedBox(
+                      widthFactor: compact ? .73 : .72,
+                      child: SkillRarityBadge(skill: skill, compact: compact),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -106,7 +106,7 @@ class SkillRarityBadge extends StatelessWidget {
     return Semantics(
       label: '${skill.name}, ${skill.rarity}',
       child: Container(
-        padding: EdgeInsets.all(compact ? 1.2 : 1.7),
+        padding: EdgeInsets.all(compact ? 1 : 1.5),
         decoration: BoxDecoration(
           gradient: gradient,
           borderRadius: radius,
@@ -119,7 +119,7 @@ class SkillRarityBadge extends StatelessWidget {
         ),
         child: Container(
           padding: EdgeInsets.symmetric(
-              horizontal: compact ? 3 : 7, vertical: compact ? 3 : 5),
+              horizontal: compact ? 3 : 5, vertical: 0),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(compact ? 4 : 6),
             gradient: LinearGradient(colors: [
@@ -129,26 +129,27 @@ class SkillRarityBadge extends StatelessWidget {
             border: Border.all(color: Colors.white.withValues(alpha: .60),
                 width: .6),
           ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.diamond_outlined, color: Colors.white,
-                size: compact ? 7 : 10),
-            const SizedBox(width: 3),
-            Flexible(child: Center(child: FittedBox(
+          child: Center(
+            child: FittedBox(
               fit: BoxFit.scaleDown,
-              child: Text(skill.name.toUpperCase(), maxLines: 1,
-                softWrap: false, textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white,
-                  fontSize: compact ? 9 : 12, fontWeight: FontWeight.w900,
-                  letterSpacing: compact ? .1 : .4,
+              child: Text(
+                skill.name.toUpperCase(),
+                maxLines: 1,
+                softWrap: false,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: compact ? 9 : 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: compact ? .1 : .35,
                   shadows: [
                     Shadow(color: color, blurRadius: 6),
                     const Shadow(color: Color(0xff000000), blurRadius: 2),
-                  ])),
-            ))),
-            const SizedBox(width: 3),
-            Icon(Icons.diamond_outlined, color: Colors.white,
-                size: compact ? 7 : 10),
-          ]),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
