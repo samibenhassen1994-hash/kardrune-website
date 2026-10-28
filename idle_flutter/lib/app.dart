@@ -1475,7 +1475,7 @@ class _RuneButton extends StatelessWidget {
   );
 }
 
-class _Cards extends StatelessWidget {
+class _Cards extends StatefulWidget {
   const _Cards({
     required this.page,
     required this.title,
@@ -1500,190 +1500,158 @@ class _Cards extends StatelessWidget {
   final ValueChanged<List<String>> onDeck;
   final ValueChanged<String> onSelect;
   @override
+  State<_Cards> createState() => _CardsState();
+}
+
+class _CardsState extends State<_Cards> {
+  final TextEditingController query = TextEditingController();
+  String ownership = 'owned', rarity = 'all', stageFilter = 'all', skillFilter = 'all', sort = 'atk';
+  bool expandedFilters = false;
+  String get title => widget.title;
+  List<String> get owned => widget.owned;
+  List<String> get deck => widget.deck;
+  String get active => widget.active;
+  Map<String, int> get attacks => widget.attacks;
+  Map<String, int> get crits => widget.crits;
+  Map<String, String> get skills => widget.skills;
+  ValueChanged<List<String>> get onDeck => widget.onDeck;
+  ValueChanged<String> get onSelect => widget.onSelect;
+  @override
+  void initState() {super.initState(); query.addListener(_changed);}
+  void _changed() {if(mounted) setState((){});}
+  @override
+  void dispose() {query.removeListener(_changed);query.dispose();super.dispose();}
+  void reset() {query.clear();setState(() {
+    ownership='owned';rarity='all';stageFilter='all';skillFilter='all';sort='atk';expandedFilters=false;
+  });}
+  @override
   Widget build(BuildContext context) {
-    final all = [
-      for (final h in KardRuneCatalog.heroes)
-        for (var s = 1; s <= 3; s++) MapEntry(h, s),
-    ];
-    final slice = all.skip(page * 4).take(4);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(19, 12, 19, 8),
-      child: Column(
-        children: [
-          Text(
-            title == 'CARTE' ? 'LE TUE CARTE' : 'YOUR CARDS',
-            style: const TextStyle(
-              fontFamily: 'Georgia',
-              fontSize: 27,
-              fontWeight: FontWeight.w700,
-              color: Color(0xfff9f4e9),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(
-              color: const Color(0xff101d36),
-              border: Border.all(color: const Color(0x66dfbe77)),
-              borderRadius: BorderRadius.circular(13),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '⚔ PVP LOADOUT',
-                  style: TextStyle(
-                    color: Color(0xffa0b0c8),
-                    fontSize: 8,
-                    letterSpacing: 1.1,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const Text(
-                  'MY DECK',
-                  style: TextStyle(
-                    fontFamily: 'Georgia',
-                    color: Color(0xfff5d28b),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    for (var i = 0; i < 9; i++)
-                      Expanded(
-                        child: AspectRatio(
-                          aspectRatio: .72,
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 1),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: const Color(0xff0b172f),
-                              border: Border.all(
-                                color: const Color(0x667a89a6),
-                              ),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: i < deck.length
-                                ? CharacterCardArt(
-                                    asset: _assetForId(deck[i]),
-                                    hp: CombatRules.hpForStage(int.parse(deck[i].split(':').last)),
-                                    attack: attacks[deck[i]], crit: crits[deck[i]],
-                                    skillId: skills[deck[i]], compact: true,
-                                  )
-                                : Text(
-                                    '${i + 1}'.padLeft(2, '0'),
-                                    style: const TextStyle(
-                                      color: Color(0xff71819c),
-                                      fontSize: 7,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                _RuneButton(
-                  onTap: () => _openDeck(context),
-                  label: '✦  EDIT DECK IN CARDS',
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 9),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xff1c3252), Color(0xff0c182e)],
-              ),
-              border: Border.all(color: const Color(0x54bca766)),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'COLLECTION PROGRESS',
-                  style: TextStyle(
-                    color: Color(0xffafc2d6),
-                    letterSpacing: 1.2,
-                    fontSize: 8,
-                  ),
-                ),
-                Text(
-                  '${owned.length} / 27 CARDS',
-                  style: const TextStyle(
-                    fontFamily: 'Georgia',
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: owned.length / 27,
-                    minHeight: 6,
-                    backgroundColor: const Color(0xff071025),
-                    color: const Color(0xfff4d38c),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              _FilterLabel('ALL HEROES', active: page == 0),
-              const SizedBox(width: 6),
-              _FilterLabel('OWNED', active: true),
-              const SizedBox(width: 6),
-              _FilterLabel('BY RARITY'),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) => GridView.builder(
-                padding: EdgeInsets.zero,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisExtent: (constraints.maxHeight - 6) / 2,
-                  mainAxisSpacing: 6,
-                  crossAxisSpacing: 6,
-                ),
-                itemCount: slice.length,
-                itemBuilder: (context, index) {
-                  final item = slice.elementAt(index);
-                  return _card(context, item.key, item.value);
-                },
-              ),
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: page > 0 ? () => onPage(page - 1) : null,
-                icon: const Icon(Icons.chevron_left),
-              ),
-              Text('${page + 1} / 7'),
-              IconButton(
-                onPressed: page < 6 ? () => onPage(page + 1) : null,
-                icon: const Icon(Icons.chevron_right),
-              ),
-            ],
-          ),
+    final all = [for(final h in KardRuneCatalog.heroes)
+      for(var s=1;s<=3;s++) MapEntry(h,s)];
+    final found = all.where((card) {
+      final id = '${card.key.id}:${card.value}';
+      final isOwned = owned.contains(id);
+      final skill = SkillCatalog.byId(skills[id]);
+      if(ownership=='owned'&&!isOwned || ownership=='missing'&&isOwned)return false;
+      if(stageFilter!='all'&&card.value.toString()!=stageFilter)return false;
+      if(rarity!='all'&&skill?.rarity!=rarity)return false;
+      if(skillFilter!='all'&&skill?.id!=skillFilter)return false;
+      final q=query.text.trim().toLowerCase();
+      return q.isEmpty || card.key.name.toLowerCase().contains(q)
+        || (skill?.name.toLowerCase().contains(q)??false)
+        || (skill?.description.toLowerCase().contains(q)??false);
+    }).toList();
+    found.sort((a,b){
+      final ai='${a.key.id}:${a.value}',bi='${b.key.id}:${b.value}';
+      final ao=owned.contains(ai),bo=owned.contains(bi);
+      if(ao!=bo)return ao?-1:1;
+      final result=switch(sort){
+        'atk'=>(attacks[bi]??-1).compareTo(attacks[ai]??-1),
+        'crit'=>(crits[bi]??-1).compareTo(crits[ai]??-1),
+        'stage'=>b.value.compareTo(a.value),
+        'rarity'=>SkillCatalog.rarities.indexOf(SkillCatalog.byId(skills[bi])?.rarity??'common')
+          .compareTo(SkillCatalog.rarities.indexOf(SkillCatalog.byId(skills[ai])?.rarity??'common')),
+        _=>a.key.name.compareTo(b.key.name),
+      };
+      return result!=0?result:ai.compareTo(bi);
+    });
+    return Padding(padding:const EdgeInsets.fromLTRB(12,8,12,5),
+      child:Column(children:[
+        Row(children:[
+          Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text(title=='CARTE'?'LE TUE CARTE':'YOUR CARDS',style:const TextStyle(
+              fontFamily:'Georgia',fontSize:23,fontWeight:FontWeight.w800,color:Color(0xffffd892))),
+            Text('${owned.length}/27 owned · ${deck.length}/9 in deck',
+              style:const TextStyle(color:Color(0xffaabbd2),fontSize:11)),
+          ])),
+          OutlinedButton.icon(key:const Key('collection-edit-deck'),
+            onPressed:()=>_openDeck(context),
+            icon:const Icon(Icons.style_outlined,size:16),label:const Text('EDIT DECK'),
+            style:OutlinedButton.styleFrom(foregroundColor:const Color(0xffffd892),
+              side:const BorderSide(color:Color(0xffbba069)),
+              textStyle:const TextStyle(fontSize:10,fontWeight:FontWeight.w900))),
+        ]),
+        const SizedBox(height:8),
+        TextField(key:const Key('collection-search'),controller:query,
+          style:const TextStyle(color:Colors.white,fontSize:14),
+          decoration:InputDecoration(isDense:true,filled:true,fillColor:const Color(0xff162741),
+            prefixIcon:const Icon(Icons.search,color:Color(0xffffd892)),
+            suffixIcon:query.text.isNotEmpty?IconButton(onPressed:query.clear,
+              icon:const Icon(Icons.close,color:Colors.white)):null,
+            hintText:'Search hero or skill...',hintStyle:const TextStyle(color:Color(0xffb4c4d6)),
+            contentPadding:const EdgeInsets.symmetric(vertical:11),
+            border:OutlineInputBorder(borderRadius:BorderRadius.circular(10)))),
+        const SizedBox(height:6),
+        Row(children:[
+          for(final item in const [('owned','OWNED'),('all','ALL'),('missing','LOCKED')])
+            Padding(padding:const EdgeInsets.only(right:5),child:ChoiceChip(
+              label:Text(item.$2),selected:ownership==item.$1,showCheckmark:false,
+              onSelected:(_)=>setState(()=>ownership=item.$1),
+              visualDensity:VisualDensity.compact,
+              labelStyle:const TextStyle(fontSize:9,color:Colors.white,fontWeight:FontWeight.bold),
+              selectedColor:const Color(0xff795d2c),backgroundColor:const Color(0xff1b2c46))),
+          const Spacer(),
+          IconButton(key:const Key('collection-toggle-filters'),tooltip:'Advanced filters',
+            onPressed:()=>setState(()=>expandedFilters=!expandedFilters),
+            icon:Icon(expandedFilters?Icons.tune:Icons.filter_list,color:const Color(0xffffd892))),
+        ]),
+        if(expandedFilters)...[
+          Row(children:[
+            Expanded(child:_dropdown(stageFilter,const [
+              ('all','ALL STAGES'),('1','STAGE 1'),('2','STAGE 2'),('3','STAGE 3')],
+              (v)=>setState(()=>stageFilter=v))),
+            const SizedBox(width:6),
+            Expanded(child:_dropdown(rarity,const [
+              ('all','ALL RARITIES'),('common','COMMON'),('uncommon','UNCOMMON'),
+              ('rare','RARE'),('epic','EPIC'),('legendary','LEGENDARY'),('ultra','ULTRA')],
+              (v)=>setState((){rarity=v;skillFilter='all';}))),
+          ]),
+          const SizedBox(height:5),
+          _dropdown(skillFilter,[
+            const ('all','ALL SKILLS'),
+            for(final skill in SkillCatalog.skills)
+              if(rarity=='all'||skill.rarity==rarity)(skill.id,skill.name.toUpperCase()),
+          ],(v)=>setState(()=>skillFilter=v)),
         ],
-      ),
-    );
+        Row(children:[
+          Expanded(child:_dropdown(sort,const [
+            ('atk','ATK HIGH → LOW'),('crit','CRIT HIGH → LOW'),
+            ('rarity','SKILL RARITY'),('stage','STAGE HIGH → LOW'),('name','NAME A–Z')],
+            (v)=>setState(()=>sort=v))),
+          const SizedBox(width:6),
+          Text('${found.length} RESULTS',style:const TextStyle(fontSize:10,color:Color(0xffb9cadf))),
+          IconButton(onPressed:reset,tooltip:'Reset filters',visualDensity:VisualDensity.compact,
+            icon:const Icon(Icons.restart_alt,color:Color(0xffffd892),size:20)),
+        ]),
+        const SizedBox(height:4),
+        Expanded(child:found.isEmpty?Center(child:TextButton(
+          onPressed:reset,child:const Text('No cards found · RESET FILTERS')))
+          :GridView.builder(
+            key:const Key('collection-scroll-grid'),
+            keyboardDismissBehavior:ScrollViewKeyboardDismissBehavior.onDrag,
+            padding:const EdgeInsets.only(bottom:14),
+            gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount:2,childAspectRatio:.68,mainAxisSpacing:9,crossAxisSpacing:9),
+            itemCount:found.length,
+            itemBuilder:(context,index){
+              final card=found[index];
+              return _card(context,card.key,card.value);
+            })),
+      ]));
   }
+
+  Widget _dropdown(String value,List<(String,String)> options,ValueChanged<String> change)=>
+    Container(padding:const EdgeInsets.symmetric(horizontal:8),
+      decoration:BoxDecoration(color:const Color(0xff172a45),
+        border:Border.all(color:const Color(0xff586880)),
+        borderRadius:BorderRadius.circular(7)),
+      child:DropdownButtonHideUnderline(child:DropdownButton<String>(
+        value:value,isExpanded:true,isDense:true,dropdownColor:const Color(0xff182940),
+        style:const TextStyle(color:Colors.white,fontSize:10,fontWeight:FontWeight.w800),
+        items:[for(final item in options)DropdownMenuItem<String>(
+          value:item.$1,child:Text(item.$2,maxLines:1,overflow:TextOverflow.ellipsis))],
+        onChanged:(v){if(v!=null)change(v);},
+      )));
 
   String _assetForId(String id) {
     final parts = id.split(':');
@@ -1796,10 +1764,10 @@ class _Cards extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
         ),
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: 390,
-            maxHeight: MediaQuery.sizeOf(dialogContext).height * .9),
+          constraints: BoxConstraints(maxWidth: 470,
+            maxHeight: MediaQuery.sizeOf(dialogContext).height * .94),
           child: Padding(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(10),
             child: SingleChildScrollView(child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1840,7 +1808,7 @@ class _Cards extends StatelessWidget {
                   const SizedBox(height: 8),
                 ],
                 Text(
-                  isOwned ? 'SELECTED CHAMPION' : 'NOT COLLECTED',
+                  isOwned ? (active == id ? 'ACTIVE CHAMPION' : 'OWNED CARD') : 'NOT COLLECTED',
                   style: TextStyle(
                     color: isOwned
                         ? const Color(0xff7fd7c3)
