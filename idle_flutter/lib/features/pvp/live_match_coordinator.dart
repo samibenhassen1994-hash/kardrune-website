@@ -16,7 +16,7 @@ class LiveMatchCoordinator extends ChangeNotifier {
   LiveMatchCoordinator({
     required this.repository,
     required this.connect,
-    Duration hitDuration = const Duration(milliseconds: 1250),
+    Duration hitDuration = const Duration(milliseconds: 940),
   }) : arena = ArenaViewController(hitDuration: hitDuration) {
     arena.onReady = ready;
   }

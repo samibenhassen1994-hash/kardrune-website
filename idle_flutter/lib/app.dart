@@ -355,6 +355,7 @@ class _IdleShellState extends State<IdleShell> {
               Positioned.fill(
                 child: LivePvpArena(
                   controller: _pvp!.arena,
+                  audio: _flameAudio,
                   onPlay: _pvp!.play,
                   onReady: _pvp!.ready,
                   onComplete: () {

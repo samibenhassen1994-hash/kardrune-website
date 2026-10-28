@@ -9,6 +9,50 @@ const cards = [
   PvpCard(id: 'dren:1', hero: 'dren', stage: 1, attack: 65, crit: 7),
 ];
 void main() {
+  testWidgets('live hand fits a large iPhone viewport', (tester) async {
+    tester.view.physicalSize = const Size(430, 932);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final c = ArenaViewController();
+    await tester.pumpWidget(MaterialApp(home: LivePvpArena(
+      controller: c, onPlay: (_) {}, onReady: () {})));
+    c.startHand(const HandEvent(round: 1, opponent: 'Rival', score: [0, 0],
+      hand: cards, deckSize: 9, usedCount: 0, durationMs: 30000,
+      deadline: 30000, matchId: 'large'));
+    await tester.pump(const Duration(milliseconds: 1100));
+    expect(find.byKey(const Key('hand-card')), findsNWidgets(3));
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('live hand and Flame stage fit a small iPhone viewport', (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final c = ArenaViewController(hitDuration: const Duration(milliseconds: 940));
+    await tester.pumpWidget(MaterialApp(home: LivePvpArena(
+      controller: c, onPlay: (_) {}, onReady: () {})));
+    c.startHand(const HandEvent(round: 1, opponent: 'Rival', score: [0, 0],
+      hand: cards, deckSize: 9, usedCount: 0, durationMs: 30000,
+      deadline: 30000, matchId: 'small'));
+    await tester.pump(const Duration(milliseconds: 1100));
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('deck-pile-bottom')), findsOneWidget);
+    expect(find.byKey(const Key('discard-count-pile')), findsOneWidget);
+    final replay = c.replay({'winner': 0, 'round': 1, 'score': [1, 0],
+      'cards': [
+        {'id': 'sam:1', 'hero': 'sam', 'stage': 1, 'attack': 40, 'crit': 4},
+        {'id': 'dren:1', 'hero': 'dren', 'stage': 1, 'attack': 65, 'crit': 7},
+      ],
+      'log': [{'actor': 0, 'damage': 40, 'critical': false, 'hp': 200}],
+    });
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.byType(LiveFlameBattleStage), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 3));
+    await replay;
+  });
   testWidgets('two round wins display final result until COMPLETE', (tester) async {
     final c = ArenaViewController(hitDuration: Duration.zero);
     var completed = false;
@@ -59,7 +103,7 @@ void main() {
     expect(find.text('240'), findsNWidgets(3));
     expect(find.byKey(const Key('battle-card-frame-sam:1')), findsOneWidget);
   });
-  testWidgets('tap selects once and automatic lock is explained', (
+  testWidgets('tap enlarges card and PLAY CARD selects once', (
     tester,
   ) async {
     final c = ArenaViewController();
@@ -84,6 +128,10 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 1200));
     await tester.tap(find.byKey(const ValueKey('hand-sam:1')));
+    await tester.pump();
+    expect(find.text('STAGE 1  ·  ATK 40  ·  CRIT 4%  ·  HP 240'), findsOneWidget);
+    expect(played, isEmpty);
+    await tester.tap(find.text('PLAY CARD'));
     await tester.pump();
     expect(played, ['sam:1']);
     c.lock('sam:1', automatic: true);
@@ -132,7 +180,7 @@ void main() {
     });
     await tester.pump(const Duration(milliseconds: 570));
     await tester.pump(const Duration(milliseconds: 130));
-    expect(find.textContaining('CRITICAL!'), findsOneWidget);
+    expect(c.effect, contains('CRITICAL!'));
     await tester.pump(const Duration(seconds: 2));
     expect(find.textContaining('ROUND WON'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));

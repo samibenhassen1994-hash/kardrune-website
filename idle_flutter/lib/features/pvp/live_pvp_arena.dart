@@ -2,11 +2,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flame/game.dart';
 
 import '../../game/catalog.dart';
 import '../../game/combat_rules.dart';
 import '../../services/live_pvp_socket.dart';
 import '../cards/card_stat_badges.dart';
+import 'flame_battle_audio.dart';
+import 'live_flame_battle.dart';
 
 class ArenaViewController extends ChangeNotifier {
   ArenaViewController({this.hitDuration = const Duration(milliseconds: 650)});
@@ -22,6 +25,8 @@ class ArenaViewController extends ChangeNotifier {
   bool _replaying = false;
   bool battleStarted = false;
   int hitSerial = 0;
+  int lastDamage = 0;
+  bool lastCritical = false;
   String actionText = '';
   bool attackWindup = false;
   bool matchFinished = false;
@@ -41,6 +46,8 @@ class ArenaViewController extends ChangeNotifier {
     automatic = false;
     battleStarted = false;
     hitSerial = 0;
+    lastDamage = 0;
+    lastCritical = false;
     actionText = '';
     attackWindup = false;
     _replaying = false;
@@ -101,7 +108,6 @@ class ArenaViewController extends ChangeNotifier {
     popup = null;
     notifyListeners();
     for (final raw in (json['log'] as List? ?? const [])) {
-      await Future<void>.delayed(hitDuration);
       if (token != generation) return;
       final log = Map<String, dynamic>.from(raw as Map);
       attackActor = log['actor'] as int? ?? -1;
@@ -109,7 +115,7 @@ class ArenaViewController extends ChangeNotifier {
       attackWindup = true;
       hitSerial++;
       notifyListeners();
-      await Future<void>.delayed(hitDuration >= const Duration(milliseconds: 600) ? const Duration(milliseconds: 440) : Duration.zero);
+      await Future<void>.delayed(hitDuration);
       if (token != generation) return;
       attackWindup = false;
       if (attackActor == 0) {
@@ -120,7 +126,10 @@ class ArenaViewController extends ChangeNotifier {
       effect = log['critical'] == true
           ? 'CRITICAL!  -${log['damage']} HP'
           : '-${log['damage']} HP';
+      lastDamage = log['damage'] as int;
+      lastCritical = log['critical'] == true;
       notifyListeners();
+      if (hitDuration > Duration.zero) await Future<void>.delayed(const Duration(milliseconds: 390));
     }
     if (token != generation) return;
     actionText = 'ROUND COMPLETE';
@@ -170,6 +179,8 @@ class ArenaViewController extends ChangeNotifier {
     attackWindup = false;
     actionText = '';
     _replaying = false;
+    lastDamage = 0;
+    lastCritical = false;
     seconds = 30;
     notifyListeners();
   }
@@ -198,17 +209,20 @@ class LivePvpArena extends StatefulWidget {
     required this.controller,
     required this.onPlay,
     required this.onReady,
+    this.audio,
     this.onComplete,
   });
   final ArenaViewController controller;
   final ValueChanged<String> onPlay;
   final VoidCallback onReady;
+  final FlameBattleAudio? audio;
   final VoidCallback? onComplete;
   @override
   State<LivePvpArena> createState() => _LivePvpArenaState();
 }
 
 class _LivePvpArenaState extends State<LivePvpArena> {
+  late final FlameBattleAudio _audio = widget.audio ?? createFlameBattleAudio();
   int dealt = 0, seenGeneration = -1;
   final _deals = <Timer>[];
   @override
@@ -252,20 +266,46 @@ class _LivePvpArenaState extends State<LivePvpArena> {
     }
     widget.controller.removeListener(_changed);
     widget.controller.detachView();
+    if (widget.audio == null) _audio.dispose();
     super.dispose();
   }
 
   void _play(String id) {
+    _audio.unlock();
     if (widget.controller.select(id)) widget.onPlay(id);
+  }
+
+  void _inspect(PvpCard card) {
+    _audio.unlock();
+    final hero = KardRuneCatalog.heroes.firstWhere((item) => item.id == card.hero);
+    showDialog<void>(context: context, builder: (dialogContext) => Dialog(
+      backgroundColor: const Color(0xff111e35),
+      shape: RoundedRectangleBorder(side: const BorderSide(color: Color(0xffd5ae61)),
+        borderRadius: BorderRadius.circular(12)),
+      child: Padding(padding: const EdgeInsets.all(14), child: Column(
+        mainAxisSize: MainAxisSize.min, children: [
+        Text(hero.name.toUpperCase(), style: const TextStyle(color: Color(0xffffd993),
+          fontSize: 18, fontWeight: FontWeight.w900)),
+        Text(hero.element.toUpperCase(), style: const TextStyle(color: Color(0xffb7cceb), fontSize: 11)),
+        const SizedBox(height: 10),
+        _BattleCard(card: card, selected: false, width: 220, height: 290),
+        const SizedBox(height: 12),
+        Text('STAGE ${card.stage}  ·  ATK ${card.attack}  ·  CRIT ${card.crit}%  ·  HP ${CombatRules.hpForStage(card.stage)}',
+          textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
+        const SizedBox(height: 12),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CLOSE')),
+          if (widget.controller.lockedCard == null) TextButton(
+            onPressed: () { Navigator.pop(dialogContext); _play(card.id); },
+            child: const Text('PLAY CARD')),
+        ]),
+      ]))));
   }
 
   @override
   Widget build(BuildContext context) {
     final c = widget.controller;
     final reduced = MediaQuery.disableAnimationsOf(context);
-    // On mobile Safari, moving full textured cards forces expensive repaints.
-    // Keep the readable hit text but use static artwork and lightweight indicators.
-    final motionDuration = reduced ? Duration.zero : const Duration(milliseconds: 120);
     final cards = c.hand?.hand ?? const <PvpCard>[];
     final battle = c.battleStarted && c.playerCard != null && c.opponentCard != null;
     final choosing = c.hand != null && c.lockedCard == null && !c.battleStarted;
@@ -319,11 +359,17 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                 DragTarget<String>(key: const Key('play-zone'),
                   onWillAcceptWithDetails: (_) => choosing,
                   onAcceptWithDetails: (details) => _play(details.data),
-                  builder: (context, candidate, rejected) => _slot(
-                    c.lockedCard == null ? 'YOUR CARD SLOT' : 'CARD LOCKED',
-                    c.lockedCard == null ? 'DRAG HERE OR TAP A CARD' : 'Waiting for opponent',
-                    candidate.isNotEmpty ? Colors.greenAccent : const Color(0xffd5ae61),
-                    const Key('player-play-zone'))),
+                  builder: (context, candidate, rejected) {
+                    final selected = c.lockedCard == null ? null : cards.where((card) => card.id == c.lockedCard).firstOrNull;
+                    if (selected != null) {
+                      return Container(key: const Key('player-play-zone'), height: bounds.maxHeight < 620 ? 90 : 104,
+                        alignment: Alignment.center,
+                        child: _BattleCard(card: selected, selected: true, width: 70, height: 98));
+                    }
+                    return _slot('YOUR CARD SLOT', 'DRAG A CARD HERE',
+                      candidate.isNotEmpty ? Colors.greenAccent : const Color(0xffd5ae61),
+                      const Key('player-play-zone'));
+                  }),
               ]),
               if (battle && !c.matchFinished) Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                 const Text('BATTLE ARENA', style: TextStyle(color: Color(0xffffd993), fontWeight: FontWeight.bold, letterSpacing: 2)),
@@ -331,15 +377,9 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                 Text(c.actionText, key: const Key('pvp-attack-direction'), textAlign: TextAlign.center,
                   style: const TextStyle(color: Color(0xffffe2a4), fontSize: 15, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 5),
-                Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                  Expanded(child: _fighter(c.playerCard!, c.playerHp, c.attackActor == 0 && c.attackWindup, c.hitSerial, motionDuration, 'you', c.attackActor == 1 && !c.attackWindup)),
-                  const SizedBox(width: 45, child: Center(child: Text('VS', style: TextStyle(fontSize: 23, color: Color(0xffffd993), fontWeight: FontWeight.bold)))),
-                  Expanded(child: _fighter(c.opponentCard!, c.opponentHp, c.attackActor == 1 && c.attackWindup, c.hitSerial, motionDuration, 'rival', c.attackActor == 0 && !c.attackWindup)),
-                ]),
-                const SizedBox(height: 5),
-                if (c.effect != null) Text(c.effect!, key: ValueKey(c.hitSerial), style: TextStyle(
-                    fontSize: 24, fontWeight: FontWeight.w900,
-                    color: c.effect!.startsWith('CRITICAL!') ? const Color(0xffffd56c) : const Color(0xffff8787))),
+                SizedBox(height: bounds.maxHeight < 620 ? 165 : 250,
+                  child: LiveFlameBattleStage(key: ValueKey('live-battle-${c.generation}'),
+                    controller: c, audio: _audio)),
               ]),
               if (c.matchFinished) Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Text(c.matchWinner == 'you' ? 'VICTORY' : c.matchWinner == 'opponent' ? 'DEFEAT' : 'DRAW',
@@ -379,16 +419,38 @@ class _LivePvpArenaState extends State<LivePvpArena> {
               const SizedBox(height: 7),
               SizedBox(height: bounds.maxHeight < 620 ? 95 : 124,
                 child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                  for (final card in handCards) Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4),
+                  SizedBox(width: 46, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    const Icon(Icons.inventory_2_outlined, color: Color(0xffd5ae61)),
+                    Text('${c.used.length}', key: const Key('discard-count-pile'),
+                      style: const TextStyle(color: Color(0xffffd993), fontWeight: FontWeight.bold)),
+                    const Text('USED', style: TextStyle(fontSize: 9)),
+                  ])),
+                  for (var index = 0; index < handCards.length; index++) Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2),
                     child: GestureDetector(key: const Key('hand-card'),
-                      onTap: choosing ? () => _play(card.id) : null,
+                      onTap: () => _inspect(handCards[index]),
                       child: Draggable<String>(
-                        data: card.id, maxSimultaneousDrags: choosing ? 1 : 0,
+                        data: handCards[index].id, maxSimultaneousDrags: choosing ? 1 : 0,
                         feedback: Material(color: Colors.transparent,
-                          child: _BattleCard(card: card, selected: true)),
-                        childWhenDragging: Opacity(opacity: .3, child: _BattleCard(card: card, selected: false)),
-                        child: _BattleCard(key: ValueKey('hand-' + card.id), card: card, selected: false))))),
+                          child: _BattleCard(card: handCards[index], selected: true)),
+                        childWhenDragging: Opacity(opacity: .3, child: _BattleCard(card: handCards[index], selected: false,
+                          width: bounds.maxHeight < 620 ? 65 : 88, height: bounds.maxHeight < 620 ? 90 : 122)),
+                        child: AnimatedSlide(duration: reduced ? Duration.zero : const Duration(milliseconds: 380),
+                          curve: Curves.easeOutCubic,
+                          offset: index < dealt ? Offset.zero : const Offset(1.5, -.9),
+                          child: AnimatedOpacity(duration: reduced ? Duration.zero : const Duration(milliseconds: 300),
+                            opacity: index < dealt ? 1 : 0,
+                            child: _BattleCard(key: ValueKey('hand-${handCards[index].id}'),
+                              card: handCards[index], selected: false,
+                              width: bounds.maxHeight < 620 ? 65 : 88,
+                              height: bounds.maxHeight < 620 ? 90 : 122))))))),
                   if (handCards.isEmpty) const Expanded(child: Center(child: Text('CARD LOCKED / DISCARDED'))),
+                  SizedBox(width: 46, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    const Icon(Icons.layers_outlined, key: Key('deck-pile-bottom'),
+                      color: Color(0xffd5ae61), size: 30),
+                    Text('${c.hand == null ? 0 : (c.hand!.deckSize - c.used.length).clamp(0, 99)}',
+                      style: const TextStyle(color: Color(0xffffd993), fontWeight: FontWeight.bold)),
+                    const Text('DECK', style: TextStyle(fontSize: 9)),
+                  ])),
                 ])),
               if (c.automatic) const Text('TIME EXPIRED — RANDOM CARD SELECTED',
                 style: TextStyle(color: Colors.orangeAccent, fontSize: 11)),
@@ -401,7 +463,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
     );
   }
   Widget _slot(String title, String detail, Color accent, Key key) => Container(
-    key: key, height: 104, width: double.infinity,
+    key: key, height: MediaQuery.sizeOf(context).height < 620 ? 90 : 104, width: double.infinity,
     margin: const EdgeInsets.symmetric(horizontal: 18),
     decoration: BoxDecoration(color: const Color(0xff182940),
       border: Border.all(color: accent, width: 2), borderRadius: BorderRadius.circular(13)),
@@ -412,23 +474,90 @@ class _LivePvpArenaState extends State<LivePvpArena> {
       Text(detail, style: const TextStyle(color: Color(0xffb3c7dd), fontSize: 11)),
     ]));
 
-  Widget _fighter(PvpCard card, int hp, bool attacking, int serial, Duration duration, String side, bool hit) =>
-    Column(mainAxisSize: MainAxisSize.min, children: [
-      Text(side == 'you' ? 'YOU' : 'RIVAL',
-        style: const TextStyle(color: Color(0xffd9e4f2), fontWeight: FontWeight.bold)),
-      const SizedBox(height: 6),
-      RepaintBoundary(child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: hit ? Colors.redAccent : attacking ? Colors.amberAccent : Colors.transparent, width: 2),
-          borderRadius: BorderRadius.circular(10)),
-        child: _BattleCard(card: card, selected: false,
-          width: MediaQuery.sizeOf(context).width < 360 ? 104 : 135,
-          height: MediaQuery.sizeOf(context).height < 900 ? 128 : 175, hp: hp))),
-      const SizedBox(height: 6),
-      Text(hp.toString() + ' HP', key: Key('pvp-' + side + '-hp'),
-        style: const TextStyle(color: Color(0xff88c9ff), fontSize: 13, fontWeight: FontWeight.w900)),
-    ]);
+}
 
+class LiveFlameBattleStage extends StatefulWidget {
+  const LiveFlameBattleStage({super.key, required this.controller, required this.audio});
+  final ArenaViewController controller;
+  final FlameBattleAudio audio;
+  @override
+  State<LiveFlameBattleStage> createState() => _LiveFlameBattleStageState();
+}
+
+class _LiveFlameBattleStageState extends State<LiveFlameBattleStage> {
+  final playerPose = ValueNotifier<LiveCardPose>(liveCardRest);
+  final rivalPose = ValueNotifier<LiveCardPose>(liveCardRest);
+  late final LiveFlameBattleGame game;
+  int seenStrike = 0;
+  bool seenImpact = false;
+
+  @override
+  void initState() {
+    super.initState();
+    game = LiveFlameBattleGame(audio: widget.audio, onPose: (player, rival) {
+      playerPose.value = player;
+      rivalPose.value = rival;
+    });
+    widget.controller.addListener(_changed);
+  }
+
+  void _changed() {
+    final c = widget.controller;
+    if (c.hitSerial != seenStrike && c.attackWindup) {
+      seenStrike = c.hitSerial;
+      seenImpact = false;
+      final card = c.attackActor == 0 ? c.playerCard : c.opponentCard;
+      if (card != null) game.strike(c.attackActor, card);
+    } else if (seenStrike == c.hitSerial && !c.attackWindup &&
+        !seenImpact && c.effect != null && c.attackActor >= 0) {
+      seenImpact = true;
+      final card = c.attackActor == 0 ? c.playerCard : c.opponentCard;
+      if (card != null) game.impact(c.attackActor, card, c.lastDamage, c.lastCritical);
+    }
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_changed);
+    game.dispose();
+    playerPose.dispose();
+    rivalPose.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.controller;
+    final cardWidth = MediaQuery.sizeOf(context).width < 360 ? 104.0 : 135.0;
+    final cardHeight = MediaQuery.sizeOf(context).height < 620 ? 112.0 :
+      MediaQuery.sizeOf(context).height < 900 ? 128.0 : 175.0;
+    Widget fighter(PvpCard card, int hp, String side, ValueNotifier<LiveCardPose> pose) =>
+      Expanded(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Text(side == 'you' ? 'YOU' : 'RIVAL', style: const TextStyle(
+          color: Color(0xffd9e4f2), fontWeight: FontWeight.bold)),
+        const SizedBox(height: 5),
+        ValueListenableBuilder<LiveCardPose>(valueListenable: pose,
+          builder: (context, value, child) => Transform.translate(
+            offset: Offset(value.x, value.y),
+            child: Transform.rotate(angle: value.angle, child: child)),
+          child: RepaintBoundary(child: _BattleCard(card: card, selected: false,
+            width: cardWidth, height: cardHeight, hp: hp))),
+        const SizedBox(height: 5),
+        Text('$hp HP', key: Key('pvp-$side-hp'), style: const TextStyle(
+          color: Color(0xff88c9ff), fontWeight: FontWeight.w900)),
+      ]));
+    return Stack(children: [
+      Row(children: [
+        fighter(c.playerCard!, c.playerHp, 'you', playerPose),
+        const SizedBox(width: 24, child: Center(child: Text('VS', style: TextStyle(
+          color: Color(0xffffd993), fontWeight: FontWeight.w900)))),
+        fighter(c.opponentCard!, c.opponentHp, 'rival', rivalPose),
+      ]),
+      Positioned.fill(child: IgnorePointer(child: RepaintBoundary(
+        child: GameWidget(game: game)))),
+    ]);
+  }
 }
 
 class _BattleCard extends StatelessWidget {
