@@ -62,10 +62,11 @@ class CharacterCardArt extends StatelessWidget {
               child: IgnorePointer(
                 child: Align(
                   alignment: const Alignment(0, .58),
-                  child: FractionallySizedBox(
-                    widthFactor: .88,
+                  child: LayoutBuilder(builder: (context, limits) => ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: limits.maxWidth * (compact ? .74 : .70)),
                     child: SkillRarityBadge(skill: skill, compact: compact),
-                  ),
+                  )),
                 ),
               ),
             ),
@@ -129,24 +130,24 @@ class SkillRarityBadge extends StatelessWidget {
                 width: .6),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.auto_awesome, color: Colors.white,
-                size: compact ? 8 : 12),
-            SizedBox(width: compact ? 2 : 5),
-            Flexible(child: FittedBox(
+            Icon(Icons.diamond_outlined, color: Colors.white,
+                size: compact ? 7 : 10),
+            const SizedBox(width: 3),
+            Flexible(child: Center(child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(skill.name.toUpperCase(), maxLines: 1,
-                softWrap: false,
+                softWrap: false, textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white,
                   fontSize: compact ? 9 : 12, fontWeight: FontWeight.w900,
-                  letterSpacing: compact ? .1 : .45,
+                  letterSpacing: compact ? .1 : .4,
                   shadows: [
                     Shadow(color: color, blurRadius: 6),
                     const Shadow(color: Color(0xff000000), blurRadius: 2),
                   ])),
-            )),
-            SizedBox(width: compact ? 2 : 5),
-            Icon(Icons.auto_awesome, color: Colors.white,
-                size: compact ? 8 : 12),
+            ))),
+            const SizedBox(width: 3),
+            Icon(Icons.diamond_outlined, color: Colors.white,
+                size: compact ? 7 : 10),
           ]),
         ),
       ),
