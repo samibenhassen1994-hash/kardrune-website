@@ -8,12 +8,53 @@ import 'package:flutter/material.dart';
 
 import '../../game/catalog.dart';
 import '../cards/card_stat_badges.dart';
+import 'flame_attack_style.dart';
+import 'flame_battle_audio.dart';
+
+typedef _CardMotion = ({double x, double y, double angle});
+const _rest = (x: 0.0, y: 0.0, angle: 0.0);
+
+class _DemoPair {
+  const _DemoPair({
+    required this.playerId,
+    required this.rivalId,
+    required this.playerAttack,
+    required this.rivalAttack,
+    required this.playerDamage,
+    required this.rivalDamage,
+  });
+
+  final String playerId, rivalId;
+  final int playerAttack, rivalAttack, playerDamage, rivalDamage;
+  FlameAttackStyle get playerStyle => flameAttackStyleFor(playerId);
+  FlameAttackStyle get rivalStyle => flameAttackStyleFor(rivalId);
+}
+
+const _pairs = [
+  _DemoPair(
+    playerId: 'sam',
+    rivalId: 'dren',
+    playerAttack: 55,
+    rivalAttack: 65,
+    playerDamage: 55,
+    rivalDamage: 90,
+  ),
+  _DemoPair(
+    playerId: 'aria',
+    rivalId: 'rhea',
+    playerAttack: 79,
+    rivalAttack: 38,
+    playerDamage: 79,
+    rivalDamage: 75,
+  ),
+];
 
 /// A visual-only battle. It never reads or writes the live match or player save.
 class FlamePvpDemo extends StatefulWidget {
-  const FlamePvpDemo({super.key, required this.onBack});
+  const FlamePvpDemo({super.key, required this.onBack, required this.audio});
 
   final VoidCallback onBack;
+  final FlameBattleAudio audio;
 
   @override
   State<FlamePvpDemo> createState() => _FlamePvpDemoState();
@@ -22,38 +63,51 @@ class FlamePvpDemo extends StatefulWidget {
 class _FlamePvpDemoState extends State<FlamePvpDemo> {
   final _playerHp = ValueNotifier<int>(240);
   final _rivalHp = ValueNotifier<int>(240);
-  final _playerShift = ValueNotifier<double>(0);
-  final _rivalShift = ValueNotifier<double>(0);
+  final _playerMotion = ValueNotifier<_CardMotion>(_rest);
+  final _rivalMotion = ValueNotifier<_CardMotion>(_rest);
   late final _FlameBattleGame _game;
+  var _pairIndex = 0;
+  var _soundOn = true;
+  _DemoPair get _pair => _pairs[_pairIndex];
 
   @override
   void initState() {
     super.initState();
     _game = _FlameBattleGame(
-      onPlayerHit: () => _playerHp.value = 150,
-      onRivalHit: () => _rivalHp.value = 185,
+      pair: _pair,
+      audio: widget.audio,
+      onPlayerHit: () => _playerHp.value = 240 - _pair.rivalDamage,
+      onRivalHit: () => _rivalHp.value = 240 - _pair.playerDamage,
       onMotion: (player, rival) {
-        _playerShift.value = player;
-        _rivalShift.value = rival;
+        _playerMotion.value = player;
+        _rivalMotion.value = rival;
       },
     );
   }
 
   void _replay() {
+    if (_soundOn) widget.audio.unlock();
     _playerHp.value = 240;
     _rivalHp.value = 240;
-    _playerShift.value = 0;
-    _rivalShift.value = 0;
+    _playerMotion.value = _rest;
+    _rivalMotion.value = _rest;
     _game.replay();
+  }
+
+  void _nextPair() {
+    setState(() => _pairIndex = (_pairIndex + 1) % _pairs.length);
+    _game.setPair(_pair);
+    _replay();
   }
 
   @override
   void dispose() {
     _game.dispose();
+    widget.audio.pause();
     _playerHp.dispose();
     _rivalHp.dispose();
-    _playerShift.dispose();
-    _rivalShift.dispose();
+    _playerMotion.dispose();
+    _rivalMotion.dispose();
     super.dispose();
   }
 
@@ -76,15 +130,35 @@ class _FlamePvpDemoState extends State<FlamePvpDemo> {
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
               child: Column(
                 children: [
-                  const Text(
-                    'FLAME · PVP ANIMATION TEST',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Color(0xffffd993),
-                      fontFamily: 'Georgia',
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                    ),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'FLAME · PVP ANIMATION TEST',
+                          style: TextStyle(
+                            color: Color(0xffffd993),
+                            fontFamily: 'Georgia',
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => setState(() {
+                          _soundOn = !_soundOn;
+                          _game.soundEnabled = _soundOn;
+                          if (_soundOn) widget.audio.unlock();
+                        }),
+                        child: Text(
+                          _soundOn ? 'SOUND ON' : 'SOUND OFF',
+                          style: const TextStyle(
+                            color: Color(0xffeac981),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 5),
                   const Text(
@@ -101,23 +175,23 @@ class _FlamePvpDemoState extends State<FlamePvpDemo> {
                           children: [
                             Expanded(
                               child: _DemoFighter(
-                                heroId: 'sam',
-                                label: 'YOU · SAM',
-                                attack: 55,
+                                heroId: _pair.playerId,
+                                label: 'YOU · ${_pair.playerId.toUpperCase()}',
+                                attack: _pair.playerAttack,
                                 crit: 10,
                                 hp: _playerHp,
-                                motion: _playerShift,
+                                motion: _playerMotion,
                               ),
                             ),
                             const SizedBox(width: 22),
                             Expanded(
                               child: _DemoFighter(
-                                heroId: 'dren',
-                                label: 'RIVAL · DREN',
-                                attack: 65,
+                                heroId: _pair.rivalId,
+                                label: 'RIVAL · ${_pair.rivalId.toUpperCase()}',
+                                attack: _pair.rivalAttack,
                                 crit: 10,
                                 hp: _rivalHp,
-                                motion: _rivalShift,
+                                motion: _rivalMotion,
                               ),
                             ),
                           ],
@@ -133,8 +207,8 @@ class _FlamePvpDemoState extends State<FlamePvpDemo> {
                     ),
                   ),
                   const Spacer(),
-                  const Text(
-                    'PLAYER ATTACK  →  RIVAL COUNTERATTACK',
+                  Text(
+                    '${_pair.playerStyle.name.toUpperCase()}  →  ${_pair.rivalStyle.name.toUpperCase()} COUNTER',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Color(0xffeac981), fontSize: 10),
                   ),
@@ -143,6 +217,13 @@ class _FlamePvpDemoState extends State<FlamePvpDemo> {
                     children: [
                       Expanded(
                         child: _DemoButton(label: 'REPLAY', onTap: _replay),
+                      ),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: _DemoButton(
+                          label: 'NEXT PAIR',
+                          onTap: _nextPair,
+                        ),
                       ),
                       const SizedBox(width: 9),
                       Expanded(
@@ -176,7 +257,7 @@ class _DemoFighter extends StatelessWidget {
   final String heroId, label;
   final int attack, crit;
   final ValueListenable<int> hp;
-  final ValueListenable<double> motion;
+  final ValueListenable<_CardMotion> motion;
 
   @override
   Widget build(BuildContext context) {
@@ -197,10 +278,12 @@ class _DemoFighter extends StatelessWidget {
         ),
         const SizedBox(height: 5),
         Expanded(
-          child: ValueListenableBuilder<double>(
+          child: ValueListenableBuilder<_CardMotion>(
             valueListenable: motion,
-            builder: (context, shift, child) =>
-                Transform.translate(offset: Offset(shift, 0), child: child),
+            builder: (context, pose, child) => Transform.translate(
+              offset: Offset(pose.x, pose.y),
+              child: Transform.rotate(angle: pose.angle, child: child),
+            ),
             child: RepaintBoundary(
               child: Center(
                 child: AspectRatio(
@@ -272,13 +355,23 @@ class _DemoButton extends StatelessWidget {
 
 class _FlameBattleGame extends FlameGame {
   _FlameBattleGame({
+    required this.pair,
+    required this.audio,
     required this.onPlayerHit,
     required this.onRivalHit,
     required this.onMotion,
   });
 
+  _DemoPair pair;
+  void setPair(_DemoPair value) {
+    pair = value;
+    if (isLoaded) _effects.pair = value;
+  }
+
+  final FlameBattleAudio audio;
+  bool soundEnabled = true;
   final VoidCallback onPlayerHit, onRivalHit;
-  final void Function(double player, double rival) onMotion;
+  final void Function(_CardMotion player, _CardMotion rival) onMotion;
   late final _BattleEffects _effects;
 
   @override
@@ -288,6 +381,9 @@ class _FlameBattleGame extends FlameGame {
   Future<void> onLoad() async {
     await super.onLoad();
     _effects = _BattleEffects(
+      pair: pair,
+      audio: audio,
+      soundEnabled: () => soundEnabled,
       onPlayerHit: onPlayerHit,
       onRivalHit: onRivalHit,
       onMotion: onMotion,
@@ -306,14 +402,20 @@ class _FlameBattleGame extends FlameGame {
 /// Draws a sword strike and impact effects over the card widgets.
 class _BattleEffects extends Component {
   _BattleEffects({
+    required this.pair,
+    required this.audio,
+    required this.soundEnabled,
     required this.onPlayerHit,
     required this.onRivalHit,
     required this.onMotion,
     required this.onFinished,
   });
 
+  _DemoPair pair;
+  final FlameBattleAudio audio;
+  final bool Function() soundEnabled;
   final VoidCallback onPlayerHit, onRivalHit, onFinished;
-  final void Function(double player, double rival) onMotion;
+  final void Function(_CardMotion player, _CardMotion rival) onMotion;
   final _criticalText = TextPaint(
     style: const TextStyle(
       color: Color(0xffffee91),
@@ -338,33 +440,49 @@ class _BattleEffects extends Component {
     ),
   );
   double elapsed = 0;
+  bool firstAttack = false, secondAttack = false;
   bool firstHit = false, secondHit = false, finished = false;
 
   void restart() {
     elapsed = 0;
+    firstAttack = secondAttack = false;
     firstHit = secondHit = finished = false;
-    onMotion(0, 0);
+    onMotion(_rest, _rest);
   }
 
   @override
   void update(double dt) {
     elapsed += dt.clamp(0, .05);
     final width = findGame()?.size.x ?? 0;
+    final playerAdvance = _lunge(elapsed, .18, 1.12, 1.52);
+    final rivalAdvance = _lunge(elapsed, 2.16, 3.10, 3.50);
+    final playerShake = _shake(elapsed, 3.10);
+    final rivalShake = _shake(elapsed, 1.12);
     onMotion(
-      width * .13 * _lunge(elapsed, .18, 1.12, 1.52) + _shake(elapsed, 3.10),
-      -width * .13 * _lunge(elapsed, 2.16, 3.10, 3.50) + _shake(elapsed, 1.12),
+      _pose(playerAdvance, playerShake, 1, width, pair.playerStyle),
+      _pose(rivalAdvance, rivalShake, -1, width, pair.rivalStyle),
     );
+    if (!firstAttack && elapsed >= .18) {
+      firstAttack = true;
+      if (soundEnabled()) audio.attack(pair.playerStyle);
+    }
     if (!firstHit && elapsed >= 1.12) {
       firstHit = true;
+      if (soundEnabled()) audio.impact(pair.playerStyle, critical: false);
       onRivalHit();
+    }
+    if (!secondAttack && elapsed >= 2.16) {
+      secondAttack = true;
+      if (soundEnabled()) audio.attack(pair.rivalStyle);
     }
     if (!secondHit && elapsed >= 3.10) {
       secondHit = true;
+      if (soundEnabled()) audio.impact(pair.rivalStyle, critical: true);
       onPlayerHit();
     }
     if (!finished && elapsed >= 4.0) {
       finished = true;
-      onMotion(0, 0);
+      onMotion(_rest, _rest);
       onFinished();
     }
   }
@@ -373,10 +491,28 @@ class _BattleEffects extends Component {
     if (time < start || time >= end) return 0;
     if (time <= impact) {
       final phase = ((time - start) / (impact - start)).clamp(0.0, 1.0);
-      return 1 - math.pow(1 - phase, 3).toDouble();
+      return .5 - .5 * math.cos(math.pi * phase);
     }
     final phase = ((time - impact) / (end - impact)).clamp(0.0, 1.0);
-    return math.pow(1 - phase, 2).toDouble();
+    return .5 + .5 * math.cos(math.pi * phase);
+  }
+
+  _CardMotion _pose(
+    double advance,
+    double shake,
+    int direction,
+    double width,
+    FlameAttackStyle style,
+  ) {
+    final reach = switch (style) {
+      FlameAttackStyle.sword || FlameAttackStyle.dagger => .13,
+      FlameAttackStyle.magic || FlameAttackStyle.arrow => .055,
+    };
+    return (
+      x: direction * width * reach * advance + shake,
+      y: -5 * math.sin(math.pi * advance) + shake.abs() * .13,
+      angle: direction * .11 * advance + shake * .006,
+    );
   }
 
   double _shake(double time, double impact) {
@@ -389,36 +525,54 @@ class _BattleEffects extends Component {
   void render(Canvas canvas) {
     final game = findGame()!;
     final width = game.size.x, height = game.size.y;
-    if (elapsed >= .78 && elapsed < 1.42) {
-      _sword(
+    if (elapsed >= .18 && elapsed < 1.42) {
+      _renderAttack(
         canvas,
-        width * .75,
-        height * .49,
-        (elapsed - .78) / .64,
-        mirrored: false,
+        pair.playerStyle,
+        width,
+        height,
+        start: .18,
+        hit: 1.12,
+        forward: true,
       );
-    } else if (elapsed >= 2.76 && elapsed < 3.40) {
-      _sword(
+    } else if (elapsed >= 2.16 && elapsed < 3.40) {
+      _renderAttack(
         canvas,
-        width * .25,
-        height * .49,
-        (elapsed - 2.76) / .64,
-        mirrored: true,
+        pair.rivalStyle,
+        width,
+        height,
+        start: 2.16,
+        hit: 3.10,
+        forward: false,
       );
     }
     if (elapsed >= 1.12 && elapsed < 1.62) {
-      _impact(canvas, width * .75, height * .5, elapsed - 1.12, false);
+      _impact(
+        canvas,
+        width * .75,
+        height * .5,
+        elapsed - 1.12,
+        pair.playerStyle,
+        false,
+      );
       final labelY = height * .27 - (elapsed - 1.12) * 18;
       _damageText.render(
         canvas,
-        '-55 HP',
+        '-${pair.playerDamage} HP',
         Vector2(width * .75, labelY),
         anchor: Anchor.center,
       );
       _glitter(canvas, width * .75, labelY, elapsed - 1.12);
     }
     if (elapsed >= 3.10 && elapsed < 3.80) {
-      _impact(canvas, width * .25, height * .5, elapsed - 3.10, true);
+      _impact(
+        canvas,
+        width * .25,
+        height * .5,
+        elapsed - 3.10,
+        pair.rivalStyle,
+        true,
+      );
       _criticalText.render(
         canvas,
         'CRITICAL!',
@@ -428,12 +582,67 @@ class _BattleEffects extends Component {
       final labelY = height * .29 - (elapsed - 3.10) * 18;
       _damageText.render(
         canvas,
-        '-90 HP',
+        '-${pair.rivalDamage} HP',
         Vector2(width * .25, labelY),
         anchor: Anchor.center,
       );
       _glitter(canvas, width * .25, labelY, elapsed - 3.10);
       _glitter(canvas, width * .5, height * .16, elapsed - 3.10);
+    }
+  }
+
+  void _renderAttack(
+    Canvas canvas,
+    FlameAttackStyle style,
+    double width,
+    double height, {
+    required double start,
+    required double hit,
+    required bool forward,
+  }) {
+    final targetX = width * (forward ? .75 : .25);
+    final sourceX = width * (forward ? .25 : .75);
+    switch (style) {
+      case FlameAttackStyle.sword:
+        if (elapsed >= hit - .34) {
+          _sword(
+            canvas,
+            targetX,
+            height * .49,
+            (elapsed - (hit - .34)) / .64,
+            mirrored: !forward,
+          );
+        }
+      case FlameAttackStyle.dagger:
+        if (elapsed >= hit - .29) {
+          _dagger(
+            canvas,
+            targetX,
+            height * .50,
+            (elapsed - (hit - .29)) / .56,
+            mirrored: !forward,
+          );
+        }
+      case FlameAttackStyle.magic:
+        if (elapsed < hit) {
+          _magic(
+            canvas,
+            sourceX,
+            targetX,
+            height * .5,
+            (elapsed - start) / (hit - start),
+          );
+        }
+      case FlameAttackStyle.arrow:
+        if (elapsed < hit) {
+          _arrow(
+            canvas,
+            sourceX,
+            targetX,
+            height * .5,
+            (elapsed - start) / (hit - start),
+          );
+        }
     }
   }
 
@@ -498,6 +707,108 @@ class _BattleEffects extends Component {
     canvas.restore();
   }
 
+  void _dagger(
+    Canvas canvas,
+    double x,
+    double y,
+    double phase, {
+    required bool mirrored,
+  }) {
+    final progress = phase.clamp(0.0, 1.0);
+    final thrust = math.sin(math.pi * progress);
+    final direction = mirrored ? -1.0 : 1.0;
+    canvas.save();
+    canvas.translate(x - direction * (25 - 20 * thrust), y + 7);
+    canvas.rotate(direction * (.6 - .9 * progress));
+    final blade = Path()
+      ..moveTo(direction * 44, 0)
+      ..lineTo(direction * 10, -7)
+      ..lineTo(direction * 10, 7)
+      ..close();
+    canvas.drawPath(blade, Paint()..color = const Color(0xffd9ecf8));
+    canvas.drawLine(
+      Offset(direction * 9, -11),
+      Offset(direction * 9, 11),
+      Paint()
+        ..color = const Color(0xffffd07b)
+        ..strokeWidth = 5
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawLine(
+      Offset(direction * 7, 0),
+      Offset(-direction * 20, 0),
+      Paint()
+        ..color = const Color(0xff6f3b30)
+        ..strokeWidth = 8
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.restore();
+  }
+
+  void _magic(
+    Canvas canvas,
+    double sourceX,
+    double targetX,
+    double y,
+    double phase,
+  ) {
+    final progress = .5 - .5 * math.cos(math.pi * phase.clamp(0.0, 1.0));
+    final x = sourceX + (targetX - sourceX) * progress;
+    final center = Offset(x, y - 16 * math.sin(math.pi * progress));
+    canvas.drawCircle(center, 18, Paint()..color = const Color(0x554eafff));
+    canvas.drawCircle(center, 11, Paint()..color = const Color(0xaaac7bff));
+    canvas.drawCircle(center, 5, Paint()..color = const Color(0xffffffff));
+    canvas.drawCircle(
+      center,
+      22 + 3 * math.sin(progress * 12),
+      Paint()
+        ..color = const Color(0xaad9c1ff)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+  }
+
+  void _arrow(
+    Canvas canvas,
+    double sourceX,
+    double targetX,
+    double y,
+    double phase,
+  ) {
+    final progress = phase.clamp(0.0, 1.0);
+    final x = sourceX + (targetX - sourceX) * progress;
+    final direction = targetX > sourceX ? 1.0 : -1.0;
+    final centerY = y - 10 * math.sin(math.pi * progress);
+    final wood = Paint()
+      ..color = const Color(0xffb78955)
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      Offset(x - direction * 33, centerY),
+      Offset(x + direction * 17, centerY),
+      wood,
+    );
+    final tip = Path()
+      ..moveTo(x + direction * 30, centerY)
+      ..lineTo(x + direction * 15, centerY - 7)
+      ..lineTo(x + direction * 15, centerY + 7)
+      ..close();
+    canvas.drawPath(tip, Paint()..color = const Color(0xffe4f2fa));
+    final feather = Paint()
+      ..color = const Color(0xffd7f3c5)
+      ..strokeWidth = 2;
+    canvas.drawLine(
+      Offset(x - direction * 31, centerY),
+      Offset(x - direction * 42, centerY - 9),
+      feather,
+    );
+    canvas.drawLine(
+      Offset(x - direction * 31, centerY),
+      Offset(x - direction * 42, centerY + 9),
+      feather,
+    );
+  }
+
   void _glitter(Canvas canvas, double x, double y, double age) {
     final visibility = (1 - age / .72).clamp(0.0, 1.0);
     for (var i = 0; i < 13; i++) {
@@ -526,11 +837,25 @@ class _BattleEffects extends Component {
     }
   }
 
-  void _impact(Canvas canvas, double x, double y, double age, bool critical) {
+  void _impact(
+    Canvas canvas,
+    double x,
+    double y,
+    double age,
+    FlameAttackStyle style,
+    bool critical,
+  ) {
     final duration = critical ? .70 : .50;
     final phase = (age / duration).clamp(0.0, 1.0);
     final opacity = (1 - phase).clamp(0.0, 1.0);
-    final color = critical ? const Color(0xffffd566) : const Color(0xfff6f0d2);
+    final color = critical
+        ? const Color(0xffffd566)
+        : switch (style) {
+            FlameAttackStyle.magic => const Color(0xffb99bff),
+            FlameAttackStyle.arrow => const Color(0xffb6e9a2),
+            FlameAttackStyle.dagger => const Color(0xffff9f91),
+            FlameAttackStyle.sword => const Color(0xfff6f0d2),
+          };
     canvas.drawCircle(
       Offset(x, y),
       12 + phase * (critical ? 45 : 30),

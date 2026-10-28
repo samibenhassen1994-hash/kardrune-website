@@ -14,6 +14,7 @@ import 'features/profile/cloud_account_controller.dart';
 import 'features/pvp/live_match_coordinator.dart';
 import 'features/pvp/live_pvp_arena.dart';
 import 'features/pvp/flame_pvp_demo.dart';
+import 'features/pvp/flame_battle_audio.dart';
 import 'models/player_save.dart';
 import 'services/local_save_service.dart';
 import 'services/live_pvp_socket.dart';
@@ -110,6 +111,7 @@ class _IdleShellState extends State<IdleShell> {
   String _cloudInitializationMessage = 'Connecting account services…';
   LiveMatchCoordinator? _pvp;
   bool _showFlameDemo = false;
+  late final FlameBattleAudio _flameAudio = createFlameBattleAudio();
   bool _ownsCloud = false;
   late final AppUpdateController? _updates;
   bool _ownsUpdates = false;
@@ -307,6 +309,7 @@ class _IdleShellState extends State<IdleShell> {
     _updates?.removeListener(_updateChanged);
     if (_ownsUpdates) _updates?.dispose();
     if (_ownsCloud) _cloud?.dispose();
+    _flameAudio.dispose();
     super.dispose();
   }
 
@@ -336,6 +339,7 @@ class _IdleShellState extends State<IdleShell> {
     if (_showFlameDemo) {
       return _motionWrap(
         FlamePvpDemo(
+          audio: _flameAudio,
           onBack: () => setState(() {
             _showFlameDemo = false;
             tab = 0;
@@ -407,8 +411,10 @@ class _IdleShellState extends State<IdleShell> {
                               onLive: _pvp?.findMatch,
                               liveStatus: _pvp?.message,
                               canLive: _pvp != null && deck.length >= 3,
-                              onFlameDemo: () =>
-                                  setState(() => _showFlameDemo = true),
+                              onFlameDemo: () {
+                                _flameAudio.unlock();
+                                setState(() => _showFlameDemo = true);
+                              },
                             ),
                             _Cards(
                               page: page,
