@@ -35,6 +35,11 @@ jobs:
         run: |
           flutter pub get
           flutter analyze
+      - name: Embed running release identity before build
+        shell: bash
+        run: |
+          RELEASE="$(git rev-parse --short HEAD)"
+          sed -i "s/__KARDRUNE_PACKAGED_RELEASE__/$RELEASE/g" idle_flutter/web/index.html
       - name: Build /idle/ release
         working-directory: idle_flutter
         run: flutter build web --release --base-href /idle/

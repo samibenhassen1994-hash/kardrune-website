@@ -72,6 +72,8 @@
     // a service-worker updatefound event. Keep all game data in local storage.
     (() => {
       const releaseUrl = new URL('release-id.json', document.baseURI);
+      // CI replaces this marker before Flutter builds its service-worker manifest.
+      const bundledRelease = '__KARDRUNE_PACKAGED_RELEASE__';
       let checking = false, needsUpdate = false, pendingRelease = null;
       let registration = null, requested = false;
       function announce() {
@@ -91,7 +93,14 @@
           if (!release) return;
           const key = 'idle-kardrune-active-release';
           const previous = localStorage.getItem(key);
-          if (!previous) localStorage.setItem(key, release);
+          const stamped = bundledRelease !== '__KARDRUNE_PACKAGED_RELEASE__';
+          if (stamped) {
+            // Compare the running app bundle, not merely the last stored version.
+            if (bundledRelease !== release) {
+              pendingRelease = release;
+              announce();
+            } else if (previous !== release) localStorage.setItem(key, release);
+          } else if (!previous) localStorage.setItem(key, release);
           else if (previous !== release) {
             pendingRelease = release;
             announce();
@@ -104,6 +113,8 @@
         void checkRelease();
         if (registration) void registration.update().catch(() => {});
       }
+      // Flutter may attach its listener after the first version check on iPhone.
+      window.addEventListener('kardrune-request-update-status', refresh);
       window.addEventListener('focus', refresh);
       window.addEventListener('pageshow', refresh);
       document.addEventListener('visibilitychange', () => {

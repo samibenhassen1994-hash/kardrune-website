@@ -9,6 +9,8 @@ class _WebUpdateBridge implements DisposableAppUpdateBridge {
   _WebUpdateBridge() {
     _listener = ((web.Event event) => _updates.add(null)).toJS;
     web.window.addEventListener('kardrune-update-available', _listener);
+    // Replay any update event fired before the Flutter listener was installed.
+    web.window.dispatchEvent(web.Event('kardrune-request-update-status'));
   }
   final _updates = StreamController<void>.broadcast();
   late final web.EventListener _listener;
