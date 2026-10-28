@@ -994,12 +994,10 @@ class _Eyebrow extends StatelessWidget {
 
 class _RuneButton extends StatelessWidget {
   const _RuneButton({
-    this.actionKey,
     required this.label,
     required this.onTap,
     this.gold = false,
   });
-  final Key? actionKey;
   final String label;
   final VoidCallback? onTap;
   final bool gold;
@@ -1008,7 +1006,6 @@ class _RuneButton extends StatelessWidget {
     button: true,
     enabled: onTap != null,
     child: GestureDetector(
-      key: actionKey,
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: AnimatedOpacity(
