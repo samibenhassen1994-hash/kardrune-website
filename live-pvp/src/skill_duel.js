@@ -66,11 +66,11 @@ export function resolveSkillDuel(cards,random=Math.random){
    attackerHp:attacker.hp,extra,counter});
   if(defender.hp===0)event('knock_out',source,target,{hpBefore:before,hpAfter:0,hp:0});
   if(!extra&&!counter&&actual>0){
-   if(active(target)&&defender.card.skillId==='C4'&&!defender.used.has('C4')&&
+   if(defender.hp>0&&active(target)&&defender.card.skillId==='C4'&&!defender.used.has('C4')&&
       defender.hp*2<defender.maxHp){
     defender.used.add('C4');defender.tenacity=true;activate(target,source,{status:'ready'});
    }
-   if(active(target)&&defender.card.skillId==='E3'&&critical&&!defender.used.has('E3')){
+   if(defender.hp>0&&active(target)&&defender.card.skillId==='E3'&&critical&&!defender.used.has('E3')){
     defender.used.add('E3');defender.guaranteed=true;activate(target,source,{status:'guaranteed_crit'});
    }
    if(active(target)&&defender.card.skillId==='N3'&&!defender.used.has('N3')){
@@ -195,10 +195,10 @@ export function resolveSkillDuel(cards,random=Math.random){
    activate(turn,1-turn,{status:'extra_hit'});
    damage(turn,1-turn,Math.max(1,percent(attack,70)),{skillId:'U1',extra:true});
   }
-  if(self.attacks===3&&enabled&&id==='N4'){
+  if(self.hp>0&&self.attacks===3&&enabled&&id==='N4'){
    activate(turn,turn,{status:'meditation'});heal(turn,20,'N4');
   }
-  if(enabled&&id==='U5'&&self.ascension<4){
+  if(self.hp>0&&enabled&&id==='U5'&&self.ascension<4){
    self.ascension++;activate(turn,turn,{status:'ascension',stacks:self.ascension});
   }
   if(self.weaken>0&&--self.weaken===0)event('status_expire',1-turn,turn,{skillId:'N5',status:'weaken'});
