@@ -171,7 +171,6 @@ class _SummonResultState extends State<SummonResult> with SingleTickerProviderSt
       asset:widget.asset,hp:widget.hp,attack:widget.newAttack,crit:widget.newCrit,
       skillId:widget.newSkillId)),
     const SizedBox(height:12),
-    _skillSummary(widget.newSkillId),
     const Text('ADDED TO YOUR COLLECTION',style:TextStyle(
       color:Color(0xff85e4b0),fontSize:11,fontWeight:FontWeight.w900))
   ]);
@@ -179,7 +178,8 @@ class _SummonResultState extends State<SummonResult> with SingleTickerProviderSt
     final skill = SkillCatalog.byId(id);
     if (skill == null) return const SizedBox.shrink();
     return Column(children:[
-      Center(child: SkillRarityBadge(skill: skill, compact: true)),
+      Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 145),
+        child: SkillRarityBadge(skill: skill, compact: true))),
       const SizedBox(height:3),
       Text(skill.description,textAlign:TextAlign.center,
         style:const TextStyle(color:Color(0xffc9d6e5),fontSize:9)),
