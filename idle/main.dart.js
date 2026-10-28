@@ -96522,10 +96522,12 @@ A.acT.prototype={
 $1(a){return J.d_(a)},
 $S:634}
 A.aBb.prototype={
-aac(){var s=A.eh(new A.aBc(this))
+aac(){var s,r=A.eh(new A.aBc(this))
 this.b!==$&&A.aQ()
-this.b=s
-v.G.window.addEventListener("kardrune-update-available",s)}}
+this.b=r
+s=v.G
+s.window.addEventListener("kardrune-update-available",r)
+s.window.dispatchEvent(new s.Event("kardrune-request-update-status"))}}
 A.aBc.prototype={
 $1(a){return this.a.a.B(0,null)},
 $S:2}
