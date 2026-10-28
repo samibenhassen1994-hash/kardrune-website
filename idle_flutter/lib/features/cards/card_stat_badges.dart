@@ -57,7 +57,7 @@ class CharacterCardArt extends StatelessWidget {
             Positioned(
               left: 4,
               right: 4,
-              bottom: compact ? 5 : 18,
+              bottom: compact ? 8 : 25,
               child: IgnorePointer(
                 child: SizedBox(
                   height: compact ? 15 : 24,

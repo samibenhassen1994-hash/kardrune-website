@@ -1524,6 +1524,7 @@ class _CardsState extends State<_Cards> {
   void reset() {query.clear();setState(() {
     ownership='owned';rarity='all';stageFilter='all';skillFilter='all';sort='atk';expandedFilters=false;
   });}
+  String _t(String it, String en) => title == 'CARTE' ? it : en;
   @override
   Widget build(BuildContext context) {
     final all = [for(final h in KardRuneCatalog.heroes)
@@ -1561,12 +1562,12 @@ class _CardsState extends State<_Cards> {
           Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
             Text(title=='CARTE'?'LE TUE CARTE':'YOUR CARDS',style:const TextStyle(
               fontFamily:'Georgia',fontSize:23,fontWeight:FontWeight.w800,color:Color(0xffffd892))),
-            Text('${owned.length}/27 owned · ${deck.length}/9 in deck',
+            Text('${owned.length}/27 ${_t('possedute','owned')} · ${deck.length}/9 ${_t('nel mazzo','in deck')}',
               style:const TextStyle(color:Color(0xffaabbd2),fontSize:11)),
           ])),
           OutlinedButton.icon(key:const Key('collection-edit-deck'),
             onPressed:()=>_openDeck(context),
-            icon:const Icon(Icons.style_outlined,size:16),label:const Text('EDIT DECK'),
+            icon:const Icon(Icons.style_outlined,size:16),label:Text(_t('MODIFICA MAZZO','EDIT DECK')),
             style:OutlinedButton.styleFrom(foregroundColor:const Color(0xffffd892),
               side:const BorderSide(color:Color(0xffbba069)),
               textStyle:const TextStyle(fontSize:10,fontWeight:FontWeight.w900))),
@@ -1578,12 +1579,16 @@ class _CardsState extends State<_Cards> {
             prefixIcon:const Icon(Icons.search,color:Color(0xffffd892)),
             suffixIcon:query.text.isNotEmpty?IconButton(onPressed:query.clear,
               icon:const Icon(Icons.close,color:Colors.white)):null,
-            hintText:'Search hero or skill...',hintStyle:const TextStyle(color:Color(0xffb4c4d6)),
+            hintText:_t('Cerca personaggio o abilità...','Search hero or skill...'),hintStyle:const TextStyle(color:Color(0xffb4c4d6)),
             contentPadding:const EdgeInsets.symmetric(vertical:11),
             border:OutlineInputBorder(borderRadius:BorderRadius.circular(10)))),
         const SizedBox(height:6),
         Row(children:[
-          for(final item in const [('owned','OWNED'),('all','ALL'),('missing','LOCKED')])
+          for(final item in [
+              ('owned',_t('POSSEDUTE','OWNED')),
+              ('all',_t('TUTTE','ALL')),
+              ('missing',_t('BLOCCATE','LOCKED')),
+            ])
             Padding(padding:const EdgeInsets.only(right:5),child:ChoiceChip(
               label:Text(item.$2),selected:ownership==item.$1,showCheckmark:false,
               onSelected:(_)=>setState(()=>ownership=item.$1),
@@ -1591,41 +1596,49 @@ class _CardsState extends State<_Cards> {
               labelStyle:const TextStyle(fontSize:9,color:Colors.white,fontWeight:FontWeight.bold),
               selectedColor:const Color(0xff795d2c),backgroundColor:const Color(0xff1b2c46))),
           const Spacer(),
-          IconButton(key:const Key('collection-toggle-filters'),tooltip:'Advanced filters',
+          IconButton(key:const Key('collection-toggle-filters'),tooltip:_t('Filtri avanzati','Advanced filters'),
             onPressed:()=>setState(()=>expandedFilters=!expandedFilters),
             icon:Icon(expandedFilters?Icons.tune:Icons.filter_list,color:const Color(0xffffd892))),
         ]),
         if(expandedFilters)...[
           Row(children:[
-            Expanded(child:_dropdown(stageFilter,const [
-              ('all','ALL STAGES'),('1','STAGE 1'),('2','STAGE 2'),('3','STAGE 3')],
+            Expanded(child:_dropdown(stageFilter,[
+              ('all',_t('TUTTI GLI STAGE','ALL STAGES')),('1','STAGE 1'),('2','STAGE 2'),('3','STAGE 3')],
               (v)=>setState(()=>stageFilter=v))),
             const SizedBox(width:6),
-            Expanded(child:_dropdown(rarity,const [
-              ('all','ALL RARITIES'),('common','COMMON'),('uncommon','UNCOMMON'),
-              ('rare','RARE'),('epic','EPIC'),('legendary','LEGENDARY'),('ultra','ULTRA')],
+            Expanded(child:_dropdown(rarity,[
+              ('all',_t('TUTTE LE RARITÀ','ALL RARITIES')),
+              ('common',_t('COMUNE','COMMON')),
+              ('uncommon',_t('NON COMUNE','UNCOMMON')),
+              ('rare',_t('RARA','RARE')),
+              ('epic',_t('EPICA','EPIC')),
+              ('legendary',_t('LEGGENDARIA','LEGENDARY')),
+              ('ultra','ULTRA')],
               (v)=>setState((){rarity=v;skillFilter='all';}))),
           ]),
           const SizedBox(height:5),
           _dropdown(skillFilter,[
-            const ('all','ALL SKILLS'),
+            ('all',_t('TUTTE LE ABILITÀ','ALL SKILLS')),
             for(final skill in SkillCatalog.skills)
               if(rarity=='all'||skill.rarity==rarity)(skill.id,skill.name.toUpperCase()),
           ],(v)=>setState(()=>skillFilter=v)),
         ],
         Row(children:[
-          Expanded(child:_dropdown(sort,const [
-            ('atk','ATK HIGH → LOW'),('crit','CRIT HIGH → LOW'),
-            ('rarity','SKILL RARITY'),('stage','STAGE HIGH → LOW'),('name','NAME A–Z')],
+          Expanded(child:_dropdown(sort,[
+            ('atk',_t('ATK ALTO → BASSO','ATK HIGH → LOW')),
+            ('crit',_t('CRIT ALTO → BASSO','CRIT HIGH → LOW')),
+            ('rarity',_t('RARITÀ ABILITÀ','SKILL RARITY')),
+            ('stage',_t('STAGE ALTO → BASSO','STAGE HIGH → LOW')),
+            ('name',_t('NOME A–Z','NAME A–Z'))],
             (v)=>setState(()=>sort=v))),
           const SizedBox(width:6),
-          Text('${found.length} RESULTS',style:const TextStyle(fontSize:10,color:Color(0xffb9cadf))),
-          IconButton(onPressed:reset,tooltip:'Reset filters',visualDensity:VisualDensity.compact,
+          Text('${found.length} ${_t('RISULTATI','RESULTS')}',style:const TextStyle(fontSize:10,color:Color(0xffb9cadf))),
+          IconButton(onPressed:reset,tooltip:_t('Azzera filtri','Reset filters'),visualDensity:VisualDensity.compact,
             icon:const Icon(Icons.restart_alt,color:Color(0xffffd892),size:20)),
         ]),
         const SizedBox(height:4),
         Expanded(child:found.isEmpty?Center(child:TextButton(
-          onPressed:reset,child:const Text('No cards found · RESET FILTERS')))
+          onPressed:reset,child:Text(_t('Nessuna carta trovata · AZZERA FILTRI','No cards found · RESET FILTERS'))))
           :GridView.builder(
             key:const Key('collection-scroll-grid'),
             keyboardDismissBehavior:ScrollViewKeyboardDismissBehavior.onDrag,
