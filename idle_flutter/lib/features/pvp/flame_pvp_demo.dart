@@ -22,6 +22,8 @@ class FlamePvpDemo extends StatefulWidget {
 class _FlamePvpDemoState extends State<FlamePvpDemo> {
   final _playerHp = ValueNotifier<int>(240);
   final _rivalHp = ValueNotifier<int>(240);
+  final _playerShift = ValueNotifier<double>(0);
+  final _rivalShift = ValueNotifier<double>(0);
   late final _FlameBattleGame _game;
 
   @override
@@ -30,12 +32,18 @@ class _FlamePvpDemoState extends State<FlamePvpDemo> {
     _game = _FlameBattleGame(
       onPlayerHit: () => _playerHp.value = 150,
       onRivalHit: () => _rivalHp.value = 185,
+      onMotion: (player, rival) {
+        _playerShift.value = player;
+        _rivalShift.value = rival;
+      },
     );
   }
 
   void _replay() {
     _playerHp.value = 240;
     _rivalHp.value = 240;
+    _playerShift.value = 0;
+    _rivalShift.value = 0;
     _game.replay();
   }
 
@@ -44,6 +52,8 @@ class _FlamePvpDemoState extends State<FlamePvpDemo> {
     _game.dispose();
     _playerHp.dispose();
     _rivalHp.dispose();
+    _playerShift.dispose();
+    _rivalShift.dispose();
     super.dispose();
   }
 
@@ -96,6 +106,7 @@ class _FlamePvpDemoState extends State<FlamePvpDemo> {
                                 attack: 55,
                                 crit: 10,
                                 hp: _playerHp,
+                                motion: _playerShift,
                               ),
                             ),
                             const SizedBox(width: 22),
@@ -106,6 +117,7 @@ class _FlamePvpDemoState extends State<FlamePvpDemo> {
                                 attack: 65,
                                 crit: 10,
                                 hp: _rivalHp,
+                                motion: _rivalShift,
                               ),
                             ),
                           ],
@@ -158,11 +170,13 @@ class _DemoFighter extends StatelessWidget {
     required this.attack,
     required this.crit,
     required this.hp,
+    required this.motion,
   });
 
   final String heroId, label;
   final int attack, crit;
   final ValueListenable<int> hp;
+  final ValueListenable<double> motion;
 
   @override
   Widget build(BuildContext context) {
@@ -183,31 +197,38 @@ class _DemoFighter extends StatelessWidget {
         ),
         const SizedBox(height: 5),
         Expanded(
-          child: Center(
-            child: AspectRatio(
-              aspectRatio: .75,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset(
-                    hero.cardAsset(hero.stages.first),
-                    fit: BoxFit.contain,
-                    cacheWidth: 420,
-                  ),
-                  Positioned(
-                    top: 4,
-                    left: 4,
-                    right: 4,
-                    child: ValueListenableBuilder<int>(
-                      valueListenable: hp,
-                      builder: (context, value, _) => CardStatBadges(
-                        hp: value,
-                        attack: attack,
-                        crit: crit,
+          child: ValueListenableBuilder<double>(
+            valueListenable: motion,
+            builder: (context, shift, child) =>
+                Transform.translate(offset: Offset(shift, 0), child: child),
+            child: RepaintBoundary(
+              child: Center(
+                child: AspectRatio(
+                  aspectRatio: .75,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset(
+                        hero.cardAsset(hero.stages.first),
+                        fit: BoxFit.contain,
+                        cacheWidth: 420,
                       ),
-                    ),
+                      Positioned(
+                        top: 4,
+                        left: 4,
+                        right: 4,
+                        child: ValueListenableBuilder<int>(
+                          valueListenable: hp,
+                          builder: (context, value, _) => CardStatBadges(
+                            hp: value,
+                            attack: attack,
+                            crit: crit,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -250,9 +271,14 @@ class _DemoButton extends StatelessWidget {
 }
 
 class _FlameBattleGame extends FlameGame {
-  _FlameBattleGame({required this.onPlayerHit, required this.onRivalHit});
+  _FlameBattleGame({
+    required this.onPlayerHit,
+    required this.onRivalHit,
+    required this.onMotion,
+  });
 
   final VoidCallback onPlayerHit, onRivalHit;
+  final void Function(double player, double rival) onMotion;
   late final _BattleEffects _effects;
 
   @override
@@ -264,6 +290,7 @@ class _FlameBattleGame extends FlameGame {
     _effects = _BattleEffects(
       onPlayerHit: onPlayerHit,
       onRivalHit: onRivalHit,
+      onMotion: onMotion,
       onFinished: pauseEngine,
     );
     camera.viewport.add(_effects);
@@ -276,30 +303,38 @@ class _FlameBattleGame extends FlameGame {
   }
 }
 
-/// Draws only a small slash, impact ring and critical text on Flame's canvas.
-/// The card images are separate static Flutter widgets behind this component.
+/// Draws a sword strike and impact effects over the card widgets.
 class _BattleEffects extends Component {
   _BattleEffects({
     required this.onPlayerHit,
     required this.onRivalHit,
+    required this.onMotion,
     required this.onFinished,
   });
 
   final VoidCallback onPlayerHit, onRivalHit, onFinished;
+  final void Function(double player, double rival) onMotion;
   final _criticalText = TextPaint(
     style: const TextStyle(
-      color: Color(0xffffde76),
-      fontSize: 23,
+      color: Color(0xffffee91),
+      fontSize: 25,
       fontWeight: FontWeight.w900,
-      shadows: [Shadow(color: Color(0xff5b1b13), blurRadius: 5)],
+      shadows: [
+        Shadow(color: Color(0xffffbe3b), blurRadius: 13),
+        Shadow(color: Color(0xff5b1b13), blurRadius: 4),
+      ],
     ),
   );
   final _damageText = TextPaint(
     style: const TextStyle(
-      color: Color(0xffff8b8b),
-      fontSize: 24,
+      color: Color(0xffffffff),
+      fontSize: 28,
       fontWeight: FontWeight.w900,
-      shadows: [Shadow(color: Color(0xff250909), blurRadius: 4)],
+      shadows: [
+        Shadow(color: Color(0xffffd65d), blurRadius: 15),
+        Shadow(color: Color(0xffa72f22), blurRadius: 6),
+        Shadow(color: Color(0xff250909), blurRadius: 2),
+      ],
     ),
   );
   double elapsed = 0;
@@ -308,11 +343,17 @@ class _BattleEffects extends Component {
   void restart() {
     elapsed = 0;
     firstHit = secondHit = finished = false;
+    onMotion(0, 0);
   }
 
   @override
   void update(double dt) {
     elapsed += dt.clamp(0, .05);
+    final width = findGame()?.size.x ?? 0;
+    onMotion(
+      width * .13 * _lunge(elapsed, .18, 1.12, 1.52) + _shake(elapsed, 3.10),
+      -width * .13 * _lunge(elapsed, 2.16, 3.10, 3.50) + _shake(elapsed, 1.12),
+    );
     if (!firstHit && elapsed >= 1.12) {
       firstHit = true;
       onRivalHit();
@@ -323,74 +364,166 @@ class _BattleEffects extends Component {
     }
     if (!finished && elapsed >= 4.0) {
       finished = true;
+      onMotion(0, 0);
       onFinished();
     }
+  }
+
+  double _lunge(double time, double start, double impact, double end) {
+    if (time < start || time >= end) return 0;
+    if (time <= impact) {
+      final phase = ((time - start) / (impact - start)).clamp(0.0, 1.0);
+      return 1 - math.pow(1 - phase, 3).toDouble();
+    }
+    final phase = ((time - impact) / (end - impact)).clamp(0.0, 1.0);
+    return math.pow(1 - phase, 2).toDouble();
+  }
+
+  double _shake(double time, double impact) {
+    final age = time - impact;
+    if (age < 0 || age >= .38) return 0;
+    return math.sin(age * 98) * 9 * (1 - age / .38);
   }
 
   @override
   void render(Canvas canvas) {
     final game = findGame()!;
     final width = game.size.x, height = game.size.y;
-    if (elapsed >= .18 && elapsed < 1.12) {
-      _slash(canvas, width, height, (elapsed - .18) / .94, forward: true);
-    } else if (elapsed >= 2.16 && elapsed < 3.10) {
-      _slash(canvas, width, height, (elapsed - 2.16) / .94, forward: false);
+    if (elapsed >= .78 && elapsed < 1.42) {
+      _sword(
+        canvas,
+        width * .75,
+        height * .49,
+        (elapsed - .78) / .64,
+        mirrored: false,
+      );
+    } else if (elapsed >= 2.76 && elapsed < 3.40) {
+      _sword(
+        canvas,
+        width * .25,
+        height * .49,
+        (elapsed - 2.76) / .64,
+        mirrored: true,
+      );
     }
     if (elapsed >= 1.12 && elapsed < 1.62) {
       _impact(canvas, width * .75, height * .5, elapsed - 1.12, false);
+      final labelY = height * .27 - (elapsed - 1.12) * 18;
       _damageText.render(
         canvas,
         '-55 HP',
-        Vector2(width * .75, height * .31),
+        Vector2(width * .75, labelY),
         anchor: Anchor.center,
       );
+      _glitter(canvas, width * .75, labelY, elapsed - 1.12);
     }
     if (elapsed >= 3.10 && elapsed < 3.80) {
       _impact(canvas, width * .25, height * .5, elapsed - 3.10, true);
       _criticalText.render(
         canvas,
         'CRITICAL!',
-        Vector2(width * .5, height * .24),
+        Vector2(width * .5, height * .16),
         anchor: Anchor.center,
       );
+      final labelY = height * .29 - (elapsed - 3.10) * 18;
       _damageText.render(
         canvas,
         '-90 HP',
-        Vector2(width * .25, height * .31),
+        Vector2(width * .25, labelY),
         anchor: Anchor.center,
       );
+      _glitter(canvas, width * .25, labelY, elapsed - 3.10);
+      _glitter(canvas, width * .5, height * .16, elapsed - 3.10);
     }
   }
 
-  void _slash(
+  void _sword(
     Canvas canvas,
-    double width,
-    double height,
-    double progress, {
-    required bool forward,
+    double x,
+    double y,
+    double phase, {
+    required bool mirrored,
   }) {
-    final start = width * (forward ? .25 : .75);
-    final end = width * (forward ? .75 : .25);
-    final eased = 1 - math.pow(1 - progress, 3).toDouble();
-    final x = start + (end - start) * eased;
-    final y = height * (.5 - .10 * math.sin(progress * math.pi));
-    final direction = forward ? 1.0 : -1.0;
-    final trail = Paint()
-      ..color = const Color(0x99fff1aa)
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset(x - direction * 27, y + 13), Offset(x, y), trail);
+    final eased = 1 - math.pow(1 - phase.clamp(0.0, 1.0), 3).toDouble();
+    final fade = math.min(1.0, math.min(phase * 8, (1 - phase) * 7));
+    canvas.save();
+    canvas.translate(x, y);
+    canvas.rotate((mirrored ? 1 : -1) * (.95 - eased * 1.65));
     final blade = Path()
-      ..moveTo(x + direction * 22, y - 14)
-      ..lineTo(x - direction * 5, y + 4)
-      ..lineTo(x - direction * 10, y - 1)
+      ..moveTo(0, -78)
+      ..lineTo(8, -58)
+      ..lineTo(6, 6)
+      ..lineTo(-6, 6)
+      ..lineTo(-8, -58)
       ..close();
-    canvas.drawPath(blade, Paint()..color = const Color(0xffffe8a0));
-    canvas.drawCircle(
-      Offset(x, y),
-      4,
-      Paint()..color = const Color(0xffffffff),
+    canvas.drawPath(
+      blade,
+      Paint()..color = const Color(0xffa4d5f7).withValues(alpha: fade),
     );
+    canvas.drawPath(
+      blade,
+      Paint()
+        ..color = const Color(0xffffffff).withValues(alpha: fade)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+    canvas.drawLine(
+      const Offset(0, -67),
+      const Offset(0, 4),
+      Paint()
+        ..color = const Color(0xffffffff).withValues(alpha: fade)
+        ..strokeWidth = 2,
+    );
+    canvas.drawLine(
+      const Offset(-18, 8),
+      const Offset(18, 8),
+      Paint()
+        ..color = const Color(0xffffda78).withValues(alpha: fade)
+        ..strokeWidth = 6
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawLine(
+      const Offset(0, 9),
+      const Offset(0, 35),
+      Paint()
+        ..color = const Color(0xff8c5128).withValues(alpha: fade)
+        ..strokeWidth = 8
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawCircle(
+      const Offset(0, 37),
+      5,
+      Paint()..color = const Color(0xffffd973).withValues(alpha: fade),
+    );
+    canvas.restore();
+  }
+
+  void _glitter(Canvas canvas, double x, double y, double age) {
+    final visibility = (1 - age / .72).clamp(0.0, 1.0);
+    for (var i = 0; i < 13; i++) {
+      final angle = i * 2.399963;
+      final radius = 23 + (i % 4) * 12.0;
+      final twinkle = (.5 + .5 * math.sin(age * 30 + i * 2.2));
+      final alpha = (visibility * twinkle).clamp(0.0, 1.0);
+      final center = Offset(
+        x + math.cos(angle) * radius,
+        y + math.sin(angle) * (12 + i % 3 * 8),
+      );
+      final size = 2.5 + (i % 3) * 1.3;
+      final paint = Paint()
+        ..color = const Color(0xffffe694).withValues(alpha: alpha)
+        ..strokeWidth = 1.5;
+      canvas.drawLine(
+        Offset(center.dx - size, center.dy),
+        Offset(center.dx + size, center.dy),
+        paint,
+      );
+      canvas.drawLine(
+        Offset(center.dx, center.dy - size),
+        Offset(center.dx, center.dy + size),
+        paint,
+      );
+    }
   }
 
   void _impact(Canvas canvas, double x, double y, double age, bool critical) {
