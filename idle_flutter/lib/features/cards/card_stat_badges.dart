@@ -54,28 +54,40 @@ class CharacterCardArt extends StatelessWidget {
             ),
           ),
           if (SkillCatalog.byId(skillId) case final skill?)
-            Positioned(
-              left: 4,
-              right: 4,
-              bottom: compact ? 8 : 25,
-              child: IgnorePointer(
-                child: SizedBox(
-                  height: compact ? 15 : 24,
-                  child: Center(
-                    child: FractionallySizedBox(
-                      widthFactor: compact ? .73 : .72,
-                      child: SkillRarityBadge(skill: skill, compact: compact),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            CardSkillOverlay(skill: skill, compact: compact),
         ],
       ),
     ),
   );
 }
 
+
+/// Shared placement for skill ribbons inside all card artwork (collection,
+/// summon duplicates, deck editor, PvP). Never place SkillRarityBadge in an
+/// unconstrained Align/FractionallySizedBox: it can cover the entire card.
+class CardSkillOverlay extends StatelessWidget {
+  const CardSkillOverlay({super.key, required this.skill, this.compact = false});
+  final SkillDefinition skill;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) => Positioned(
+    left: 4,
+    right: 4,
+    bottom: compact ? 8 : 25,
+    child: IgnorePointer(
+      child: SizedBox(
+        height: compact ? 15 : 24,
+        child: Center(
+          child: FractionallySizedBox(
+            widthFactor: compact ? .73 : .72,
+            child: SkillRarityBadge(skill: skill, compact: compact),
+          ),
+        ),
+      ),
+    ),
+  );
+}
 
 /// A legible fantasy plate with rarity-colored enamel and a luminous rim.
 /// Purely presentational: the parent card stays responsible for inspection taps.
@@ -106,6 +118,7 @@ class SkillRarityBadge extends StatelessWidget {
     return Semantics(
       label: '${skill.name}, ${skill.rarity}',
       child: Container(
+        height: compact ? 15 : 24,
         padding: EdgeInsets.all(compact ? 1 : 1.5),
         decoration: BoxDecoration(
           gradient: gradient,
