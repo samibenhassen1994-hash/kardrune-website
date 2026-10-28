@@ -333,16 +333,15 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                 const SizedBox(height: 5),
                 Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
                   Expanded(child: _fighter(c.playerCard!, c.playerHp, c.attackActor == 0 && c.attackWindup, c.hitSerial, motionDuration, 'you', c.attackActor == 1 && !c.attackWindup)),
-                  SizedBox(width: 45, child: Center(child: c.attackWindup
-                    ? TweenAnimationBuilder<double>(
-                        key: ValueKey('attack-${c.hitSerial}'),
-                        tween: Tween(begin: c.attackActor == 0 ? -1.0 : 1.0, end: 0),
-                        duration: const Duration(milliseconds: 360),
-                        builder: (context, x, child) => Transform.translate(
-                          offset: Offset(x * 25, 0), child: child),
-                        child: Text(_attackGlyph(c.attackActor == 0 ? c.playerCard!.hero : c.opponentCard!.hero),
-                          key: const Key('pvp-attack-effect'), style: const TextStyle(fontSize: 30)))
-                    : const Text('VS', style: TextStyle(fontSize: 23, color: Color(0xffffd993), fontWeight: FontWeight.bold)))),
+                  SizedBox(width: 80, height: 80, child: Center(
+                    child: c.attackWindup
+                      ? _SwordSlashFrames(key: ValueKey('slash-${c.hitSerial}'),
+                          reverse: c.attackActor == 1,
+                          reducedMotion: reduced)
+                      : const Text('VS', style: TextStyle(
+                          fontSize: 23, color: Color(0xffffd993),
+                          fontWeight: FontWeight.bold)),
+                  )),
                   Expanded(child: _fighter(c.opponentCard!, c.opponentHp, c.attackActor == 1 && c.attackWindup, c.hitSerial, motionDuration, 'rival', c.attackActor == 0 && !c.attackWindup)),
                 ]),
                 const SizedBox(height: 5),
@@ -409,14 +408,6 @@ class _LivePvpArenaState extends State<LivePvpArena> {
       ))),
     );
   }
-  String _attackGlyph(String hero) => switch (hero) {
-    'sam' || 'tor' || 'kael' => '⚔️',
-    'rhea' || 'nyra' => '🏹',
-    'lira' || 'aria' || 'neris' => '✨',
-    'dren' => '🗡️',
-    _ => '⚡',
-  };
-
   Widget _slot(String title, String detail, Color accent, Key key) => Container(
     key: key, height: 104, width: double.infinity,
     margin: const EdgeInsets.symmetric(horizontal: 18),
@@ -493,3 +484,54 @@ class _BattleCard extends StatelessWidget {
   );
 }
 
+
+/// Plays the supplied 4x2 transparent sprite sheet. Cards stay still;
+/// only this small 8-frame sprite animates during each server-reported hit.
+class _SwordSlashFrames extends StatefulWidget {
+  const _SwordSlashFrames({super.key, required this.reverse, required this.reducedMotion});
+  final bool reverse, reducedMotion;
+
+  @override
+  State<_SwordSlashFrames> createState() => _SwordSlashFramesState();
+}
+
+class _SwordSlashFramesState extends State<_SwordSlashFrames>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 420),
+  )..forward();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _controller,
+    builder: (context, _) {
+      final frame = widget.reducedMotion ? 4 : (_controller.value * 8).floor().clamp(0, 7);
+      return Transform.flip(
+        flipX: widget.reverse,
+        child: ClipRect(child: SizedBox(
+          width: 80, height: 80,
+          child: Stack(children: [
+            Positioned(
+              left: -(frame % 4) * 80.0,
+              top: -(frame ~/ 4) * 80.0,
+              child: Image.asset(
+                'assets/idle/animations/pvp_sword_slash.png',
+                width: 320, height: 160,
+                fit: BoxFit.fill,
+                filterQuality: FilterQuality.low,
+                gaplessPlayback: true,
+              ),
+            ),
+          ]),
+        )),
+      );
+    },
+  );
+}
