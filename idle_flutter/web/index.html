@@ -93,7 +93,7 @@
           if (!release) return;
           const key = 'idle-kardrune-active-release';
           const previous = localStorage.getItem(key);
-          const stamped = bundledRelease !== '__KARDRUNE_PACKAGED_RELEASE__';
+          const stamped = /^[0-9a-f]{7,40}$/i.test(bundledRelease);
           if (stamped) {
             // Compare the running app bundle, not merely the last stored version.
             if (bundledRelease !== release) {
