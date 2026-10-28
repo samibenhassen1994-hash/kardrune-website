@@ -74,13 +74,13 @@ class CardSkillOverlay extends StatelessWidget {
   Widget build(BuildContext context) => Positioned(
     left: 4,
     right: 4,
-    bottom: compact ? 8 : 25,
+    bottom: compact ? 14 : 37,
     child: IgnorePointer(
       child: SizedBox(
-        height: compact ? 15 : 24,
+        height: compact ? 13 : 18,
         child: Center(
           child: FractionallySizedBox(
-            widthFactor: compact ? .73 : .72,
+            widthFactor: compact ? .65 : .60,
             child: SkillRarityBadge(skill: skill, compact: compact),
           ),
         ),
@@ -118,7 +118,7 @@ class SkillRarityBadge extends StatelessWidget {
     return Semantics(
       label: '${skill.name}, ${skill.rarity}',
       child: Container(
-        height: compact ? 15 : 24,
+        height: compact ? 13 : 18,
         padding: EdgeInsets.all(compact ? 1 : 1.5),
         decoration: BoxDecoration(
           gradient: gradient,
@@ -152,7 +152,7 @@ class SkillRarityBadge extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: compact ? 9 : 12,
+                  fontSize: compact ? 8 : 10,
                   fontWeight: FontWeight.w900,
                   letterSpacing: compact ? .1 : .35,
                   shadows: [
