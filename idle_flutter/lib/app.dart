@@ -1653,14 +1653,6 @@ class _CardsState extends State<_Cards> {
         onChanged:(v){if(v!=null)change(v);},
       )));
 
-  String _assetForId(String id) {
-    final parts = id.split(':');
-    final hero = KardRuneCatalog.heroes.firstWhere(
-      (item) => item.id == parts.first,
-    );
-    return hero.cardAsset(hero.stages[int.parse(parts.last) - 1]);
-  }
-
   void _openDeck(BuildContext context) => showDialog<void>(
     context: context,
     builder: (dialogContext) => Dialog(
@@ -1830,33 +1822,6 @@ class _CardsState extends State<_Cards> {
       ),
     );
   }
-}
-
-class _FilterLabel extends StatelessWidget {
-  const _FilterLabel(this.label, {this.active = false});
-  final String label;
-  final bool active;
-  @override
-  Widget build(BuildContext context) => Expanded(
-    child: Container(
-      height: 34,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: active ? const Color(0xff463c30) : const Color(0xff142541),
-        border: Border.all(
-          color: active ? const Color(0x88dabb77) : const Color(0x457484a1),
-        ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: active ? const Color(0xffffe3a4) : const Color(0xffacbfd6),
-          fontSize: 8,
-        ),
-      ),
-    ),
-  );
 }
 
 class _Summon extends StatelessWidget {
