@@ -116,9 +116,7 @@ class _SummonResultState extends State<SummonResult> with SingleTickerProviderSt
         Padding(padding:const EdgeInsets.only(top:47),child:Image.asset(widget.asset,
           fit:BoxFit.contain,alignment:Alignment.center)),
         if (SkillCatalog.byId(old ? widget.oldSkillId : widget.newSkillId) case final skill?)
-          Align(alignment: const Alignment(0, .65),
-            child: FractionallySizedBox(widthFactor: .90,
-              child: SkillRarityBadge(skill: skill, compact: true))),
+          CardSkillOverlay(skill: skill),
         Positioned(top:3,left:3,right:3,child:Row(children:[
           Expanded(child:_cardStat('ATK','$atk',old?null:atk-widget.oldAttack!)),
           const SizedBox(width:3),
@@ -181,8 +179,7 @@ class _SummonResultState extends State<SummonResult> with SingleTickerProviderSt
     final skill = SkillCatalog.byId(id);
     if (skill == null) return const SizedBox.shrink();
     return Column(children:[
-      Text('${skill.name.toUpperCase()} · ${skill.rarity.toUpperCase()}',
-        textAlign:TextAlign.center,style:TextStyle(color:skill.color,fontSize:10,fontWeight:FontWeight.w900)),
+      Center(child: SkillRarityBadge(skill: skill, compact: true)),
       const SizedBox(height:3),
       Text(skill.description,textAlign:TextAlign.center,
         style:const TextStyle(color:Color(0xffc9d6e5),fontSize:9)),
