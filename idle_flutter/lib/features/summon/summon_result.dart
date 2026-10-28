@@ -1,16 +1,20 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../cards/card_stat_badges.dart';
+import '../../game/skill_catalog.dart';
 
 class SummonResult extends StatefulWidget {
   const SummonResult({super.key, required this.heroName, required this.stage, required this.asset,
     required this.hp, required this.newAttack, required this.newCrit,
     required this.onKeep, required this.onReplace, required this.onContinue,
-    this.oldAttack, this.oldCrit});
+    this.onLater,
+    this.oldAttack, this.oldCrit, this.oldSkillId, this.newSkillId});
   final String heroName, asset;
   final int stage, hp, newAttack, newCrit;
   final int? oldAttack, oldCrit;
+  final String? oldSkillId, newSkillId;
   final VoidCallback onKeep, onReplace, onContinue;
+  final VoidCallback? onLater;
   bool get duplicate => oldAttack != null && oldCrit != null;
   @override State<SummonResult> createState() => _SummonResultState();
 }
@@ -69,7 +73,8 @@ class _SummonResultState extends State<SummonResult> with SingleTickerProviderSt
         ]),
         const SizedBox(height:7),
         const Text('KEEP = +100 SHARDS  ·  REPLACE = NEW STATS',textAlign:TextAlign.center,
-          style:TextStyle(color:Color(0xffacbdd5),fontSize:8))
+          style:TextStyle(color:Color(0xffacbdd5),fontSize:8)),
+        if(widget.onLater!=null) TextButton(onPressed:widget.onLater,child:const Text('LATER')),
       ])
       :_button('CONTINUE',const Key('summon-continue'),widget.onContinue,true))
   ]);
@@ -86,6 +91,12 @@ class _SummonResultState extends State<SummonResult> with SingleTickerProviderSt
     _stat('CRIT',widget.oldCrit!,widget.newCrit,percent:true),
     const SizedBox(height:6),
     _stat('HP',widget.hp,widget.hp),
+    const SizedBox(height:8),
+    Row(children:[
+      Expanded(child:_skillSummary(widget.oldSkillId)),
+      const SizedBox(width:8),
+      Expanded(child:_skillSummary(widget.newSkillId)),
+    ]),
     const SizedBox(height:10),
     const Text('▲ GREEN: BETTER    ▼ RED: WORSE',
       style:TextStyle(color:Color(0xffd2dfef),fontSize:11,fontWeight:FontWeight.bold)),
@@ -104,6 +115,11 @@ class _SummonResultState extends State<SummonResult> with SingleTickerProviderSt
       child:Stack(fit:StackFit.expand,children:[
         Padding(padding:const EdgeInsets.only(top:47),child:Image.asset(widget.asset,
           fit:BoxFit.contain,alignment:Alignment.center)),
+        if (SkillCatalog.byId(old ? widget.oldSkillId : widget.newSkillId) case final skill?)
+          Align(alignment:const Alignment(0,.65),child:Container(
+            color:const Color(0xee071124),padding:const EdgeInsets.all(3),
+            child:Text(skill.name,maxLines:1,overflow:TextOverflow.ellipsis,
+              style:TextStyle(color:skill.color,fontSize:10,fontWeight:FontWeight.w900)))),
         Positioned(top:3,left:3,right:3,child:Row(children:[
           Expanded(child:_cardStat('ATK','$atk',old?null:atk-widget.oldAttack!)),
           const SizedBox(width:3),
@@ -155,11 +171,24 @@ class _SummonResultState extends State<SummonResult> with SingleTickerProviderSt
   }
   Widget _newCard()=>Column(children:[
     SizedBox(height:300,child:CharacterCardArt(key:const Key('summon-new-card'),
-      asset:widget.asset,hp:widget.hp,attack:widget.newAttack,crit:widget.newCrit)),
+      asset:widget.asset,hp:widget.hp,attack:widget.newAttack,crit:widget.newCrit,
+      skillId:widget.newSkillId)),
     const SizedBox(height:12),
+    _skillSummary(widget.newSkillId),
     const Text('ADDED TO YOUR COLLECTION',style:TextStyle(
       color:Color(0xff85e4b0),fontSize:11,fontWeight:FontWeight.w900))
   ]);
+  Widget _skillSummary(String? id) {
+    final skill = SkillCatalog.byId(id);
+    if (skill == null) return const SizedBox.shrink();
+    return Column(children:[
+      Text('${skill.name.toUpperCase()} · ${skill.rarity.toUpperCase()}',
+        textAlign:TextAlign.center,style:TextStyle(color:skill.color,fontSize:10,fontWeight:FontWeight.w900)),
+      const SizedBox(height:3),
+      Text(skill.description,textAlign:TextAlign.center,
+        style:const TextStyle(color:Color(0xffc9d6e5),fontSize:9)),
+    ]);
+  }
   Widget _button(String label,Key key,VoidCallback action,bool gold) =>
     ElevatedButton(key:key,onPressed:action,
       style:ElevatedButton.styleFrom(backgroundColor:gold?const Color(0xffe5bf79):const Color(0xff29405c),

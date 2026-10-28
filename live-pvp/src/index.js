@@ -1,4 +1,5 @@
 import {buildHand,resolveDuel,pickWinner} from './rules.js';
+import {validSkillForStage,SKILL_BY_ID,SKILL_VERSION} from '../../shared/skill_catalog.js';
 const CHOOSE_MS=30000;
 const MAX_ROUNDS=3;
 const WINS_TO_WIN=2;
@@ -23,10 +24,13 @@ export default {
   if(!Array.isArray(ids)||ids.length<MAX_ROUNDS||ids.length>9||new Set(ids).size!==ids.length)return new Response('Invalid deck',{status:400});
   const deck=[];
   for(const id of ids){
-   const [hero,stageText]=id.split(':'),stage=Number(stageText),attack=save.attacks?.[id],crit=save.crits?.[id];
+   const [hero,stageText]=id.split(':'),stage=Number(stageText);
+   const grant=await env.DB.prepare('SELECT attack,crit,skill_id,skill_version FROM skill_grants WHERE uid=? AND card_id=?').bind(row.uid,id).first();
+   const attack=grant?.attack,crit=grant?.crit,skillId=grant?.skill_id;
    if(!save.owned?.includes(id)||!['sam','lira','rhea','dren','tor','aria','kael','neris','nyra'].includes(hero)||![1,2,3].includes(stage)||!Number.isInteger(attack)||attack<1||attack>100||!Number.isInteger(crit)||crit<0||crit>25)
     return new Response('Invalid card',{status:400});
-   deck.push({id,hero,stage,attack,crit});
+   if(grant.skill_version!==SKILL_VERSION||!validSkillForStage(skillId,stage))return new Response('Skill grant unavailable',{status:409});
+   deck.push({id,hero,stage,attack,crit,skillId,skillRarity:SKILL_BY_ID[skillId].rarity,skillVersion:SKILL_VERSION});
   }
   const id=env.LOBBY.idFromName('friendly-global-v1');
   const avatar=['player','guard','vassal','king'].includes(save.avatar)?save.avatar:'player';
@@ -123,12 +127,16 @@ export class PvpLobby {
   const [a,b]=match.players;
   a.used.push(a.chosen.id);b.used.push(b.chosen.id);
   const result=resolveDuel(a.chosen,b.chosen);
+  const timeline=result.log.map(entry=>({...entry,round:match.round,matchId:match.id}));
   if(result.winner===0)match.scores[0]++;
   if(result.winner===1)match.scores[1]++;
-  const event={type:'round_result',round:match.round,cards:[a.chosen,b.chosen],winner:result.winner,log:result.log,score:match.scores};
+  const event={type:'round_result',round:match.round,cards:[a.chosen,b.chosen],winner:result.winner,
+   log:timeline,startHp:result.startHp,finalHp:result.hp,maxHp:result.maxHp,
+   score:match.scores,selfIndex:0};
   match.awaiting=new Set([a.uid,b.uid]);
   send(a.ws,event);
-  send(b.ws,{...event,cards:[b.chosen,a.chosen],winner:result.winner==='draw'?'draw':1-result.winner,log:result.log.map(hit=>({...hit,actor:1-hit.actor})),score:[...match.scores].reverse()});
+  send(b.ws,{...event,cards:[b.chosen,a.chosen],winner:result.winner==='draw'?'draw':1-result.winner,
+   selfIndex:1,score:[...match.scores].reverse()});
   match.readyTimer=setTimeout(()=>{if(!this.matches.has(match.id)||!match.awaiting)return;
    const late=[...match.awaiting];this.finish(match,'replay_timeout',late.length===1?late[0]:null)
   },180000);
@@ -152,8 +160,8 @@ export class PvpLobby {
     score:i===0?match.scores:[...match.scores].reverse()});
   });
   const [a,b]=match.players;
-  const job=this.env.DB.prepare('INSERT INTO pvp_live_history(id,player_a,player_b,score_a,score_b,winner_uid,completed_at) VALUES(?,?,?,?,?,?,?)')
-   .bind(match.id,a.uid,b.uid,match.scores[0],match.scores[1],winning,Date.now()).run().catch(()=>{});
+  const job=this.env.DB.prepare('INSERT INTO pvp_live_history(id,player_a,player_b,score_a,score_b,winner_uid,completed_at,reason) VALUES(?,?,?,?,?,?,?,?)')
+   .bind(match.id,a.uid,b.uid,match.scores[0],match.scores[1],winning,Date.now(),reason).run().catch(()=>{});
   if(typeof this.state.waitUntil==='function')this.state.waitUntil(job);
  }
 }

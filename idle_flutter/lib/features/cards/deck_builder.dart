@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../game/catalog.dart';
 import '../../game/deck_rules.dart';
+import '../../game/combat_rules.dart';
+import '../../game/skill_catalog.dart';
 import '../../theme/kardrune_theme.dart';
+import 'card_stat_badges.dart';
+import 'skill_preview.dart';
 
 class DeckBuilder extends StatefulWidget {
   const DeckBuilder({
@@ -10,8 +14,13 @@ class DeckBuilder extends StatefulWidget {
     required this.owned,
     required this.initial,
     required this.onSave,
+    this.attacks = const {},
+    this.crits = const {},
+    this.skills = const {},
   });
   final List<String> owned, initial;
+  final Map<String,int> attacks, crits;
+  final Map<String,String> skills;
   final ValueChanged<List<String>> onSave;
   @override
   State<DeckBuilder> createState() => _DeckBuilderState();
@@ -147,7 +156,9 @@ class _DeckBuilderState extends State<DeckBuilder> {
     required VoidCallback onTap,
     required bool slot,
   }) {
-    final image = Image.asset(asset(id), fit: BoxFit.contain);
+    final stage = int.parse(id.split(':').last);
+    final image = CharacterCardArt(asset: asset(id),hp:CombatRules.hpForStage(stage),
+      attack:widget.attacks[id],crit:widget.crits[id],skillId:widget.skills[id],compact:true);
     return Draggable<String>(
       data: id,
       feedback: Material(
@@ -156,15 +167,39 @@ class _DeckBuilderState extends State<DeckBuilder> {
           key: const Key('deck-drag-feedback'),
           width: 72,
           height: 98,
-          child: Image.asset(asset(id), fit: BoxFit.contain),
+          child: CharacterCardArt(asset: asset(id),hp:CombatRules.hpForStage(stage),
+            attack:widget.attacks[id],crit:widget.crits[id],skillId:widget.skills[id],compact:true),
         ),
       ),
       childWhenDragging: Opacity(opacity: .25, child: image),
       child: InkWell(
         key: slot ? Key('slot-card-$id') : Key('inventory-$id'),
-        onTap: onTap,
+        onTap: () => _inspect(id),
+        onDoubleTap: onTap,
         child: image,
       ),
     );
+  }
+
+  void _inspect(String id) {
+    final skill = SkillCatalog.byId(widget.skills[id]);
+    final stage = int.parse(id.split(':').last);
+    showDialog<void>(context:context,builder:(dialogContext)=>Dialog(
+      backgroundColor:const Color(0xff111e35),
+      child:SizedBox(width:350,height:MediaQuery.sizeOf(context).height*.75,
+        child:SingleChildScrollView(padding:const EdgeInsets.all(14),child:Column(children:[
+          SizedBox(height:240,child:CharacterCardArt(asset:asset(id),
+            hp:CombatRules.hpForStage(stage),attack:widget.attacks[id],
+            crit:widget.crits[id],skillId:widget.skills[id])),
+          Text(id.toUpperCase(),style:const TextStyle(color:KardRuneTheme.gold,fontWeight:FontWeight.w900)),
+          if(skill!=null)...[
+            Text('${skill.name.toUpperCase()} · ${skill.rarity.toUpperCase()}',
+              style:TextStyle(color:skill.color,fontWeight:FontWeight.w900)),
+            Text(skill.description,textAlign:TextAlign.center),
+            Text('${skill.trigger} · ${skill.limit}',textAlign:TextAlign.center),
+            SkillPreviewButton(skill:skill),
+          ],
+          TextButton(onPressed:()=>Navigator.pop(dialogContext),child:const Text('CLOSE')),
+        ])))));
   }
 }

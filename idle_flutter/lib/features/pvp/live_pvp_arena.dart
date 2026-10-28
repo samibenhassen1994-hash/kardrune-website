@@ -6,8 +6,10 @@ import 'package:flame/game.dart';
 
 import '../../game/catalog.dart';
 import '../../game/combat_rules.dart';
+import '../../game/skill_catalog.dart';
 import '../../services/live_pvp_socket.dart';
 import '../cards/card_stat_badges.dart';
+import '../cards/skill_preview.dart';
 import 'flame_battle_audio.dart';
 import 'live_flame_battle.dart';
 
@@ -23,6 +25,10 @@ class ArenaViewController extends ChangeNotifier {
   bool automatic = false;
   int seconds = 30, generation = 0;
   bool _replaying = false;
+  int _replaySequence = 0;
+  bool _readySent = false;
+  Map<String, dynamic>? _replayPayload;
+  bool get replaying => _replaying;
   bool battleStarted = false;
   int hitSerial = 0;
   int lastDamage = 0;
@@ -30,6 +36,14 @@ class ArenaViewController extends ChangeNotifier {
   String actionText = '';
   bool attackWindup = false;
   bool matchFinished = false;
+  int skillSerial = 0, skillActor = -1, skillTarget = -1;
+  String? lastSkillId;
+  final Map<int, String> runtimeSkillState = {};
+  String? runtimeFor(PvpCard card) {
+    if (identical(card, playerCard)) return runtimeSkillState[0];
+    if (identical(card, opponentCard)) return runtimeSkillState[1];
+    return null;
+  }
   String matchWinner = 'draw';
   int roundsPlayed = 0;
   VoidCallback? onReady;
@@ -46,11 +60,17 @@ class ArenaViewController extends ChangeNotifier {
     automatic = false;
     battleStarted = false;
     hitSerial = 0;
+    skillSerial = 0;
+    lastSkillId = null;
+    runtimeSkillState.clear();
     lastDamage = 0;
     lastCritical = false;
     actionText = '';
     attackWindup = false;
     _replaying = false;
+    _replaySequence++;
+    _readySent = false;
+    _replayPayload = null;
     seconds = (value.durationMs / 1000).ceil();
     generation++;
     _clock?.cancel();
@@ -82,6 +102,8 @@ class ArenaViewController extends ChangeNotifier {
   Future<void> replay(Map<String, dynamic> json) async {
     if (_replaying) return;
     _replaying = true;
+    _replayPayload = json;
+    final serial = ++_replaySequence;
     _clock?.cancel();
     battleStarted = true;
     popup = 'BATTLE START';
@@ -89,14 +111,19 @@ class ArenaViewController extends ChangeNotifier {
     effect = null;
     notifyListeners();
     final token = generation;
+    final selfIndex = json['selfIndex'] as int? ?? 0;
+    int localIndex(int canonical) => canonical == selfIndex ? 0 : 1;
     if (json['cards'] is List && (json['cards'] as List).length >= 2) {
       final cards = json['cards'] as List;
       playerCard = PvpCard.fromJson(Map<String, dynamic>.from(cards[0] as Map));
       opponentCard = PvpCard.fromJson(
         Map<String, dynamic>.from(cards[1] as Map),
       );
-      playerHp = CombatRules.hpForStage(playerCard!.stage);
-      opponentHp = CombatRules.hpForStage(opponentCard!.stage);
+      final startHp = json['startHp'] as List?;
+      playerHp = startHp != null && startHp.length > 1 && startHp[selfIndex] is int
+          ? startHp[selfIndex] as int : CombatRules.hpForStage(playerCard!.stage);
+      opponentHp = startHp != null && startHp.length > 1 && startHp[1-selfIndex] is int
+          ? startHp[1-selfIndex] as int : CombatRules.hpForStage(opponentCard!.stage);
       attackActor = -1;
       effect = null;
       notifyListeners();
@@ -104,25 +131,71 @@ class ArenaViewController extends ChangeNotifier {
     if (hitDuration > Duration.zero) {
       await Future<void>.delayed(const Duration(milliseconds: 550));
     }
-    if (token != generation) return;
+    if (token != generation || serial != _replaySequence) return;
     popup = null;
     notifyListeners();
     for (final raw in (json['log'] as List? ?? const [])) {
-      if (token != generation) return;
+      if (token != generation || serial != _replaySequence) return;
       final log = Map<String, dynamic>.from(raw as Map);
-      attackActor = log['actor'] as int? ?? -1;
+      final kind = log['kind'] as String? ?? 'hit';
+      final target = localIndex(log['target'] as int? ?? 1 - (log['actor'] as int? ?? 0));
+      if (kind == 'status_apply') {
+        runtimeSkillState[target] = '${log['status'] ?? 'Attiva'} · ${log['turns'] ?? 0} azioni';
+        notifyListeners();
+        continue;
+      }
+      if (kind == 'status_expire') {
+        runtimeSkillState.remove(target);
+        notifyListeners();
+        continue;
+      }
+      if (kind == 'attack_start' || kind == 'round_end' ||
+          kind == 'knock_out' || kind == 'shield') {
+        continue;
+      }
+      if (kind == 'skill') {
+        skillActor = localIndex(log['source'] as int? ?? log['actor'] as int? ?? 0);
+        skillTarget = localIndex(log['target'] as int? ?? log['actor'] as int? ?? 0);
+        lastSkillId = log['skillId'] as String?;
+        runtimeSkillState[skillActor] = log['charges'] == 0
+            ? 'CONSUMATA' : (log['status'] as String? ?? 'ATTIVA').toUpperCase();
+        skillSerial++;
+        final skill = SkillCatalog.byId(lastSkillId);
+        actionText = skill == null ? 'SKILL ACTIVATED' : skill.name.toUpperCase();
+        effect = actionText;
+        notifyListeners();
+        if (hitDuration > Duration.zero) await Future<void>.delayed(const Duration(milliseconds: 310));
+        continue;
+      }
+      if (kind == 'dot' || kind == 'heal' || kind == 'dodge' || kind == 'skip') {
+        final effectSkillId = log['skillId'] as String?;
+        if (effectSkillId != null) {
+          skillActor = localIndex(log['source'] as int? ?? 0);
+          skillTarget = target;
+          lastSkillId = effectSkillId;
+          skillSerial++;
+        }
+        if (log['hp'] is int) {
+          if (target == 0) playerHp = log['hp'] as int;
+          if (target == 1) opponentHp = log['hp'] as int;
+        }
+        actionText = SkillCatalog.byId(log['skillId'] as String?)?.name.toUpperCase() ?? kind.toUpperCase();
+        effect = kind == 'heal' ? '+${log['heal'] ?? 0} HP' :
+          kind == 'dodge' ? 'SCHIVATA' : kind == 'skip' ? 'CONGELATO' : '-${log['damage'] ?? 0} HP';
+        notifyListeners();
+        if (hitDuration > Duration.zero) await Future<void>.delayed(const Duration(milliseconds: 390));
+        continue;
+      }
+      attackActor = localIndex(log['actor'] as int? ?? 0);
       actionText = attackActor == 0 ? 'YOU ATTACK → RIVAL' : 'RIVAL ATTACK → YOU';
       attackWindup = true;
       hitSerial++;
       notifyListeners();
       await Future<void>.delayed(hitDuration);
-      if (token != generation) return;
+      if (token != generation || serial != _replaySequence) return;
       attackWindup = false;
-      if (attackActor == 0) {
-        opponentHp = log['hp'] as int;
-      } else {
-        playerHp = log['hp'] as int;
-      }
+      if (target == 0) playerHp = log['hp'] as int;
+      if (target == 1) opponentHp = log['hp'] as int;
       effect = log['critical'] == true
           ? 'CRITICAL!  -${log['damage']} HP'
           : '-${log['damage']} HP';
@@ -131,7 +204,7 @@ class ArenaViewController extends ChangeNotifier {
       notifyListeners();
       if (hitDuration > Duration.zero) await Future<void>.delayed(const Duration(milliseconds: 390));
     }
-    if (token != generation) return;
+    if (token != generation || serial != _replaySequence) return;
     actionText = 'ROUND COMPLETE';
     popup = json['winner'] == 0
         ? 'ROUND WON'
@@ -140,9 +213,39 @@ class ArenaViewController extends ChangeNotifier {
         : 'ROUND DRAW';
     if (json['score'] is List) score = List<int>.from(json['score'] as List);
     roundsPlayed = (json['round'] as int?) ?? hand?.round ?? roundsPlayed;
+    _replaying = false;
     notifyListeners();
     await Future<void>.delayed(const Duration(seconds: 2));
-    if (token == generation) onReady?.call();
+    if (token == generation && serial == _replaySequence) _sendReady();
+  }
+
+  void _sendReady() {
+    if (_readySent) return;
+    _readySent = true;
+    onReady?.call();
+  }
+
+  void skipReplay() {
+    final payload = _replayPayload;
+    if (!_replaying || payload == null) return;
+    final serial = ++_replaySequence;
+    final selfIndex = payload['selfIndex'] as int? ?? 0;
+    final finalHp = payload['finalHp'] as List?;
+    if (finalHp != null && finalHp.length > 1) {
+      playerHp = finalHp[selfIndex] as int;
+      opponentHp = finalHp[1-selfIndex] as int;
+    }
+    if (payload['score'] is List) score = List<int>.from(payload['score'] as List);
+    roundsPlayed = payload['round'] as int? ?? roundsPlayed;
+    attackWindup = false;
+    _replaying = false;
+    actionText = 'ROUND COMPLETE';
+    popup = payload['winner'] == 0 ? 'ROUND WON' :
+      payload['winner'] == 1 ? 'ROUND LOST' : 'ROUND DRAW';
+    notifyListeners();
+    Future<void>.delayed(const Duration(seconds: 2), () {
+      if (serial == _replaySequence) _sendReady();
+    });
   }
 
   void finish(String winner, List<int> value, {bool rewarded = false}) {
@@ -283,11 +386,13 @@ class _LivePvpArenaState extends State<LivePvpArena> {
   void _inspect(PvpCard card) {
     _audio.unlock();
     final hero = KardRuneCatalog.heroes.firstWhere((item) => item.id == card.hero);
+    final skill = SkillCatalog.byId(card.skillId);
     showDialog<void>(context: context, builder: (dialogContext) => Dialog(
       backgroundColor: const Color(0xff111e35),
       shape: RoundedRectangleBorder(side: const BorderSide(color: Color(0xffd5ae61)),
         borderRadius: BorderRadius.circular(12)),
-      child: Padding(padding: const EdgeInsets.all(14), child: Column(
+      child: SizedBox(width: 390, height: MediaQuery.sizeOf(dialogContext).height * .82,
+        child: SingleChildScrollView(child: Padding(padding: const EdgeInsets.all(14), child: Column(
         mainAxisSize: MainAxisSize.min, children: [
         Text(hero.name.toUpperCase(), style: const TextStyle(color: Color(0xffffd993),
           fontSize: 18, fontWeight: FontWeight.w900)),
@@ -297,6 +402,20 @@ class _LivePvpArenaState extends State<LivePvpArena> {
         const SizedBox(height: 12),
         Text('STAGE ${card.stage}  ·  ATK ${card.attack}  ·  CRIT ${card.crit}%  ·  HP ${CombatRules.hpForStage(card.stage)}',
           textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
+        if (skill != null) ...[
+          const SizedBox(height: 8),
+          Text('${skill.name.toUpperCase()} · ${skill.rarity.toUpperCase()}',
+            textAlign: TextAlign.center,style: TextStyle(color:skill.color,fontWeight:FontWeight.w900)),
+          Text(skill.description,textAlign: TextAlign.center,
+            style: const TextStyle(color: Color(0xffd1dfed),fontSize: 11)),
+          Text('${skill.trigger} · ${skill.limit}',textAlign: TextAlign.center,
+            style: const TextStyle(color: Color(0xffa9bdd4),fontSize: 10)),
+          Text('Stato: ${widget.controller.runtimeFor(card) ?? 'DISPONIBILE'}',
+            style: const TextStyle(color: Color(0xffd1dfed),fontSize: 10)),
+          Text('Stage ${card.stage}: ${(SkillCatalog.weights[card.stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% per pull',
+            style: const TextStyle(color: Color(0xffa9bdd4),fontSize: 10)),
+          SkillPreviewButton(skill: skill),
+        ],
         const SizedBox(height: 12),
         Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CLOSE')),
@@ -304,7 +423,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
             onPressed: () { Navigator.pop(dialogContext); _play(card.id); },
             child: const Text('PLAY CARD')),
         ]),
-      ]))));
+      ]))))));
   }
 
   @override
@@ -417,10 +536,13 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                 const SizedBox(height: 5),
                 Text(c.actionText, key: const Key('pvp-attack-direction'), textAlign: TextAlign.center,
                   style: const TextStyle(color: Color(0xffffe2a4), fontSize: 15, fontWeight: FontWeight.w900)),
+                if (c.replaying) TextButton(
+                  onPressed: c.skipReplay,
+                  child: const Text('SKIP REPLAY')),
                 const SizedBox(height: 5),
                 SizedBox(height: bounds.maxHeight < 620 ? 165 : 250,
                   child: LiveFlameBattleStage(key: ValueKey('live-battle-${c.generation}'),
-                    controller: c, audio: _audio)),
+                    controller: c, audio: _audio, onInspect: _inspect)),
               ]),
               if (c.matchFinished) Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Text(c.matchWinner == 'you' ? 'VICTORY' : c.matchWinner == 'opponent' ? 'DEFEAT' : 'DRAW',
@@ -430,6 +552,14 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                   style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Text('${c.roundsPlayed} / 3 ROUNDS PLAYED', style: const TextStyle(color: Color(0xffb7cceb), fontSize: 14)),
+                if (c.playerCard != null && c.opponentCard != null)
+                  SizedBox(height: 92, child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    GestureDetector(onTap: () => _inspect(c.playerCard!),
+                      child: _BattleCard(card: c.playerCard!, selected: false, width: 62, height: 86, hp: c.playerHp)),
+                    const SizedBox(width: 18),
+                    GestureDetector(onTap: () => _inspect(c.opponentCard!),
+                      child: _BattleCard(card: c.opponentCard!, selected: false, width: 62, height: 86, hp: c.opponentHp)),
+                  ])),
                 const SizedBox(height: 8),
                 Text(c.actionText, style: const TextStyle(color: Color(0xffffd993), fontSize: 13)),
                 const SizedBox(height: 24),
@@ -559,9 +689,11 @@ class _LivePvpArenaState extends State<LivePvpArena> {
 }
 
 class LiveFlameBattleStage extends StatefulWidget {
-  const LiveFlameBattleStage({super.key, required this.controller, required this.audio});
+  const LiveFlameBattleStage({super.key, required this.controller, required this.audio,
+    required this.onInspect});
   final ArenaViewController controller;
   final FlameBattleAudio audio;
+  final ValueChanged<PvpCard> onInspect;
   @override
   State<LiveFlameBattleStage> createState() => _LiveFlameBattleStageState();
 }
@@ -571,6 +703,7 @@ class _LiveFlameBattleStageState extends State<LiveFlameBattleStage> {
   final rivalPose = ValueNotifier<LiveCardPose>(liveCardRest);
   late final LiveFlameBattleGame game;
   int seenStrike = 0;
+  int seenSkill = 0;
   bool seenImpact = false;
 
   @override
@@ -585,6 +718,12 @@ class _LiveFlameBattleStageState extends State<LiveFlameBattleStage> {
 
   void _changed() {
     final c = widget.controller;
+    if (c.skillSerial != seenSkill) {
+      seenSkill = c.skillSerial;
+      if (c.lastSkillId != null && c.skillActor >= 0) {
+        game.skill(c.skillActor, c.skillTarget, c.lastSkillId!);
+      }
+    }
     if (c.hitSerial != seenStrike && c.attackWindup) {
       seenStrike = c.hitSerial;
       seenImpact = false;
@@ -623,8 +762,11 @@ class _LiveFlameBattleStageState extends State<LiveFlameBattleStage> {
           builder: (context, value, child) => Transform.translate(
             offset: Offset(value.x, value.y),
             child: Transform.rotate(angle: value.angle, child: child)),
-          child: RepaintBoundary(child: _BattleCard(card: card, selected: false,
-            width: cardWidth, height: cardHeight, hp: hp))),
+          child: RepaintBoundary(child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => widget.onInspect(card),
+            child: _BattleCard(card: card, selected: false,
+              width: cardWidth, height: cardHeight, hp: hp)))),
         const SizedBox(height: 5),
         Text('$hp HP', key: Key('pvp-$side-hp'), style: const TextStyle(
           color: Color(0xff88c9ff), fontWeight: FontWeight.w900)),
@@ -680,6 +822,7 @@ class _BattleCard extends StatelessWidget {
         hp: hp ?? CombatRules.hpForStage(card.stage),
         attack: card.attack,
         crit: card.crit,
+        skillId: card.skillId,
         compact: true,
         imageCacheWidth: 320,
       ),

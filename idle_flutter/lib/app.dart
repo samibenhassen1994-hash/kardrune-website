@@ -7,8 +7,10 @@ import 'game/catalog.dart';
 import 'game/combat_rules.dart';
 import 'game/game_rules.dart';
 import 'game/summon_rules.dart';
+import 'game/skill_catalog.dart';
 import 'features/cards/deck_builder.dart';
 import 'features/cards/card_stat_badges.dart';
+import 'features/cards/skill_preview.dart';
 import 'features/summon/summon_result.dart';
 import 'features/profile/cloud_account_controller.dart';
 import 'features/pvp/live_match_coordinator.dart';
@@ -95,6 +97,7 @@ class _IdleShellState extends State<IdleShell> {
   bool italian = false;
   final owned = <String>{};
   final attacks = <String, int>{}, crits = <String, int>{};
+  final skills = <String, String>{};
   var active = 'sam:1',
       duels = 0,
       wins = 0,
@@ -104,6 +107,10 @@ class _IdleShellState extends State<IdleShell> {
   List<String> deck = [];
   Map<String, Object?>? _pendingDuplicate;
   bool _summonOpen = false;
+  bool _snoozeDuplicate = false;
+  bool _summonRequestPending = false;
+  String? _pendingOnlineRollId;
+  String? _pendingPracticeRollId;
   MotionPreference motion = MotionPreference.automatic;
   late final LocalSaveService? _saveService;
   CloudAccountController? _cloud;
@@ -134,6 +141,17 @@ class _IdleShellState extends State<IdleShell> {
     owned.addAll(save.owned);
     attacks.addAll(save.attacks);
     crits.addAll(save.crits);
+    skills.addAll(save.skills);
+    if (_saveService?.storage.read(CloudAccountController.lastUserKey) == null) {
+      var migrated = false;
+      for (final id in owned) {
+        if (skills.containsKey(id)) continue;
+        final stage = int.tryParse(id.split(':').last) ?? 1;
+        skills[id] = SkillCatalog.roll(stage, widget.random(), widget.random()).id;
+        migrated = true;
+      }
+      if (migrated) _saveService?.save(save.copyWith(skills: Map.of(skills)));
+    }
     _pendingDuplicate = save.pendingDuplicate;
     if (_pendingDuplicate != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -224,6 +242,10 @@ class _IdleShellState extends State<IdleShell> {
   }
 
   void _pvpFinished(String matchId, String reason) {
+    if (reason == 'completed' && _cloud?.identity != null) {
+      _claimPvpReward(matchId);
+      return;
+    }
     if (reason == 'completed' && _saveService != null) {
       final storage = _saveService.storage;
       final claimed = <String>[];
@@ -238,6 +260,32 @@ class _IdleShellState extends State<IdleShell> {
         storage.write(_pvpRewardKey, jsonEncode(claimed.take(500).toList()));
         setState(() => shards += 100);
         _persist();
+      }
+    }
+  }
+
+  Future<void> _claimPvpReward(String matchId) async {
+    final cloud = _cloud;
+    if (cloud == null) return;
+    final accountUid = cloud.identity?.uid;
+    for (var attempt = 0; attempt < 6; attempt++) {
+      try {
+        if (cloud.state != CloudAccountState.synced) await cloud.loadCloud();
+        final response = await cloud.api.post('/api/pvp/reward', {
+          'matchId': matchId, 'revision': cloud.revision,
+        });
+        if (!mounted || cloud.identity?.uid != accountUid) return;
+        cloud.applyServerSave(response);
+        return;
+      } catch (error) {
+        if (attempt == 5) {
+          if (mounted) {
+            setState(() => battleStatus =
+              'PvP reward pending. Cloud result: $error');
+          }
+          return;
+        }
+        await Future<void>.delayed(Duration(milliseconds: 300 * (attempt + 1)));
       }
     }
   }
@@ -296,6 +344,9 @@ class _IdleShellState extends State<IdleShell> {
       crits
         ..clear()
         ..addAll(save.crits);
+      skills
+        ..clear()
+        ..addAll(save.skills);
       _pendingDuplicate = save.pendingDuplicate;
       deck = _saveService?.loadDeck().where(owned.contains).toList() ?? [];
     });
@@ -328,6 +379,7 @@ class _IdleShellState extends State<IdleShell> {
         practiceCount: practiceCount,
         attacks: Map.of(attacks),
         crits: Map.of(crits),
+        skills: Map.of(skills),
         pendingDuplicate: _pendingDuplicate,
       ),
     );
@@ -392,6 +444,10 @@ class _IdleShellState extends State<IdleShell> {
                           index: tab,
                           children: [
                             _Tournament(
+                              activeCard: active,
+                              attack: attacks[active],
+                              crit: crits[active],
+                              skillId: skills[active],
                               rewardsLeft: rewardsLeft,
                               status: battleStatus,
                               onStart: _train,
@@ -411,6 +467,7 @@ class _IdleShellState extends State<IdleShell> {
                               active: active,
                               attacks: attacks,
                               crits: crits,
+                              skills: skills,
                               onPage: (v) => setState(() => page = v),
                               onDeck: _saveDeck,
                               onSelect: (id) {
@@ -513,6 +570,15 @@ class _IdleShellState extends State<IdleShell> {
   );
 
   void _train() {
+    if (_cloud?.identity != null) {
+      if (_cloud!.state != CloudAccountState.synced) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Review or sync your cloud save before training.')));
+        return;
+      }
+      _trainOnline();
+      return;
+    }
     final parts = active.split(':');
     final stage = int.tryParse(parts.last) ?? 1;
     final result = GameRules.resolvePractice(
@@ -535,12 +601,47 @@ class _IdleShellState extends State<IdleShell> {
     _persist();
   }
 
+  Future<void> _trainOnline() async {
+    if (_summonRequestPending) return;
+    final cloud = _cloud!;
+    final accountUid = cloud.identity?.uid;
+    _summonRequestPending = true;
+    final rollId = _pendingPracticeRollId ??= _newRollId();
+    try {
+      if (!await cloud.prepareServerMutation()) throw StateError('Cloud save needs review');
+      final result = await cloud.api.post('/api/practice', {
+        'rollId': rollId, 'revision': cloud.revision,
+      });
+      if (!mounted || cloud.identity?.uid != accountUid) return;
+      cloud.applyServerSave(result);
+      _pendingPracticeRollId = null;
+      setState(() => battleStatus =
+        '${result['win'] == true ? 'VICTORY' : 'DEFEAT'} · +${result['reward']} SHARDS');
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Practice unavailable: $error')));
+      }
+    } finally {
+      _summonRequestPending = false;
+    }
+  }
+
   void _summon(bool featured) {
     if (_pendingDuplicate != null) {
       _resumeDuplicate();
       return;
     }
-    if (_summonOpen || shards < SummonRules.cost(featured)) return;
+    if (_summonOpen || _summonRequestPending || shards < SummonRules.cost(featured)) return;
+    if (_cloud?.identity != null) {
+      if (_cloud!.state != CloudAccountState.synced) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Review or sync your cloud save before summoning.')));
+        return;
+      }
+      _summonOnline(featured);
+      return;
+    }
     final stage = SummonRules.stageFor(featured, widget.random());
     final index = SummonRules.heroIndex(
       featured,
@@ -552,28 +653,68 @@ class _IdleShellState extends State<IdleShell> {
     final duplicate = owned.contains(id);
     final attack = CombatRules.rollAttack(widget.random);
     final crit = CombatRules.rollCrit(widget.random);
+    final skill = SkillCatalog.roll(stage, widget.random(), widget.random());
     setState(() {
       shards -= SummonRules.cost(featured);
       pulls++;
       if (duplicate) {
-        _pendingDuplicate = {'id': id, 'attack': attack, 'crit': crit};
+        _pendingDuplicate = {'id': id, 'attack': attack, 'crit': crit,
+          'skillId': skill.id, 'skillVersion': SkillCatalog.version};
       } else {
         owned.add(id);
         attacks[id] = attack;
         crits[id] = crit;
+        skills[id] = skill.id;
       }
     });
     _persist();
-    _reveal(id, attack, crit, duplicate);
+    _reveal(id, attack, crit, duplicate, skill.id);
+  }
+
+  String _newRollId() {
+    final random = math.Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    final hex = bytes.map((v) => v.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
+  }
+
+  Future<void> _summonOnline(bool featured) async {
+    final cloud = _cloud!;
+    final accountUid = cloud.identity?.uid;
+    _summonRequestPending = true;
+    final rollId = _pendingOnlineRollId ??= _newRollId();
+    try {
+      if (!await cloud.prepareServerMutation()) throw StateError('Cloud save needs review');
+      final result = await cloud.api.post('/api/summon', {
+        'featured': featured, 'revision': cloud.revision, 'rollId': rollId,
+      });
+      if (!mounted || cloud.identity?.uid != accountUid) return;
+      cloud.applyServerSave(result);
+      _pendingOnlineRollId = null;
+      if (result['card'] is! Map) return;
+      final card = Map<String, dynamic>.from(result['card'] as Map);
+      _reveal(card['id'] as String, card['attack'] as int,
+        card['crit'] as int, result['duplicate'] == true, card['skillId'] as String);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Summon unavailable: $error')));
+      }
+    } finally {
+      _summonRequestPending = false;
+    }
   }
 
   void _resumeDuplicate() {
     if (_pendingDuplicate == null || _summonOpen) return;
     final p = _pendingDuplicate!;
-    _reveal(p['id'] as String, p['attack'] as int, p['crit'] as int, true);
+    _reveal(p['id'] as String, p['attack'] as int, p['crit'] as int, true,
+      p['skillId'] as String?);
   }
 
-  void _reveal(String id, int attack, int crit, bool duplicate) {
+  void _reveal(String id, int attack, int crit, bool duplicate, String? skillId) {
     if (!mounted || _summonOpen) return;
     final parts = id.split(':');
     final stage = int.parse(parts.last);
@@ -581,11 +722,22 @@ class _IdleShellState extends State<IdleShell> {
     _summonOpen = true;
     void decide(BuildContext dialogContext, bool replace) {
       if (_pendingDuplicate == null) return;
+      final rollId = _pendingDuplicate!['rollId'];
+      if (rollId is String) {
+        if (_cloud?.identity == null) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Sign in to resolve this saved online summon.')));
+        } else {
+          _decideOnline(dialogContext, rollId, replace);
+        }
+        return;
+      }
       final decision = SummonRules.resolveDuplicate(replace: replace);
       setState(() {
         if (decision.useNewStats) {
           attacks[id] = attack;
           crits[id] = crit;
+          if (skillId != null) skills[id] = skillId;
         } else {
           shards += decision.refund;
         }
@@ -607,18 +759,48 @@ class _IdleShellState extends State<IdleShell> {
         oldCrit: duplicate ? crits[id] : null,
         newAttack: attack,
         newCrit: crit,
+        newSkillId: skillId,
+        oldSkillId: skills[id],
         onKeep: () => decide(dialogContext, false),
         onReplace: () => decide(dialogContext, true),
         onContinue: () => Navigator.of(dialogContext).pop(),
+        onLater: duplicate ? () {
+          _snoozeDuplicate = true;
+          Navigator.of(dialogContext).pop();
+        } : null,
       ),
     ).whenComplete(() {
       _summonOpen = false;
-      if (mounted && _pendingDuplicate != null) {
+      if (mounted && _pendingDuplicate != null && !_snoozeDuplicate) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _resumeDuplicate();
         });
       }
+      _snoozeDuplicate = false;
     });
+  }
+
+  Future<void> _decideOnline(BuildContext dialogContext, String rollId, bool replace) async {
+    if (_summonRequestPending || _cloud?.state != CloudAccountState.synced) return;
+    _summonRequestPending = true;
+    final cloud = _cloud!;
+    final accountUid = cloud.identity?.uid;
+    try {
+      if (!await cloud.prepareServerMutation()) throw StateError('Cloud save needs review');
+      final response = await cloud.api.post('/api/summon/decision', {
+        'rollId': rollId, 'replace': replace, 'revision': cloud.revision,
+      });
+      if (!mounted || cloud.identity?.uid != accountUid) return;
+      cloud.applyServerSave(response);
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Decision unavailable: $error')));
+      }
+    } finally {
+      _summonRequestPending = false;
+    }
   }
 }
 
@@ -814,6 +996,10 @@ class _RuneNavigation extends StatelessWidget {
 
 class _Tournament extends StatelessWidget {
   const _Tournament({
+    required this.activeCard,
+    this.attack,
+    this.crit,
+    this.skillId,
     required this.rewardsLeft,
     required this.status,
     required this.onStart,
@@ -823,6 +1009,9 @@ class _Tournament extends StatelessWidget {
     required this.onFlameDemo,
   });
   final int rewardsLeft;
+  final String activeCard;
+  final int? attack, crit;
+  final String? skillId;
   final String status;
   final VoidCallback onStart;
   final VoidCallback? onLive;
@@ -945,8 +1134,12 @@ class _Tournament extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _HomeCombatant(
-                        id: 'sam',
-                        label: 'SAM · S1',
+                        id: activeCard.split(':').first,
+                        stage: int.tryParse(activeCard.split(':').last) ?? 1,
+                        attack: attack,
+                        crit: crit,
+                        skillId: skillId,
+                        label: '${activeCard.split(':').first.toUpperCase()} · S${activeCard.split(':').last}',
                         subtitle: 'YOUR HERO',
                         compact: compact,
                       ),
@@ -1161,10 +1354,17 @@ class _HomeCombatant extends StatelessWidget {
     required this.label,
     required this.subtitle,
     required this.compact,
+    this.stage = 1,
+    this.attack,
+    this.crit,
+    this.skillId,
     this.enemy = false,
   });
   final String id, label, subtitle;
   final bool compact, enemy;
+  final int stage;
+  final int? attack, crit;
+  final String? skillId;
   @override
   Widget build(BuildContext context) {
     final hero = KardRuneCatalog.heroes.firstWhere((item) => item.id == id);
@@ -1181,10 +1381,22 @@ class _HomeCombatant extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Image.asset(
-              hero.cardAsset(hero.stages.first),
-              fit: BoxFit.contain,
-            ),
+            child: enemy ? Image.asset(hero.cardAsset(hero.stages.first),fit:BoxFit.contain)
+              : GestureDetector(onTap: () {
+                  final skill = SkillCatalog.byId(skillId);
+                  if(skill == null)return;
+                  showDialog<void>(context:context,builder:(dialogContext)=>Dialog(
+                    backgroundColor:const Color(0xff111e35),
+                    child:Padding(padding:const EdgeInsets.all(16),child:Column(
+                      mainAxisSize:MainAxisSize.min,children:[
+                        Text(skill.name.toUpperCase(),style:TextStyle(color:skill.color,fontWeight:FontWeight.w900)),
+                        Text(skill.description,textAlign:TextAlign.center),
+                        Text('${skill.trigger} · ${skill.limit}',textAlign:TextAlign.center),
+                        SkillPreviewButton(skill:skill),
+                        TextButton(onPressed:()=>Navigator.pop(dialogContext),child:const Text('CLOSE')),
+                      ]))));
+                },child:CharacterCardArt(asset:hero.cardAsset(hero.stages[stage-1]),
+                  hp:CombatRules.hpForStage(stage),attack:attack,crit:crit,skillId:skillId)),
           ),
         ),
         SizedBox(height: compact ? 3 : 6),
@@ -1272,6 +1484,7 @@ class _Cards extends StatelessWidget {
     required this.active,
     required this.attacks,
     required this.crits,
+    required this.skills,
     required this.onPage,
     required this.onDeck,
     required this.onSelect,
@@ -1282,6 +1495,7 @@ class _Cards extends StatelessWidget {
   final List<String> deck;
   final String active;
   final Map<String, int> attacks, crits;
+  final Map<String, String> skills;
   final ValueChanged<int> onPage;
   final ValueChanged<List<String>> onDeck;
   final ValueChanged<String> onSelect;
@@ -1353,9 +1567,11 @@ class _Cards extends StatelessWidget {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: i < deck.length
-                                ? Image.asset(
-                                    _assetForId(deck[i]),
-                                    fit: BoxFit.contain,
+                                ? CharacterCardArt(
+                                    asset: _assetForId(deck[i]),
+                                    hp: CombatRules.hpForStage(int.parse(deck[i].split(':').last)),
+                                    attack: attacks[deck[i]], crit: crits[deck[i]],
+                                    skillId: skills[deck[i]], compact: true,
                                   )
                                 : Text(
                                     '${i + 1}'.padLeft(2, '0'),
@@ -1491,6 +1707,9 @@ class _Cards extends StatelessWidget {
         child: DeckBuilder(
           owned: owned,
           initial: deck,
+          attacks: attacks,
+          crits: crits,
+          skills: skills,
           onSave: (value) {
             onDeck(value);
             Navigator.pop(dialogContext);
@@ -1542,6 +1761,7 @@ class _Cards extends StatelessWidget {
                 hp: CombatRules.hpForStage(stage),
                 attack: isOwned ? attacks[id] : null,
                 crit: isOwned ? crits[id] : null,
+                skillId: isOwned ? skills[id] : null,
                 imageOpacity: isOwned ? 1 : .28,
               ),
               if (!isOwned)
@@ -1576,10 +1796,11 @@ class _Cards extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
         ),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 390),
+          constraints: BoxConstraints(maxWidth: 390,
+            maxHeight: MediaQuery.sizeOf(dialogContext).height * .9),
           child: Padding(
             padding: const EdgeInsets.all(18),
-            child: Column(
+            child: SingleChildScrollView(child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
@@ -1600,9 +1821,24 @@ class _Cards extends StatelessWidget {
                     hp: CombatRules.hpForStage(stage),
                     attack: isOwned ? attacks[id] : null,
                     crit: isOwned ? crits[id] : null,
+                    skillId: isOwned ? skills[id] : null,
                   ),
                 ),
                 const SizedBox(height: 12),
+                if (isOwned) if (SkillCatalog.byId(skills[id]) case final skill?) ...[
+                  Text('${skill.name.toUpperCase()} · ${skill.rarity.toUpperCase()}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: skill.color, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 4),
+                  Text(skill.description, textAlign: TextAlign.center,
+                    style: const TextStyle(color: Color(0xffd2dced), fontSize: 11)),
+                  Text('${skill.trigger} · ${skill.limit}', textAlign: TextAlign.center,
+                    style: const TextStyle(color: Color(0xffa9bdd4), fontSize: 10)),
+                  Text('Stage $stage: ${(SkillCatalog.weights[stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% per pull',
+                    style: const TextStyle(color: Color(0xffa9bdd4), fontSize: 10)),
+                  SkillPreviewButton(skill: skill),
+                  const SizedBox(height: 8),
+                ],
                 Text(
                   isOwned ? 'SELECTED CHAMPION' : 'NOT COLLECTED',
                   style: TextStyle(
@@ -1620,7 +1856,7 @@ class _Cards extends StatelessWidget {
                   onTap: () => Navigator.pop(dialogContext),
                 ),
               ],
-            ),
+            )),
           ),
         ),
       ),
@@ -2121,6 +2357,11 @@ class _Profile extends StatelessWidget {
                             icon: const Icon(Icons.logout, size: 14),
                             label: const Text('LOGOUT'),
                           ),
+                          if (cloud!.hasGuestBackup)
+                            TextButton(
+                              onPressed: cloud!.restoreGuestBackup,
+                              child: const Text('RESTORE OFFLINE SAVE'),
+                            ),
                         ],
                       ),
                   ],

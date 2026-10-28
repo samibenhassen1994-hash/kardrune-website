@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../game/skill_catalog.dart';
 
 class CharacterCardArt extends StatelessWidget {
   const CharacterCardArt({
@@ -12,6 +13,7 @@ class CharacterCardArt extends StatelessWidget {
     this.compact = false,
     this.imageOpacity = 1,
     this.imageCacheWidth,
+    this.skillId,
   });
 
   final String asset;
@@ -23,6 +25,7 @@ class CharacterCardArt extends StatelessWidget {
   final double imageOpacity;
   // Optional: decode small in-arena cards at their displayed resolution.
   final int? imageCacheWidth;
+  final String? skillId;
 
   @override
   Widget build(BuildContext context) => Center(
@@ -50,6 +53,36 @@ class CharacterCardArt extends StatelessWidget {
               ),
             ),
           ),
+          if (SkillCatalog.byId(skillId) case final skill?)
+            Positioned(
+              left: 4,
+              right: 4,
+              top: 0,
+              bottom: 0,
+              child: IgnorePointer(
+                child: Align(
+                  alignment: const Alignment(0, .58),
+                  child: FractionallySizedBox(widthFactor: .72, child: Container(
+                    constraints: const BoxConstraints(maxWidth: 145),
+                    padding: EdgeInsets.symmetric(horizontal: compact ? 2 : 4, vertical: compact ? 2 : 3),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [
+                        Color(0x99071124), Color(0xc0071124), Color(0x99071124)]),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(skill.name.toUpperCase(),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: skill.color, fontSize: compact ? 7 : 10,
+                        fontWeight: FontWeight.w800, shadows: [
+                          Shadow(color: skill.color.withValues(alpha: .8), blurRadius: 7),
+                          const Shadow(color: Colors.black, blurRadius: 3),
+                        ])),
+                  )),
+                ),
+              ),
+            ),
         ],
       ),
     ),

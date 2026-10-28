@@ -9,15 +9,23 @@ class PvpCard {
     required this.stage,
     required this.attack,
     required this.crit,
+    this.skillId,
+    this.skillRarity,
+    this.skillVersion,
   });
   final String id, hero;
   final int stage, attack, crit;
+  final String? skillId, skillRarity;
+  final int? skillVersion;
   factory PvpCard.fromJson(Map<String, dynamic> j) => PvpCard(
     id: j['id'] as String,
     hero: j['hero'] as String,
     stage: j['stage'] as int,
     attack: j['attack'] as int,
     crit: j['crit'] as int,
+    skillId: j['skillId'] as String?,
+    skillRarity: j['skillRarity'] as String?,
+    skillVersion: j['skillVersion'] as int?,
   );
 }
 

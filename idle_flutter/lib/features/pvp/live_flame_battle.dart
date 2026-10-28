@@ -6,6 +6,7 @@ import 'package:flame/text.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/live_pvp_socket.dart';
+import '../../game/skill_catalog.dart';
 import 'flame_attack_style.dart';
 import 'flame_battle_audio.dart';
 
@@ -54,6 +55,12 @@ class LiveFlameBattleGame extends FlameGame {
     _effects.clear();
     pauseEngine();
   }
+
+  void skill(int actor, int target, String skillId) {
+    if (!isLoaded) return;
+    _effects.skill(actor, target, skillId);
+    resumeEngine();
+  }
 }
 
 class _LiveStrikeEffects extends Component {
@@ -72,6 +79,25 @@ class _LiveStrikeEffects extends Component {
   FlameAttackStyle style = FlameAttackStyle.sword;
   bool critical = false;
   double strikeAge = 99, impactAge = 99;
+  double skillAge = 99;
+  int skillActor = -1, skillTarget = -1;
+  String? skillId;
+  SkillDefinition? activeSkill;
+  TextPaint? skillPaint;
+
+  void skill(int actor, int target, String id) {
+    skillActor = actor;
+    skillTarget = target;
+    skillId = id;
+    activeSkill = SkillCatalog.byId(id);
+    final skill = activeSkill;
+    if (skill != null) {
+      skillPaint = TextPaint(style: TextStyle(color: skill.color,
+        fontSize: 15, fontWeight: FontWeight.w900,
+        shadows: [Shadow(color: skill.color, blurRadius: 12)]));
+    }
+    skillAge = 0;
+  }
 
   void strike(int value, FlameAttackStyle attackStyle) {
     actor = value;
@@ -89,7 +115,7 @@ class _LiveStrikeEffects extends Component {
   }
 
   void clear() {
-    strikeAge = impactAge = 99;
+    strikeAge = impactAge = skillAge = 99;
     actor = -1;
     onPose(liveCardRest, liveCardRest);
   }
@@ -99,6 +125,7 @@ class _LiveStrikeEffects extends Component {
     final step = dt.clamp(0.0, .05);
     strikeAge += step;
     impactAge += step;
+    skillAge += step;
     final width = findGame()?.size.x ?? 0;
     final forward = actor == 0 ? 1.0 : -1.0;
     final progress = (strikeAge / .94).clamp(0.0, 1.0);
@@ -111,15 +138,59 @@ class _LiveStrikeEffects extends Component {
       y: -5 * math.sin(math.pi * advance), angle: forward * .11 * advance);
     final victim = (x: shake, y: shake.abs() * .13, angle: shake * .006);
     onPose(actor == 0 ? active : victim, actor == 0 ? victim : active);
-    if (strikeAge > 1.3 && impactAge > .75) findGame()?.pauseEngine();
+    if (strikeAge > 1.3 && impactAge > .75 && skillAge > 1.1) findGame()?.pauseEngine();
   }
 
   @override
   void render(Canvas canvas) {
-    if (actor < 0) return;
     final game = findGame();
     if (game == null) return;
     final w = game.size.x, h = game.size.y;
+    final skill = activeSkill;
+    if (skillAge < 1.1 && skillActor >= 0 && skill != null) {
+      final fade = (1 - skillAge / 1.1).clamp(0.0, 1.0);
+      final defensive = skill.vfx == 'shield' || skill.vfx == 'dodge' ||
+        skill.vfx == 'heal' || skill.vfx == 'ascend';
+      final side = defensive ? skillActor : skillTarget;
+      final x = w * (side == 0 ? .25 : .75);
+      final center = Offset(x, h * .51);
+      final paint = Paint()..color = skill.color.withValues(alpha: fade * .85)
+        ..style = PaintingStyle.stroke..strokeWidth = 3;
+      if (skill.vfx == 'shield' || skill.vfx == 'dodge') {
+        canvas.drawCircle(center, 24 + skillAge * 40, paint);
+        canvas.drawCircle(center, 13 + skillAge * 22,
+          Paint()..color = skill.color.withValues(alpha: fade * .45)
+            ..style = PaintingStyle.stroke..strokeWidth = 2);
+      } else if (skill.vfx == 'curse' || skill.vfx == 'silence' || skill.vfx == 'freeze') {
+        for (var i = 0; i < 7; i++) {
+          final dx = (i - 3) * 13.0;
+          final y = center.dy - 42 + skillAge * 55 + (i % 2) * 8;
+          canvas.drawLine(Offset(x + dx, y - 9), Offset(x + dx, y + 9), paint);
+        }
+      } else if (skill.vfx == 'poison' || skill.vfx == 'bleed' || skill.vfx == 'burn') {
+        for (var i = 0; i < 12; i++) {
+          final angle = i * 2.399963;
+          final radius = 15 + skillAge * (12 + i % 4 * 6);
+          canvas.drawCircle(center + Offset(math.cos(angle), math.sin(angle)) * radius,
+            2 + i % 3.0, Paint()..color = skill.color.withValues(alpha: fade));
+        }
+      } else if (skill.vfx == 'heal' || skill.vfx == 'ascend') {
+        for (var i = 0; i < 8; i++) {
+          final dx = (i - 3.5) * 10;
+          final y = center.dy + 22 - skillAge * (35 + i % 3 * 8);
+          canvas.drawCircle(Offset(x + dx, y), 3,
+            Paint()..color = skill.color.withValues(alpha: fade));
+        }
+      } else {
+        final path = Path()..moveTo(x - 38 + skillAge * 18, center.dy + 29)
+          ..lineTo(x + 15 + skillAge * 16, center.dy - 26)
+          ..lineTo(x + 35 + skillAge * 12, center.dy - 34);
+        canvas.drawPath(path, paint);
+      }
+      skillPaint?.render(canvas, skill.name.toUpperCase(),
+        Vector2(x, h * .17 - skillAge * 10), anchor: Anchor.center);
+    }
+    if (actor < 0) return;
     final sourceX = w * (actor == 0 ? .25 : .75);
     final targetX = w * (actor == 0 ? .75 : .25);
     final y = h * .5;

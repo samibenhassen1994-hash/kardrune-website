@@ -37,6 +37,7 @@ class CloudAccountController extends ChangeNotifier {
     this.onRemoteSave,
   });
   static const lastUserKey = 'idle-cloud-last-user-v1';
+  static const guestBackupPrefix = 'idle-guest-before-cloud-v1:';
 
   final CloudAuthPort auth;
   final ApiClient api;
@@ -55,6 +56,12 @@ class CloudAccountController extends ChangeNotifier {
 
   Future<void> get settle => _settle;
   String get _linkKey => 'idle-cloud-sync-v1:${identity!.uid}';
+  String? get _guestBackupKey {
+    final uid = identity?.uid ?? local.storage.read(lastUserKey);
+    return uid == null ? null : '$guestBackupPrefix$uid';
+  }
+  bool get hasGuestBackup => _guestBackupKey != null &&
+      local.storage.read(_guestBackupKey!) != null;
 
   void start() {
     _subscription ??= auth.accountChanges.listen((account) {
@@ -174,15 +181,27 @@ class CloudAccountController extends ChangeNotifier {
   Future<void> _upload({required bool auto}) async {
     try {
       final save = local.load();
+      if (revision == 0 && _guestBackupKey != null && !hasGuestBackup) {
+        local.storage.write(_guestBackupKey!, jsonEncode(save.toJson()));
+      }
       final response = await api.putSave(save.toJson(), revision);
       revision = response['revision'] is int
           ? response['revision'] as int
           : revision + 1;
-      final snapshot = jsonEncode(save.toJson());
+      final canonical = response['save'] is Map
+          ? PlayerSave.fromJson(Map<String, Object?>.from(response['save'] as Map))
+          : save;
+      if (response['save'] is Map) {
+        local.save(canonical);
+        onRemoteSave?.call(canonical);
+      }
+      final snapshot = jsonEncode(canonical.toJson());
       _writeLink(revision, snapshot);
-      remoteSave = save.toJson();
+      remoteSave = canonical.toJson();
       state = CloudAccountState.synced;
-      message = 'Saved automatically · revision $revision';
+      message = hasGuestBackup
+          ? 'Cloud saved · offline snapshot retained on this device'
+          : 'Saved automatically · revision $revision';
       notifyListeners();
     } on SaveConflict catch (error) {
       revision = error.revision;
@@ -198,6 +217,44 @@ class CloudAccountController extends ChangeNotifier {
   }
 
   Future<void> uploadLocal() => _upload(auto: false);
+
+  Future<bool> prepareServerMutation() async {
+    _syncTimer?.cancel();
+    if (identity == null || state != CloudAccountState.synced) return false;
+    final snapshot = jsonEncode(local.load().toJson());
+    if (_readLink()?.snapshot != snapshot) await _upload(auto: true);
+    return identity != null && state == CloudAccountState.synced;
+  }
+
+  Future<void> restoreGuestBackup() async {
+    final key = _guestBackupKey;
+    if (key == null) return;
+    final raw = local.storage.read(key);
+    if (raw == null) return;
+    await auth.signOutAccount();
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map) return;
+    final save = PlayerSave.fromJson(Map<String, Object?>.from(decoded));
+    local.save(save);
+    onRemoteSave?.call(save);
+    state = CloudAccountState.signedOut;
+    message = 'Offline snapshot restored. Cloud account signed out.';
+    notifyListeners();
+  }
+
+  void applyServerSave(Map<String, dynamic> response) {
+    final raw = response['save'];
+    if (identity == null || raw is! Map || response['revision'] is! int) return;
+    final save = PlayerSave.fromJson(Map<String, Object?>.from(raw));
+    revision = response['revision'] as int;
+    remoteSave = save.toJson();
+    local.save(save);
+    onRemoteSave?.call(save);
+    _writeLink(revision, jsonEncode(save.toJson()));
+    state = CloudAccountState.synced;
+    message = 'Cloud progress saved · revision $revision';
+    notifyListeners();
+  }
 
   Future<void> loadCloud() async {
     try {
