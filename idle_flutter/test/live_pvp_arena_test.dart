@@ -41,6 +41,11 @@ void main() {
     expect(find.text('Rival'), findsOneWidget);
     expect(find.byKey(const Key('player-avatar')), findsOneWidget);
     expect(find.byKey(const Key('opponent-avatar')), findsOneWidget);
+    expect(tester.getSize(find.byKey(const Key('player-avatar'))).width, greaterThanOrEqualTo(44));
+    expect(tester.getSize(find.byKey(const Key('opponent-avatar'))).width, greaterThanOrEqualTo(44));
+    expect(find.textContaining('LIVE RUNE CLASH'), findsNothing);
+    final roundCenter = tester.getCenter(find.byKey(const Key('round-counter')));
+    expect((roundCenter.dx - 160).abs(), lessThan(8));
     expect(find.text('1'), findsOneWidget);
     expect(find.byKey(const Key('round-score')), findsOneWidget);
     expect(tester.takeException(), isNull);

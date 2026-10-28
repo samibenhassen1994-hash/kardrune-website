@@ -72,6 +72,7 @@ void main() {
       () => Future<void>.delayed(const Duration(milliseconds: 250)),
     );
     await tester.pump();
+    expect(tester.takeException(), isNull);
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/pvp_arena_390x844.png'),

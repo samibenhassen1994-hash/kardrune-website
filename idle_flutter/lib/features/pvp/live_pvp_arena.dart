@@ -321,32 +321,39 @@ class _LivePvpArenaState extends State<LivePvpArena> {
           colors: [Color(0xff203959), Color(0xff091225), Color(0xff1a1232)])),
         child: Column(children: [
           Container(key: const Key('pvp-round-header'),
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.symmetric(horizontal: 9, vertical: bounds.maxHeight < 620 ? 5 : 8),
             decoration: const BoxDecoration(color: Color(0xff121e33),
               border: Border(bottom: BorderSide(color: Color(0xffdfb76c)))),
-            child: Column(children: [
-              Row(children: [
-                const Expanded(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
-                  child: Text('⚔ LIVE RUNE CLASH', style: TextStyle(color: Color(0xffffd993), fontSize: 16, fontWeight: FontWeight.w900)))),
-                const SizedBox(width: 8),
-                Text('ROUND ' + (c.hand?.round ?? 1).toString() + ' / 3',
-                  key: const Key('round-counter'), style: const TextStyle(fontWeight: FontWeight.w900)),
-              ]),
-              const SizedBox(height: 5),
-              Row(key: const Key('round-score'), children: [
-                Expanded(child: _profileScore(
+            child: Row(children: [
+                Expanded(child: _profileIdentity(
                   label: 'TU', name: c.hand?.playerName ?? widget.playerName,
                   avatar: c.hand?.playerAvatar ?? widget.playerAvatar,
-                  wins: c.score[0], imageKey: const Key('player-avatar'))),
-                const Padding(padding: EdgeInsets.symmetric(horizontal: 5),
-                  child: Text('VS', style: TextStyle(color: Color(0xffffd993),
-                    fontFamily: 'Georgia', fontWeight: FontWeight.w900))),
-                Expanded(child: _profileScore(
+                  imageKey: const Key('player-avatar'), accent: const Color(0xff4ba8ff),
+                  compact: bounds.maxWidth < 360 || bounds.maxHeight < 620)),
+                SizedBox(width: bounds.maxWidth < 360 ? 94 : 104,
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    FittedBox(fit: BoxFit.scaleDown, child: Text(
+                      'ROUND ${c.hand?.round ?? 1} / 3',
+                      key: const Key('round-counter'),
+                      style: const TextStyle(color: Color(0xffffe0a1),
+                        fontSize: 13, fontWeight: FontWeight.w900))),
+                    const SizedBox(height: 5),
+                    Row(key: const Key('round-score'),
+                      mainAxisAlignment: MainAxisAlignment.center, children: [
+                      _roundWin(c.score[0], const Color(0xff4ba8ff)),
+                      const Padding(padding: EdgeInsets.symmetric(horizontal: 5),
+                        child: Text('VS', style: TextStyle(color: Color(0xffffd993),
+                          fontFamily: 'Georgia', fontSize: 13, fontWeight: FontWeight.w900))),
+                      _roundWin(c.score[1], const Color(0xffff6c6c)),
+                    ]),
+                  ])),
+                Expanded(child: _profileIdentity(
                   label: 'RIVALE', name: c.hand?.opponent ?? 'SEARCHING',
                   avatar: c.hand?.opponentAvatar ?? 'player',
-                  wins: c.score[1], imageKey: const Key('opponent-avatar'),
+                  imageKey: const Key('opponent-avatar'),
+                  accent: const Color(0xffff6c6c),
+                  compact: bounds.maxWidth < 360 || bounds.maxHeight < 620,
                   reverse: true)),
-              ]),
             ])),
           Container(key: const Key('pvp-timer'), margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
             padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
@@ -488,35 +495,45 @@ class _LivePvpArenaState extends State<LivePvpArena> {
       Text(detail, style: const TextStyle(color: Color(0xffb3c7dd), fontSize: 11)),
     ]));
 
-  Widget _profileScore({required String label, required String name,
-    required String avatar, required int wins, required Key imageKey,
-    bool reverse = false}) {
+  Widget _roundWin(int wins, Color accent) => Container(
+    width: 25, height: 30, alignment: Alignment.center,
+    decoration: BoxDecoration(
+      color: accent.withValues(alpha: .18),
+      border: Border.all(color: accent, width: 1.5),
+      borderRadius: BorderRadius.circular(7),
+      boxShadow: [BoxShadow(color: accent.withValues(alpha: .2), blurRadius: 8)]),
+    child: Text('$wins', style: TextStyle(color: accent,
+      fontSize: 17, fontWeight: FontWeight.w900)));
+
+  Widget _profileIdentity({required String label, required String name,
+    required String avatar, required Key imageKey, required Color accent,
+    required bool compact, bool reverse = false}) {
     final safeAvatar = const ['player', 'guard', 'vassal', 'king'].contains(avatar)
         ? avatar : 'player';
-    final portrait = Container(key: imageKey, width: 34, height: 34,
+    final size = compact ? 44.0 : 56.0;
+    final portrait = Container(key: imageKey, width: size, height: size,
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xffd9b66d), width: 1.5),
+        gradient: LinearGradient(colors: [accent, const Color(0xffffd993), accent]),
+        border: Border.all(color: accent, width: 2),
+        boxShadow: [BoxShadow(color: accent.withValues(alpha: .55), blurRadius: 9)]),
+      child: Container(decoration: BoxDecoration(shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xff101b31), width: 2),
         image: DecorationImage(image: AssetImage(
-          'assets/idle/avatars/avatar_$safeAvatar.webp'), fit: BoxFit.cover)));
+          'assets/idle/avatars/avatar_$safeAvatar.webp'), fit: BoxFit.cover))));
     final identity = Expanded(child: Column(
       crossAxisAlignment: reverse ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min, children: [
-      Text(label, style: const TextStyle(color: Color(0xffb9cbdf),
-        fontSize: 8, fontWeight: FontWeight.w800)),
+      Text(label, style: TextStyle(color: accent,
+        fontSize: 9, fontWeight: FontWeight.w900)),
       Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
         textAlign: reverse ? TextAlign.right : TextAlign.left,
         style: const TextStyle(color: Color(0xffffe4a3), fontSize: 11,
           fontWeight: FontWeight.w900)),
     ]));
-    final score = Container(width: 25, height: 29, alignment: Alignment.center,
-      decoration: BoxDecoration(color: const Color(0xff263f5f),
-        border: Border.all(color: const Color(0xffd9b66d)),
-        borderRadius: BorderRadius.circular(6)),
-      child: Text('$wins', style: const TextStyle(color: Colors.white,
-        fontSize: 17, fontWeight: FontWeight.w900)));
     return Row(children: reverse
-      ? [score, const SizedBox(width: 4), identity, const SizedBox(width: 4), portrait]
-      : [portrait, const SizedBox(width: 4), identity, const SizedBox(width: 4), score]);
+      ? [identity, const SizedBox(width: 4), portrait]
+      : [portrait, const SizedBox(width: 4), identity]);
   }
 
 }
