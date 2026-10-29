@@ -25,7 +25,7 @@ class ArenaLanding extends StatelessWidget {
     builder: (context, bounds) {
       final width = bounds.maxWidth;
       final height = bounds.maxHeight;
-      const imageTop = 40.0;
+      const imageTop = 0.0;
       final imageHeight = height - imageTop;
       final wide = width / height > .7;
       final artWidth = wide ? height * 964 / 1632 : width;

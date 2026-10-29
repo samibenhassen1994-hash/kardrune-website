@@ -9,6 +9,7 @@ import 'free_pull_notifications.dart';
 class SummonScreen extends StatefulWidget {
   const SummonScreen({
     super.key,
+    required this.header,
     required this.shards,
     required this.active,
     required this.accountKey,
@@ -17,6 +18,7 @@ class SummonScreen extends StatefulWidget {
     required this.onFreeSummon,
   });
   final int shards;
+  final Widget header;
   final bool active;
   final String accountKey;
   final Future<Map<String, dynamic>> Function() loadFreeStatus;
@@ -42,6 +44,10 @@ class _SummonScreenState extends State<SummonScreen> {
     if (widget.active) _refresh();
     ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted || !widget.active) return;
+      if (!notificationsEnabled && freePullNotificationsGranted) {
+        notificationsEnabled = true;
+        _scheduleNotification();
+      }
       setState(() => now = DateTime.now());
       if (nextAt != null && now.millisecondsSinceEpoch >= nextAt!) _refresh();
     });
@@ -51,8 +57,9 @@ class _SummonScreenState extends State<SummonScreen> {
   void didUpdateWidget(covariant SummonScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if ((widget.active && !oldWidget.active) ||
-        widget.accountKey != oldWidget.accountKey)
+        widget.accountKey != oldWidget.accountKey) {
       _refresh();
+    }
   }
 
   Future<void> _refresh() async {
@@ -66,11 +73,12 @@ class _SummonScreenState extends State<SummonScreen> {
       });
       _scheduleNotification();
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           available = 0;
           nextAt = null;
         });
+      }
     }
   }
 
@@ -167,9 +175,19 @@ class _SummonScreenState extends State<SummonScreen> {
                 children: [
                   Row(
                     children: [
-                      _tab(0, 'STANDARD'),
-                      _tab(1, 'FEATURED'),
-                      _tab(2, 'EVENT'),
+                      _tab(
+                        0,
+                        'STANDARD',
+                        'assets/idle/cards/young_sam/young_sam_stage_1.webp',
+                      ),
+                      const SizedBox(width: 5),
+                      _tab(
+                        1,
+                        'FEATURED',
+                        'assets/idle/cards/dren/dren_stage_3.webp',
+                      ),
+                      const SizedBox(width: 5),
+                      _tab(2, 'EVENT', 'assets/idle/summon/summon_arena.webp'),
                     ],
                   ),
                   const SizedBox(height: 7),
@@ -186,33 +204,65 @@ class _SummonScreenState extends State<SummonScreen> {
               ),
             ),
           ),
+          Positioned(top: 0, left: 0, right: 0, child: widget.header),
         ],
       );
     },
   );
 
-  Widget _tab(int index, String label) => Expanded(
+  Widget _tab(int index, String label, String image) => Expanded(
     child: GestureDetector(
       onTap: () => setState(() => section = index),
       child: Container(
-        height: 36,
-        alignment: Alignment.center,
+        height: 82,
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: section == index
-              ? const Color(0xffa76a31)
-              : const Color(0x99162339),
-          border: Border.all(color: const Color(0xffd6b16c)),
-          borderRadius: BorderRadius.circular(5),
-        ),
-        child: FittedBox(
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xffffe7b5),
-              fontWeight: FontWeight.w900,
-              fontSize: 10,
-            ),
+          border: Border.all(
+            color: section == index
+                ? const Color(0xffffe2a1)
+                : const Color(0xffa5783d),
+            width: 2,
           ),
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: section == index
+              ? const [BoxShadow(color: Color(0x88f9bf58), blurRadius: 9)]
+              : null,
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset(
+              image,
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+            ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0x08000000), Color(0xdd0b1020)],
+                ),
+              ),
+            ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: FittedBox(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      color: Color(0xffffe7b5),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 10,
+                      shadows: [Shadow(color: Colors.black, blurRadius: 5)],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     ),
@@ -222,11 +272,8 @@ class _SummonScreenState extends State<SummonScreen> {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       _title('STANDARD SUMMON'),
-      _info('All 9 heroes have equal chance: 11.11% each.'),
-      _info('Stage 1: 78%   •   Stage 2: 19%   •   Stage 3: 3%'),
-      _info('ATK: 1–100   •   CRIT: 0–25%   •   Skill: 1 per card'),
-      _skillRates(),
-      const SizedBox(height: 8),
+      _info('Nine heroes · 300 Shards or a free charge'),
+      const SizedBox(height: 5),
       _info('FREE PULLS  $available / 2', gold: true),
       if (nextAt != null) ...[
         const SizedBox(height: 4),
@@ -238,17 +285,6 @@ class _SummonScreenState extends State<SummonScreen> {
         ),
         _info('Next charge in ${_remaining()}', gold: true),
       ],
-      if (!notificationsEnabled)
-        GestureDetector(
-          onTap: () async {
-            final granted = await enableFreePullNotifications();
-            if (mounted) {
-              setState(() => notificationsEnabled = granted);
-              _scheduleNotification();
-            }
-          },
-          child: _info('🔔 Notify me when a free pull recharges', gold: true),
-        ),
       const SizedBox(height: 6),
       _button(
         'FREE SUMMON',
@@ -268,10 +304,7 @@ class _SummonScreenState extends State<SummonScreen> {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       _title('FEATURED SUMMON · DREN'),
-      _info('Stage 1: 60%   •   Stage 2: 30%   •   Stage 3: 10%'),
-      _info('Dren: 42.22% total (35% rate-up + normal chance).'),
-      _info('Each other hero: 7.22%. ATK: 1–100, CRIT: 0–25%.'),
-      _skillRates(),
+      _info('Dren rate-up · 600 Shards'),
       const SizedBox(height: 9),
       _button(
         'FEATURED PULL  ◆ 600',
@@ -324,18 +357,105 @@ class _SummonScreenState extends State<SummonScreen> {
     return '${h}h ${m}m';
   }
 
-  Widget _title(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 5),
-    child: Text(
-      text,
-      style: const TextStyle(
-        color: Color(0xffffdf9d),
-        fontFamily: 'Georgia',
-        fontSize: 17,
-        fontWeight: FontWeight.w900,
+  Widget _title(String text) => Row(
+    children: [
+      Expanded(
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: Color(0xffffdf9d),
+            fontFamily: 'Georgia',
+            fontSize: 17,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
       ),
-    ),
+      TextButton.icon(
+        onPressed: _showInfo,
+        icon: const Icon(Icons.info_outline, size: 17),
+        label: const Text('INFO'),
+        style: TextButton.styleFrom(foregroundColor: const Color(0xffffd986)),
+      ),
+    ],
   );
+
+  void _showInfo() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: const Color(0xff111e35),
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(color: Color(0xffffd986), width: 2),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 380),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  section == 0
+                      ? 'STANDARD SUMMON'
+                      : section == 1
+                      ? 'FEATURED SUMMON'
+                      : 'EVENT SUMMON',
+                  style: const TextStyle(
+                    color: Color(0xffffdf9d),
+                    fontFamily: 'Georgia',
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (section == 0) ...[
+                          _info('Cost: 300 Shards, or one free charge.'),
+                          _info(
+                            '2 free charges; each recharges 12 hours after use.',
+                          ),
+                          _info('All 9 heroes: 11.11% each.'),
+                          _info('Stage 1: 78% · Stage 2: 19% · Stage 3: 3%'),
+                        ] else if (section == 1) ...[
+                          _info('Cost: 600 Shards. Dren is rate-up.'),
+                          _info('Stage 1: 60% · Stage 2: 30% · Stage 3: 10%'),
+                          _info('Dren: 42.22%; each other hero: 7.22%.'),
+                        ] else
+                          _info(
+                            'No event is active. No event odds or cost are defined.',
+                          ),
+                        if (section != 2) ...[
+                          _info('ATK: 1–100 · CRIT: 0–25% · 1 skill per card.'),
+                          _info(
+                            'Duplicate: keep new stats or take 100 Shards.',
+                          ),
+                          _skillRates(),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text('CLOSE'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _info(String text, {bool gold = false}) => Padding(
     padding: const EdgeInsets.only(bottom: 4),
     child: Text(

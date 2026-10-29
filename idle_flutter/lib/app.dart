@@ -14,6 +14,7 @@ import 'features/cards/card_stat_badges.dart';
 import 'features/cards/skill_preview.dart';
 import 'features/summon/summon_result.dart';
 import 'features/summon/summon_screen.dart';
+import 'features/summon/free_pull_notifications.dart';
 import 'features/profile/cloud_account_controller.dart';
 import 'features/pvp/live_match_coordinator.dart';
 import 'features/pvp/live_pvp_arena.dart';
@@ -432,10 +433,10 @@ class _IdleShellState extends State<IdleShell> {
       _withUpdate(
         Scaffold(
           backgroundColor: Colors.transparent,
-          extendBody: tab == 0,
+          extendBody: tab == 0 || tab == 2,
           body: SafeArea(
-            top: tab != 0,
-            bottom: tab != 0,
+            top: tab != 0 && tab != 2,
+            bottom: tab != 0 && tab != 2,
             child: DecoratedBox(
               decoration: const BoxDecoration(
                 color: Color(0xff070e20),
@@ -451,7 +452,7 @@ class _IdleShellState extends State<IdleShell> {
                   constraints: const BoxConstraints(maxWidth: 720),
                   child: Column(
                     children: [
-                      if (tab != 0) _Header(shards: shards, name: name, avatar: avatar),
+                      if (tab != 0 && tab != 2) _Header(shards: shards, name: name, avatar: avatar),
                       Expanded(
                         child: IndexedStack(
                           index: tab,
@@ -489,6 +490,11 @@ class _IdleShellState extends State<IdleShell> {
                               },
                             ),
                             SummonScreen(
+                              header: _Header(shards: shards, name: name, avatar: avatar,
+                                transparent: true, onNotifications: () async {
+                                  await enableFreePullNotifications();
+                                  if (mounted) setState(() {});
+                                }),
                               shards: shards,
                               active: tab == 2,
                               accountKey: _cloud?.identity?.uid ?? 'guest',
@@ -533,7 +539,7 @@ class _IdleShellState extends State<IdleShell> {
           bottomNavigationBar: _RuneNavigation(
             current: tab,
             italian: italian,
-            arenaOverlay: tab == 0,
+            arenaOverlay: tab == 0 || tab == 2,
             onTap: (value) => setState(() => tab = value),
           ),
         ),
@@ -828,10 +834,11 @@ class _OpponentIntro extends StatelessWidget {
 
 class _Header extends StatelessWidget {
   const _Header({required this.shards, required this.name, required this.avatar,
-    this.transparent = false});
+    this.transparent = false, this.onNotifications});
   final int shards;
   final String name, avatar;
   final bool transparent;
+  final VoidCallback? onNotifications;
 
   @override
   Widget build(BuildContext context) {
@@ -870,6 +877,13 @@ class _Header extends StatelessWidget {
           style: const TextStyle(color: Color(0xffffe1a6), fontFamily: 'Georgia',
             fontWeight: FontWeight.w800, fontSize: 16,
             shadows: [Shadow(color: Colors.black, blurRadius: 6)]))),
+        if (onNotifications != null) IconButton(
+          tooltip: 'Free Summon notifications',
+          onPressed: onNotifications,
+          icon: Icon(freePullNotificationsGranted
+            ? Icons.notifications_active_outlined : Icons.notifications_outlined,
+            color: const Color(0xffffd982)),
+        ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
           decoration: BoxDecoration(
