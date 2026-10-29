@@ -16,6 +16,7 @@ import 'features/profile/cloud_account_controller.dart';
 import 'features/pvp/live_match_coordinator.dart';
 import 'features/pvp/live_pvp_arena.dart';
 import 'features/pvp/flame_battle_audio.dart';
+import 'features/pvp/arena_landing.dart';
 import 'models/player_save.dart';
 import 'services/local_save_service.dart';
 import 'services/live_pvp_socket.dart';
@@ -406,7 +407,10 @@ class _IdleShellState extends State<IdleShell> {
       _withUpdate(
         Scaffold(
           backgroundColor: Colors.transparent,
+          extendBody: tab == 0,
           body: SafeArea(
+            top: tab != 0,
+            bottom: tab != 0,
             child: DecoratedBox(
               decoration: const BoxDecoration(
                 color: Color(0xff070e20),
@@ -422,16 +426,23 @@ class _IdleShellState extends State<IdleShell> {
                   constraints: const BoxConstraints(maxWidth: 720),
                   child: Column(
                     children: [
-                      _Header(shards: shards),
+                      if (tab != 0) _Header(shards: shards),
                       Expanded(
                         child: IndexedStack(
                           index: tab,
                           children: [
-                            _ArenaHome(
-                              italian: italian,
-                              onLive: _pvp?.findMatch,
-                              liveStatus: _pvp?.message,
-                              canLive: _pvp != null && deck.length >= 3,
+                            ArenaLanding(
+                              hint: _cloud?.identity == null
+                                  ? (italian ? 'ACCEDI DAL PROFILO PER GIOCARE' : 'SIGN IN FROM PROFILE TO PLAY LIVE')
+                                  : deck.length < 3
+                                      ? (italian ? 'AGGIUNGI TRE CARTE AL MAZZO' : 'ADD THREE CARDS TO YOUR DECK')
+                                      : _pvp?.message ?? 'READY FOR A LIVE MATCH',
+                              searching: _pvp?.state == LiveMatchState.connecting ||
+                                  _pvp?.state == LiveMatchState.waiting,
+                              onStart: _pvp != null && deck.length >= 3
+                                  ? _pvp!.findMatch
+                                  : () => setState(() => tab = _cloud?.identity == null ? 3 : 1),
+                              onCancel: _pvp?.close,
                             ),
                             _Cards(
                               page: page,
@@ -491,6 +502,7 @@ class _IdleShellState extends State<IdleShell> {
           bottomNavigationBar: _RuneNavigation(
             current: tab,
             italian: italian,
+            arenaOverlay: tab == 0,
             onTap: (value) => setState(() => tab = value),
           ),
         ),
@@ -828,10 +840,12 @@ class _RuneNavigation extends StatelessWidget {
   const _RuneNavigation({
     required this.current,
     required this.italian,
+    required this.arenaOverlay,
     required this.onTap,
   });
   final int current;
   final bool italian;
+  final bool arenaOverlay;
   final ValueChanged<int> onTap;
   @override
   Widget build(BuildContext context) {
@@ -843,10 +857,10 @@ class _RuneNavigation extends StatelessWidget {
     ];
     return Container(
       height: 68,
-      decoration: const BoxDecoration(
-        color: Color(0xf5091426),
-        border: Border(top: BorderSide(color: Color(0x59bca46c))),
-        boxShadow: [BoxShadow(color: Color(0x66000000), blurRadius: 24)],
+      decoration: BoxDecoration(
+        color: arenaOverlay ? const Color(0xc2091426) : const Color(0xf5091426),
+        border: const Border(top: BorderSide(color: Color(0x59bca46c))),
+        boxShadow: const [BoxShadow(color: Color(0x66000000), blurRadius: 24)],
       ),
       child: SafeArea(
         top: false,
@@ -908,64 +922,6 @@ class _RuneNavigation extends StatelessWidget {
       ),
     );
   }
-}
-
-class _ArenaHome extends StatelessWidget {
-  const _ArenaHome({
-    required this.italian,
-    required this.onLive,
-    required this.liveStatus,
-    required this.canLive,
-  });
-  final bool italian, canLive;
-  final VoidCallback? onLive;
-  final String? liveStatus;
-
-  @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        const Icon(Icons.shield_outlined, color: Color(0xfff3cc81), size: 48),
-        const SizedBox(height: 12),
-        const Text('KARDRUNE ARENA',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Color(0xffffd993), fontFamily: 'Georgia',
-            fontSize: 27, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 28),
-        SizedBox(width: double.infinity, height: 58,
-          child: ElevatedButton.icon(
-            key: const Key('find-live-match'),
-            onPressed: canLive ? onLive : null,
-            icon: const Icon(Icons.sports_martial_arts, size: 23),
-            label: Text(italian ? 'SFIDA AVVERSARIO' : 'CHALLENGE OPPONENT',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 15,
-                fontWeight: FontWeight.w900, letterSpacing: .8)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xffe9c17a),
-              foregroundColor: const Color(0xff231b13),
-              disabledBackgroundColor: const Color(0xff455063),
-              disabledForegroundColor: const Color(0xffd6dce4),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(13))),
-          )),
-        if (!canLive) Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: Text(onLive == null
-            ? (italian ? 'Accedi per giocare online.' : 'Sign in to play online.')
-            : (italian ? 'Prepara almeno 3 carte nel mazzo PvP.'
-                       : 'Add at least 3 cards to your PvP deck.'),
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xffbdcbe0), fontSize: 12))),
-        if (liveStatus != null && liveStatus!.isNotEmpty) Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: Text(liveStatus!, key: const Key('live-match-status'),
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xffdae4f1), fontSize: 12))),
-      ]),
-    ),
-  );
 }
 
 class _Eyebrow extends StatelessWidget {

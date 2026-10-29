@@ -74,6 +74,7 @@ flutter:
     - assets/idle/cards/tor/
     - assets/idle/cards/young_sam/
     - assets/idle/animations/
+    - assets/idle/arena/
     - assets/idle/avatars/
 
   # To add assets to your application, add an assets section, like this:
