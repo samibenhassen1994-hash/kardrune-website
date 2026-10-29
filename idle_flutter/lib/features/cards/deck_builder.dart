@@ -40,6 +40,15 @@ class _DeckBuilderState extends State<DeckBuilder> {
   void _clearDeck() =>
       setState(() => slots = List<String?>.filled(DeckRules.size, null));
 
+  void _toggleCard(String id) {
+    final index = slots.indexOf(id);
+    if (index >= 0) {
+      _removeSlot(index);
+    } else {
+      _addToDeck(id);
+    }
+  }
+
   void _addToDeck(String id) {
     if (slots.contains(id)) return;
     if (!slots.contains(null)) {
@@ -216,8 +225,38 @@ class _DeckBuilderState extends State<DeckBuilder> {
                   final hero = KardRuneCatalog.heroes.firstWhere(
                     (h) => h.id == id.split(':').first);
                   return Column(children: [
-                    Expanded(child: _draggable(id,
-                      onTap: () => _addToDeck(id), slot: false)),
+                    Expanded(child: Stack(fit: StackFit.expand, children: [
+                      _draggable(id, onTap: () => _toggleCard(id), slot: false),
+                      Center(child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          key: Key('toggle-deck-card-$id'),
+                          borderRadius: BorderRadius.circular(9),
+                          onTap: () => _toggleCard(id),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18, vertical: 9),
+                            decoration: BoxDecoration(
+                              color: const Color(0xbb08162b),
+                              border: Border.all(
+                                color: slots.contains(id)
+                                  ? const Color(0xffffa2a2)
+                                  : KardRuneTheme.gold,
+                              ),
+                              borderRadius: BorderRadius.circular(9),
+                            ),
+                            child: Text(slots.contains(id) ? 'REMOVE' : 'ADD',
+                              style: TextStyle(
+                                color: slots.contains(id)
+                                  ? const Color(0xffffc5c5)
+                                  : const Color(0xffffdc95),
+                                fontSize: 12, fontWeight: FontWeight.w900,
+                                letterSpacing: 1),
+                            ),
+                          ),
+                        ),
+                      )),
+                    ])),
                     SizedBox(height: 29, child: Row(children: [
                       Expanded(child: Text(
                         '${hero.name.toUpperCase()} · S${id.split(':').last}',
@@ -226,10 +265,10 @@ class _DeckBuilderState extends State<DeckBuilder> {
                           fontSize: 11, fontWeight: FontWeight.w800))),
                       InkWell(
                         key: Key('add-deck-card-$id'),
-                        onTap: () => _addToDeck(id),
-                        child: const Padding(
+                        onTap: () => _toggleCard(id),
+                        child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: 4),
-                          child: Icon(Icons.add_circle,
+                          child: Icon(slots.contains(id) ? Icons.remove_circle : Icons.add_circle,
                             color: KardRuneTheme.gold, size: 23)),
                       ),
                     ])),
