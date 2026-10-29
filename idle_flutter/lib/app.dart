@@ -1255,7 +1255,7 @@ class _CardsState extends State<_Cards> {
               IconButton(
                 key: const Key('close-deck-editor'),
                 tooltip: _t('Chiudi', 'Close'),
-                onPressed: () => Navigator.pop(dialogContext),
+                onPressed: () => Navigator.maybePop(dialogContext),
                 icon: const Icon(Icons.close, color: Colors.white, size: 28),
               ),
               const SizedBox(width: 8),

@@ -30,9 +30,254 @@ class DeckBuilder extends StatefulWidget {
 
 class _DeckBuilderState extends State<DeckBuilder> {
   late List<String?> slots;
+  late final List<String?> _initialSlots;
   final ScrollController _ownedScroll = ScrollController();
   int? hover;
+  bool _allowExit = false, _showingExitPrompt = false;
+  String _searchText = '', _filterStage = 'all', _filterRarity = 'all',
+      _filterSkill = 'all', _sortCards = 'default';
+  bool _onlyDeckCards = false;
+
   String _t(String it, String en) => widget.italian ? it : en;
+  bool get _hasUnsavedChanges =>
+      List.generate(DeckRules.size, (i) => slots[i] != _initialSlots[i])
+          .contains(true);
+
+  bool get _hasActiveFilters =>
+      _searchText.isNotEmpty || _filterStage != 'all' ||
+      _filterRarity != 'all' || _filterSkill != 'all' ||
+      _sortCards != 'default' || _onlyDeckCards;
+
+  List<String> _visibleCards() {
+    final search = _searchText.trim().toLowerCase();
+    final filtered = widget.owned.where((id) {
+      final parts = id.split(':');
+      final skill = SkillCatalog.byId(widget.skills[id]);
+      if (_filterStage != 'all' && parts.last != _filterStage) return false;
+      if (_filterRarity != 'all' && skill?.rarity != _filterRarity) {
+        return false;
+      }
+      if (_filterSkill != 'all' && skill?.id != _filterSkill) return false;
+      if (_onlyDeckCards && !slots.contains(id)) return false;
+      if (search.isEmpty) return true;
+      final hero = KardRuneCatalog.heroes.firstWhere(
+        (item) => item.id == parts.first);
+      return hero.name.toLowerCase().contains(search) ||
+          (skill?.name.toLowerCase().contains(search) ?? false) ||
+          (skill?.description.toLowerCase().contains(search) ?? false);
+    }).toList();
+    switch (_sortCards) {
+      case 'attack':
+        filtered.sort((a, b) => (widget.attacks[b] ?? -1)
+            .compareTo(widget.attacks[a] ?? -1));
+      case 'crit':
+        filtered.sort((a, b) => (widget.crits[b] ?? -1)
+            .compareTo(widget.crits[a] ?? -1));
+      case 'rarity':
+        filtered.sort((a, b) {
+          final rankA = SkillCatalog.rarities.indexOf(
+            SkillCatalog.byId(widget.skills[a])?.rarity ?? '');
+          final rankB = SkillCatalog.rarities.indexOf(
+            SkillCatalog.byId(widget.skills[b])?.rarity ?? '');
+          return rankB.compareTo(rankA);
+        });
+      case 'stage':
+        filtered.sort((a, b) => int.parse(b.split(':').last)
+            .compareTo(int.parse(a.split(':').last)));
+      case 'name':
+        filtered.sort((a, b) => a.compareTo(b));
+    }
+    return filtered;
+  }
+
+  Widget _filterSelect(String label, String value,
+      List<(String, String)> options, ValueChanged<String> changed) =>
+      Row(children: [
+        SizedBox(width: 78,
+          child: Text(label, style: const TextStyle(
+            color: Color(0xfff5d28b), fontSize: 12,
+            fontWeight: FontWeight.w700))),
+        Expanded(child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            isExpanded: true,
+            value: value,
+            dropdownColor: const Color(0xff1b2c48),
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+            items: [
+              for (final option in options)
+                DropdownMenuItem(value: option.$1,
+                  child: Text(option.$2, maxLines: 1,
+                    overflow: TextOverflow.ellipsis)),
+            ],
+            onChanged: (next) { if (next != null) changed(next); },
+          ),
+        )),
+      ]);
+
+  Future<void> _openFilters() async {
+    final search = TextEditingController(text: _searchText);
+    var stage = _filterStage, rarity = _filterRarity,
+        skillId = _filterSkill, order = _sortCards;
+    var onlyDeck = _onlyDeckCards;
+    try {
+      await showModalBottomSheet<void>(
+        context: context, isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: const Color(0xff111f38),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
+        builder: (sheetContext) => StatefulBuilder(
+          builder: (sheetContext, sheetSetState) =>
+            Padding(
+              padding: EdgeInsets.fromLTRB(17, 12, 17,
+                14 + MediaQuery.viewInsetsOf(sheetContext).bottom),
+              child: SingleChildScrollView(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Row(children: [
+                    Expanded(child: Text(
+                      _t('FILTRA LE CARTE', 'FILTER CARDS'),
+                      style: const TextStyle(color: KardRuneTheme.gold,
+                        fontSize: 17, fontWeight: FontWeight.w900))),
+                    IconButton(
+                      tooltip: _t('Chiudi', 'Close'),
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: const Icon(Icons.close, color: Colors.white)),
+                  ]),
+                  TextField(
+                    key: const Key('deck-filter-search'),
+                    controller: search,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search,
+                        color: KardRuneTheme.gold),
+                      hintText: _t('Cerca personaggio o abilità',
+                        'Search hero or skill'),
+                      hintStyle: const TextStyle(color: Color(0xffa8b6cc)),
+                      isDense: true,
+                    )),
+                  const SizedBox(height: 7),
+                  _filterSelect('STAGE', stage, const [
+                    ('all', 'TUTTI / ALL'), ('1', 'STAGE 1'),
+                    ('2', 'STAGE 2'), ('3', 'STAGE 3'),
+                  ], (value) => sheetSetState(() => stage = value)),
+                  _filterSelect(_t('RARITÀ', 'RARITY'), rarity, [
+                    ('all', _t('TUTTE', 'ALL')),
+                    ('common', _t('COMUNE', 'COMMON')),
+                    ('uncommon', _t('NON COMUNE', 'UNCOMMON')),
+                    ('rare', _t('RARA', 'RARE')),
+                    ('epic', _t('EPICA', 'EPIC')),
+                    ('legendary', _t('LEGGENDARIA', 'LEGENDARY')),
+                    ('ultra', 'ULTRA'),
+                  ], (value) => sheetSetState(() {
+                    rarity = value; skillId = 'all';
+                  })),
+                  _filterSelect(_t('ABILITÀ', 'SKILL'), skillId, [
+                    ('all', _t('TUTTE', 'ALL')),
+                    for (final skill in SkillCatalog.skills)
+                      if (rarity == 'all' || skill.rarity == rarity)
+                        (skill.id, skill.name.toUpperCase()),
+                  ], (value) => sheetSetState(() => skillId = value)),
+                  _filterSelect(_t('ORDINA', 'SORT'), order, [
+                    ('default', _t('PREDEFINITO', 'DEFAULT')),
+                    ('attack', 'ATK ↓'),
+                    ('crit', 'CRIT ↓'),
+                    ('rarity', _t('RARITÀ ↓', 'RARITY ↓')),
+                    ('stage', 'STAGE ↓'),
+                    ('name', _t('NOME A–Z', 'NAME A–Z')),
+                  ], (value) => sheetSetState(() => order = value)),
+                  CheckboxListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    activeColor: KardRuneTheme.gold,
+                    title: Text(_t('Solo carte nel mazzo',
+                      'Only cards in deck'),
+                      style: const TextStyle(color: Colors.white,
+                        fontSize: 12)),
+                    value: onlyDeck,
+                    onChanged: (value) =>
+                      sheetSetState(() => onlyDeck = value ?? false)),
+                  Row(children: [
+                    Expanded(child: TextButton(
+                      onPressed: () => sheetSetState(() {
+                        search.clear();
+                        stage = 'all'; rarity = 'all';
+                        skillId = 'all'; order = 'default';
+                        onlyDeck = false;
+                      }),
+                      child: Text(_t('AZZERA', 'RESET')))),
+                    const SizedBox(width: 8),
+                    Expanded(child: ElevatedButton(
+                      key: const Key('deck-filter-apply'),
+                      onPressed: () {
+                        setState(() {
+                          _searchText = search.text.trim();
+                          _filterStage = stage; _filterRarity = rarity;
+                          _filterSkill = skillId; _sortCards = order;
+                          _onlyDeckCards = onlyDeck;
+                        });
+                        if (_ownedScroll.hasClients) {
+                          _ownedScroll.jumpTo(0);
+                        }
+                        Navigator.pop(sheetContext);
+                      },
+                      child: Text(_t('APPLICA', 'APPLY')))),
+                  ]),
+                ]),
+              ),
+            ),
+        ),
+      );
+    } finally {
+      search.dispose();
+    }
+  }
+
+  Future<void> _confirmUnsavedExit() async {
+    if (_showingExitPrompt) return;
+    _showingExitPrompt = true;
+    try {
+      final choice = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: const Color(0xff14243e),
+          title: Text(_t('Modifiche non salvate', 'Unsaved changes'),
+            style: const TextStyle(color: KardRuneTheme.gold)),
+          content: Text(_t(
+            'Hai modificato il mazzo. Vuoi salvarlo prima di uscire?',
+            'Your deck has changed. Save before leaving?'),
+            style: const TextStyle(color: Colors.white)),
+          actions: [
+            TextButton(
+              key: const Key('deck-exit-cancel'),
+              onPressed: () => Navigator.pop(dialogContext, 'cancel'),
+              child: Text(_t('ANNULLA', 'CANCEL'))),
+            TextButton(
+              key: const Key('deck-exit-discard'),
+              onPressed: () => Navigator.pop(dialogContext, 'discard'),
+              child: Text(_t('ESCI SENZA SALVARE', 'DISCARD'))),
+            ElevatedButton(
+              key: const Key('deck-exit-save'),
+              onPressed: () => Navigator.pop(dialogContext, 'save'),
+              child: Text(_t('SALVA', 'SAVE'))),
+          ],
+        ),
+      );
+      if (!mounted) return;
+      if (choice == 'save') {
+        _saveDeck();
+      } else if (choice == 'discard') {
+        setState(() => _allowExit = true);
+        Navigator.of(context).pop();
+      }
+    } finally {
+      _showingExitPrompt = false;
+    }
+  }
+
+  void _saveDeck() {
+    _allowExit = true;
+    widget.onSave(slots.whereType<String>().toList());
+  }
 
   void _removeSlot(int index) =>
       setState(() => slots = DeckRules.remove(slots, index, widget.owned));
@@ -64,6 +309,7 @@ class _DeckBuilderState extends State<DeckBuilder> {
   void initState() {
     super.initState();
     slots = DeckRules.normalize(widget.initial, widget.owned);
+    _initialSlots = List<String?>.of(slots);
   }
 
   @override
@@ -83,7 +329,13 @@ class _DeckBuilderState extends State<DeckBuilder> {
   @override
   Widget build(BuildContext context) {
     final reduced = MediaQuery.disableAnimationsOf(context);
-    return LayoutBuilder(builder: (context, limits) {
+    final visibleCards = _visibleCards();
+    return PopScope<void>(
+      canPop: !_hasUnsavedChanges || _allowExit,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _hasUnsavedChanges) _confirmUnsavedExit();
+      },
+      child: LayoutBuilder(builder: (context, limits) {
       final slotsHeight = (limits.maxHeight * .44).clamp(188.0, 415.0);
       final cardColumns = limits.maxWidth >= 650 ? 4 : 2;
       return Container(
@@ -199,10 +451,21 @@ class _DeckBuilderState extends State<DeckBuilder> {
                   color: KardRuneTheme.gold, fontSize: 12,
                   fontWeight: FontWeight.w900, letterSpacing: .7),
               )),
-              Text('${widget.owned.length} ${_t('CARTE', 'CARDS')}',
+              Text('${visibleCards.length}/${widget.owned.length} ${_t('CARTE', 'CARDS')}',
                 style: const TextStyle(
                   color: Color(0xffb9c9dd), fontSize: 11,
                   fontWeight: FontWeight.w700)),
+              IconButton(
+                key: const Key('deck-filter-open'),
+                tooltip: _t('Filtra carte', 'Filter cards'),
+                onPressed: _openFilters,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 34, minHeight: 34),
+                icon: Icon(Icons.tune,
+                  color: _hasActiveFilters
+                    ? const Color(0xffffd58b) : const Color(0xffb9c9dd),
+                  size: 22)),
             ]),
             const SizedBox(height: 4),
             Expanded(child: Scrollbar(
@@ -219,9 +482,9 @@ class _DeckBuilderState extends State<DeckBuilder> {
                   mainAxisSpacing: 9,
                   crossAxisSpacing: 9,
                 ),
-                itemCount: widget.owned.length,
+                itemCount: visibleCards.length,
                 itemBuilder: (context, index) {
-                  final id = widget.owned[index];
+                  final id = visibleCards[index];
                   final hero = KardRuneCatalog.heroes.firstWhere(
                     (h) => h.id == id.split(':').first);
                   return Column(children: [
@@ -280,8 +543,7 @@ class _DeckBuilderState extends State<DeckBuilder> {
             SizedBox(height: 46, width: double.infinity,
               child: ElevatedButton(
                 key: const Key('save-deck'),
-                onPressed: () =>
-                  widget.onSave(slots.whereType<String>().toList()),
+                onPressed: _saveDeck,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xffe6be77),
                   foregroundColor: const Color(0xff241b12),
@@ -296,7 +558,8 @@ class _DeckBuilderState extends State<DeckBuilder> {
           ]),
         ),
       );
-    });
+    }),
+    );
   }
   Widget _draggable(
     String id, {
