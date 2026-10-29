@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 class ArenaLanding extends StatelessWidget {
   const ArenaLanding({
     super.key,
+    required this.header,
     required this.onStart,
     required this.hint,
     required this.searching,
@@ -14,6 +15,7 @@ class ArenaLanding extends StatelessWidget {
   });
 
   final VoidCallback onStart;
+  final Widget header;
   final VoidCallback? onCancel;
   final String hint;
   final bool searching;
@@ -43,6 +45,7 @@ class ArenaLanding extends StatelessWidget {
                   filterQuality: FilterQuality.medium,
                   cacheWidth: 1080,
                 ),
+                Positioned(top: 0, left: 0, right: 0, child: header),
                 Positioned(
                   top: height * (small ? .48 : .515),
                   left: 0,
@@ -56,8 +59,8 @@ class ArenaLanding extends StatelessWidget {
                     ),
                   ),
                 ),
-                Positioned(
-              top: height * .425,
+                if (hint.isNotEmpty) Positioned(
+                  top: height * .425,
                   left: artWidth * .09,
                   right: artWidth * .09,
                   child: Text(
@@ -93,7 +96,7 @@ class ArenaLanding extends StatelessWidget {
                           child: Text(
                             'START MATCH',
                             style: TextStyle(
-                              color: const Color(0xffffdfa0),
+                              color: const Color(0xfffff1c4),
                               fontFamily: 'Georgia',
                               fontSize: small ? 22 : 29,
                               fontWeight: FontWeight.w900,
@@ -105,9 +108,10 @@ class ArenaLanding extends StatelessWidget {
                                   blurRadius: 2,
                                 ),
                                 Shadow(
-                                  color: Color(0xfff3a645),
-                                  blurRadius: 13,
+                                  color: Color(0xffffd25b),
+                                  blurRadius: 18,
                                 ),
+                                Shadow(color: Color(0xfff5a329), blurRadius: 28),
                               ],
                             ),
                           ),

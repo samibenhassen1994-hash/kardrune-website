@@ -426,17 +426,20 @@ class _IdleShellState extends State<IdleShell> {
                   constraints: const BoxConstraints(maxWidth: 720),
                   child: Column(
                     children: [
-                      if (tab != 0) _Header(shards: shards),
+                      if (tab != 0) _Header(shards: shards, name: name, avatar: avatar),
                       Expanded(
                         child: IndexedStack(
                           index: tab,
                           children: [
                             ArenaLanding(
+                              header: _Header(shards: shards, name: name, avatar: avatar, transparent: true),
                               hint: _cloud?.identity == null
                                   ? (italian ? 'ACCEDI DAL PROFILO PER GIOCARE' : 'SIGN IN FROM PROFILE TO PLAY LIVE')
                                   : deck.length < 3
                                       ? (italian ? 'AGGIUNGI TRE CARTE AL MAZZO' : 'ADD THREE CARDS TO YOUR DECK')
-                                      : _pvp?.message ?? 'READY FOR A LIVE MATCH',
+                                      : _pvp?.state == LiveMatchState.idle
+                                          ? ''
+                                          : _pvp?.message ?? '',
                               searching: _pvp?.state == LiveMatchState.connecting ||
                                   _pvp?.state == LiveMatchState.waiting,
                               onStart: _pvp != null && deck.length >= 3
@@ -733,109 +736,59 @@ class _IdleShellState extends State<IdleShell> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.shards});
+  const _Header({required this.shards, required this.name, required this.avatar,
+    this.transparent = false});
   final int shards;
-  @override
-  Widget build(BuildContext context) => Container(
-    height: 79,
-    padding: const EdgeInsets.symmetric(horizontal: 19),
-    decoration: const BoxDecoration(
-      color: Color(0xdd071226),
-      border: Border(bottom: BorderSide(color: Color(0x30d2b780))),
-    ),
-    child: Row(
-      children: [
-        Transform.rotate(
-          angle: -.12,
-          child: Container(
-            width: 44,
-            height: 44,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xff1c3857), Color(0xff081122)],
-              ),
-              border: Border.all(color: const Color(0xffefc574), width: 2),
-              boxShadow: const [
-                BoxShadow(color: Color(0x33e7ab42), blurRadius: 20),
-              ],
-            ),
-            child: const Text(
-              'KR',
-              style: TextStyle(
-                color: Color(0xfff6d68e),
-                fontFamily: 'Georgia',
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 11),
-        const Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text.rich(
-                TextSpan(
-                  text: 'IDLE ',
-                  children: [
-                    TextSpan(
-                      text: 'KARDRUNE',
-                      style: TextStyle(color: Color(0xfff5d28b)),
-                    ),
-                  ],
-                ),
-                maxLines: 1,
-                style: TextStyle(
-                  color: Color(0xfff9f4e9),
-                  fontFamily: 'Georgia',
-                  fontSize: 15,
-                  letterSpacing: .7,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              SizedBox(height: 3),
-              Text(
-                'THE POCKET REALM',
-                style: TextStyle(
-                  color: Color(0xff8fa6c8),
-                  fontSize: 8,
-                  letterSpacing: 2.1,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: const Color(0xff1c2942),
-            border: Border.all(color: const Color(0x50c6a961)),
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('◆', style: TextStyle(color: Color(0xff72d8ff))),
-              const SizedBox(width: 5),
-              Text(
-                shards.toString().replaceAllMapped(
-                  RegExp(r'\B(?=(\d{3})+(?!\d))'),
-                  (_) => ',',
-                ),
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
+  final String name, avatar;
+  final bool transparent;
 
+  @override
+  Widget build(BuildContext context) {
+    final safeAvatar = const ['player', 'guard', 'vassal', 'king'].contains(avatar)
+        ? avatar : 'player';
+    return Container(
+      height: transparent ? 58 : 70,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: transparent ? const Color(0x99071120) : const Color(0xdd071226),
+        border: const Border(bottom: BorderSide(color: Color(0x65d2b780))),
+      ),
+      child: Row(children: [
+        Container(
+          width: 42, height: 42,
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xffefc574), width: 2),
+            boxShadow: const [BoxShadow(color: Color(0x99d69339), blurRadius: 9)],
+          ),
+          child: CircleAvatar(backgroundImage: AssetImage(
+            'assets/idle/avatars/avatar_$safeAvatar.webp')),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: Color(0xffffe1a6), fontFamily: 'Georgia',
+            fontWeight: FontWeight.w800, fontSize: 16,
+            shadows: [Shadow(color: Colors.black, blurRadius: 6)]))),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: const Color(0x99132132),
+            border: Border.all(color: const Color(0x99d5b477)),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Text('◆', style: TextStyle(color: Color(0xff72d8ff))),
+            const SizedBox(width: 5),
+            Text(shards.toString().replaceAllMapped(
+              RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ','),
+              style: const TextStyle(color: Color(0xffffe1a6), fontWeight: FontWeight.w800)),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
 class _RuneNavigation extends StatelessWidget {
   const _RuneNavigation({
     required this.current,
