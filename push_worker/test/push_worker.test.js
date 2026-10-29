@@ -10,8 +10,10 @@ import {onRequestPost as createSubscription,onRequestDelete as deleteSubscriptio
 
 const here=dirname(fileURLToPath(import.meta.url));
 
-function database() {
+function database({maxQueries=Infinity}={}) {
   const sqlite=new DatabaseSync(':memory:');
+  let queries=0;
+  const tick=()=>{if(++queries>maxQueries)throw Error(`D1 query budget exceeded at ${queries}`);};
   sqlite.exec('PRAGMA foreign_keys=ON');
   for(let number=1;number<=5;number++) {
     const name=String(number).padStart(4,'0');
@@ -27,14 +29,16 @@ function database() {
     prepare(sql) {
       const statement=sqlite.prepare(sql);
       return {bind(...values) { return {
-        async all() { return {results:statement.all(...values)}; },
-        async first() { return statement.get(...values)??null; },
+        async all() { tick();return {results:statement.all(...values)}; },
+        async first() { tick();return statement.get(...values)??null; },
         async run() {
+          tick();
           const result=statement.run(...values);
           return {meta:{changes:Number(result.changes)}};
         },
       }; }};
     },
+    get queryCount() { return queries; },
   };
 }
 
@@ -104,6 +108,38 @@ test('expired push endpoints are removed',async()=>{
   const now=1_000_000+43_200_000;
   await processNotifications({DB:db,__sendPush:async()=>{throw Object.assign(Error('gone'),{statusCode:410});}},now);
   assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS count FROM push_subscriptions').get().count,0);
+});
+
+test('completed deliveries do not starve later due events',async()=>{
+  const db=database();
+  seed(db);
+  const now=1_000_000+43_200_000;
+  for(let index=2;index<=61;index++) {
+    db.sqlite.prepare(`INSERT INTO notification_events(id,uid,topic,due_at,expires_at,created_at)
+      VALUES(?,?,'free_pull',?,?,?)`).run(`free_pull:user-a:roll-${index}`,'user-a',now,now+21_600_000,index);
+  }
+  const insert=db.sqlite.prepare(`INSERT INTO notification_deliveries
+    (event_id,endpoint,status,attempts,claimed_until,sent_at) VALUES(?,?,'sent',1,0,?)`);
+  for(let index=1;index<=60;index++) {
+    insert.run(`free_pull:user-a:roll-${index}`,'https://fcm.googleapis.com/push/test',now);
+  }
+  const sent=[];
+  await processNotifications({DB:db,__sendPush:async(_sub,payload)=>sent.push(JSON.parse(payload))},now);
+  assert.deepEqual(sent.map(item=>item.id),['free_pull:user-a:roll-61']);
+});
+
+test('a full sender batch stays inside the 50-query Free-plan budget',async()=>{
+  const db=database({maxQueries:50});
+  seed(db);
+  const now=1_000_000+43_200_000;
+  for(let index=2;index<=15;index++) {
+    db.sqlite.prepare(`INSERT INTO notification_events(id,uid,topic,due_at,expires_at,created_at)
+      VALUES(?,?,'free_pull',?,?,?)`).run(`free_pull:user-a:roll-${index}`,'user-a',now,now+21_600_000,index);
+  }
+  let sent=0;
+  await processNotifications({DB:db,__sendPush:async()=>sent++},now);
+  assert.equal(sent,15);
+  assert.equal(db.queryCount,47);
 });
 
 function firebaseToken(uid,privateKey) {
