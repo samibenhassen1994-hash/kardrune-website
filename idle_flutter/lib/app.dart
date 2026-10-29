@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:convert';
 
@@ -12,6 +13,7 @@ import 'features/cards/deck_builder.dart';
 import 'features/cards/card_stat_badges.dart';
 import 'features/cards/skill_preview.dart';
 import 'features/summon/summon_result.dart';
+import 'features/summon/summon_screen.dart';
 import 'features/profile/cloud_account_controller.dart';
 import 'features/pvp/live_match_coordinator.dart';
 import 'features/pvp/live_pvp_arena.dart';
@@ -89,6 +91,8 @@ class IdleShell extends StatefulWidget {
 }
 
 class _IdleShellState extends State<IdleShell> {
+  static const _freeSummonKey = 'idle-free-standard-v1';
+  static const _freeSummonWindowMs = 12 * 60 * 60 * 1000;
   static const _motionKey = 'idle-motion-preference-v1';
   static const _pvpRewardKey = 'idle-pvp-completed-rewards-v1';
   int tab = 0, shards = 1500, page = 0;
@@ -115,6 +119,9 @@ class _IdleShellState extends State<IdleShell> {
   bool _cloudInitializing = false;
   String _cloudInitializationMessage = 'Connecting account services…';
   LiveMatchCoordinator? _pvp;
+  Timer? _opponentIntroTimer;
+  String? _introMatchId;
+  bool _showOpponentIntro = false;
   late final FlameBattleAudio _flameAudio = createFlameBattleAudio();
   bool _ownsCloud = false;
   late final AppUpdateController? _updates;
@@ -288,6 +295,17 @@ class _IdleShellState extends State<IdleShell> {
 
   void _pvpChanged() {
     _updates?.setMatchActive(_pvp?.state == LiveMatchState.arena);
+    final hand = _pvp?.arena.hand;
+    if (_pvp?.state == LiveMatchState.arena && hand != null &&
+        hand.round == 1 && hand.matchId != _introMatchId) {
+      _introMatchId = hand.matchId;
+      _showOpponentIntro = true;
+      _opponentIntroTimer?.cancel();
+      _opponentIntroTimer = Timer(const Duration(milliseconds: 1800), () {
+        if (mounted) setState(() => _showOpponentIntro = false);
+      });
+    }
+    if (_pvp?.state != LiveMatchState.arena) _showOpponentIntro = false;
     if (mounted) setState(() {});
   }
 
@@ -350,6 +368,7 @@ class _IdleShellState extends State<IdleShell> {
 
   @override
   void dispose() {
+    _opponentIntroTimer?.cancel();
     _cloud?.removeListener(_cloudChanged);
     _pvp?.removeListener(_pvpChanged);
     _pvp?.dispose();
@@ -387,7 +406,8 @@ class _IdleShellState extends State<IdleShell> {
     if (_pvp?.state == LiveMatchState.arena) {
       return _motionWrap(
         _withUpdate(
-          LivePvpArena(
+          Stack(children: [
+            Positioned.fill(child: LivePvpArena(
                   controller: _pvp!.arena,
                   audio: _flameAudio,
                   playerName: name,
@@ -399,7 +419,12 @@ class _IdleShellState extends State<IdleShell> {
                     setState(() => tab = 0);
                     _pvp?.close();
                   },
-          ),
+            )),
+            if (_showOpponentIntro && _pvp!.arena.hand != null)
+              Positioned.fill(child: _OpponentIntro(
+                name: _pvp!.arena.hand!.opponent,
+                avatar: _pvp!.arena.hand!.opponentAvatar ?? 'player')),
+          ]),
         ),
       );
     }
@@ -463,10 +488,13 @@ class _IdleShellState extends State<IdleShell> {
                                 _persist();
                               },
                             ),
-                            _Summon(
+                            SummonScreen(
                               shards: shards,
-                              title: italian ? 'EVOCA' : 'SUMMON',
+                              active: tab == 2,
+                              accountKey: _cloud?.identity?.uid ?? 'guest',
+                              loadFreeStatus: _freeSummonStatus,
                               onSummon: _summon,
+                              onFreeSummon: () => _summon(false, free: true),
                             ),
                             _Profile(
                               name: name,
@@ -558,19 +586,43 @@ class _IdleShellState extends State<IdleShell> {
     ],
   );
 
-  void _summon(bool featured) {
+  Future<Map<String, dynamic>> _freeSummonStatus() async {
+    if (_cloud?.identity != null) return _cloud!.api.get('/api/summon');
+    final now = widget.nowMs();
+    final used = _localFreeSummons(now);
+    return {'available': 2 - used.length,
+      'nextAt': used.isEmpty ? null : used.first + _freeSummonWindowMs,
+      'serverNow': now};
+  }
+
+  List<int> _localFreeSummons(int now) {
+    try {
+      final decoded = jsonDecode(_saveService?.storage.read(_freeSummonKey) ?? '[]');
+      if (decoded is List) {
+        return decoded.whereType<int>()
+          .where((v) => v > now - _freeSummonWindowMs && v <= now).toList()..sort();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  Future<void> _summon(bool featured, {bool free = false}) async {
     if (_pendingDuplicate != null) {
       _resumeDuplicate();
       return;
     }
-    if (_summonOpen || _summonRequestPending || shards < SummonRules.cost(featured)) return;
+    if (_summonOpen || _summonRequestPending || (!free && shards < SummonRules.cost(featured))) return;
+    if (free && (featured || (await _freeSummonStatus())['available'] == 0)) {
+      return;
+    }
+    if (!mounted) return;
     if (_cloud?.identity != null) {
       if (_cloud!.state != CloudAccountState.synced) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Review or sync your cloud save before summoning.')));
         return;
       }
-      _summonOnline(featured);
+      await _summonOnline(featured, free: free);
       return;
     }
     final stage = SummonRules.stageFor(featured, widget.random());
@@ -586,7 +638,7 @@ class _IdleShellState extends State<IdleShell> {
     final crit = CombatRules.rollCrit(widget.random);
     final skill = SkillCatalog.roll(stage, widget.random(), widget.random());
     setState(() {
-      shards -= SummonRules.cost(featured);
+      if (!free) { shards -= SummonRules.cost(featured); }
       pulls++;
       if (duplicate) {
         _pendingDuplicate = {'id': id, 'attack': attack, 'crit': crit,
@@ -598,6 +650,10 @@ class _IdleShellState extends State<IdleShell> {
         skills[id] = skill.id;
       }
     });
+    if (free) {
+      _saveService?.storage.write(_freeSummonKey,
+        jsonEncode([..._localFreeSummons(widget.nowMs()), widget.nowMs()]));
+    }
     _persist();
     _reveal(id, attack, crit, duplicate, skill.id);
   }
@@ -611,7 +667,7 @@ class _IdleShellState extends State<IdleShell> {
     return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
   }
 
-  Future<void> _summonOnline(bool featured) async {
+  Future<void> _summonOnline(bool featured, {bool free = false}) async {
     final cloud = _cloud!;
     final accountUid = cloud.identity?.uid;
     _summonRequestPending = true;
@@ -619,7 +675,8 @@ class _IdleShellState extends State<IdleShell> {
     try {
       if (!await cloud.prepareServerMutation()) throw StateError('Cloud save needs review');
       final result = await cloud.api.post('/api/summon', {
-        'featured': featured, 'revision': cloud.revision, 'rollId': rollId,
+        'featured': featured, 'free': free,
+        'revision': cloud.revision, 'rollId': rollId,
       });
       if (!mounted || cloud.identity?.uid != accountUid) return;
       cloud.applyServerSave(result);
@@ -735,6 +792,40 @@ class _IdleShellState extends State<IdleShell> {
   }
 }
 
+class _OpponentIntro extends StatelessWidget {
+  const _OpponentIntro({required this.name, required this.avatar});
+  final String name, avatar;
+
+  @override
+  Widget build(BuildContext context) {
+    final safeAvatar = const ['player', 'guard', 'vassal', 'king'].contains(avatar)
+        ? avatar : 'player';
+    return ColoredBox(color: const Color(0xff080e20), child: Center(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Text('YOUR OPPONENT', style: TextStyle(color: Color(0xffffd78c),
+          fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: 2)),
+        const SizedBox(height: 20),
+        Container(width: 120, height: 120, padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xffff8075), width: 3),
+            boxShadow: const [BoxShadow(color: Color(0xaaff493d), blurRadius: 24)]),
+          child: CircleAvatar(backgroundImage: AssetImage(
+            'assets/idle/avatars/avatar_$safeAvatar.webp'))),
+        const SizedBox(height: 16),
+        Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: Color(0xffffe4b3), fontFamily: 'Georgia',
+            fontSize: 25, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 24),
+        const SizedBox(width: 28, height: 28, child: CircularProgressIndicator(
+          color: Color(0xffffd78c), strokeWidth: 2.5)),
+        const SizedBox(height: 10),
+        const Text('ENTERING THE ARENA', style: TextStyle(
+          color: Color(0xffb7c9df), fontSize: 11, letterSpacing: 1.4)),
+      ]),
+    ));
+  }
+}
+
 class _Header extends StatelessWidget {
   const _Header({required this.shards, required this.name, required this.avatar,
     this.transparent = false});
@@ -747,7 +838,7 @@ class _Header extends StatelessWidget {
     final safeAvatar = const ['player', 'guard', 'vassal', 'king'].contains(avatar)
         ? avatar : 'player';
     return Container(
-      height: transparent ? 58 : 70,
+      height: transparent ? 68 : 76,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
         color: transparent ? const Color(0x99071120) : const Color(0xdd071226),
@@ -755,15 +846,24 @@ class _Header extends StatelessWidget {
       ),
       child: Row(children: [
         Container(
-          width: 42, height: 42,
-          padding: const EdgeInsets.all(2),
+          width: 55, height: 55,
+          padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xffefc574), width: 2),
-            boxShadow: const [BoxShadow(color: Color(0x99d69339), blurRadius: 9)],
+            gradient: const SweepGradient(colors: [
+              Color(0xff7b391c), Color(0xffffe7a4), Color(0xffba692b),
+              Color(0xffffe7a4), Color(0xff7b391c),
+            ]),
+            border: Border.all(color: const Color(0xffffeab3), width: 1.5),
+            boxShadow: const [BoxShadow(color: Color(0xccd69339), blurRadius: 12)],
           ),
-          child: CircleAvatar(backgroundImage: AssetImage(
-            'assets/idle/avatars/avatar_$safeAvatar.webp')),
+          child: Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xff5b2c18), width: 2)),
+            child: CircleAvatar(backgroundImage: AssetImage(
+              'assets/idle/avatars/avatar_$safeAvatar.webp')),
+          ),
         ),
         const SizedBox(width: 10),
         Expanded(child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
@@ -905,11 +1005,9 @@ class _RuneButton extends StatelessWidget {
   const _RuneButton({
     required this.label,
     required this.onTap,
-    this.gold = false,
   });
   final String label;
   final VoidCallback? onTap;
-  final bool gold;
   @override
   Widget build(BuildContext context) => Semantics(
     button: true,
@@ -925,20 +1023,16 @@ class _RuneButton extends StatelessWidget {
           height: 36,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: gold
-                  ? const [Color(0xfff8dd9d), Color(0xffbc8a3b)]
-                  : const [Color(0xff1e344f), Color(0xff13213a)],
+            gradient: const LinearGradient(
+              colors: [Color(0xff1e344f), Color(0xff13213a)],
             ),
-            border: Border.all(
-              color: gold ? const Color(0x9cf6dd9b) : const Color(0x66c4aa66),
-            ),
+            border: Border.all(color: const Color(0x66c4aa66)),
             borderRadius: BorderRadius.circular(9),
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: gold ? const Color(0xff251a0c) : const Color(0xfff7dba5),
+              color: const Color(0xfff7dba5),
               fontSize: 10,
               letterSpacing: .8,
               fontWeight: FontWeight.w800,
@@ -1333,209 +1427,6 @@ class _CardsState extends State<_Cards> {
       ),
     );
   }
-}
-
-class _Summon extends StatelessWidget {
-  const _Summon({
-    required this.shards,
-    required this.title,
-    required this.onSummon,
-  });
-  final int shards;
-  final String title;
-  final ValueChanged<bool> onSummon;
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(19, 12, 19, 8),
-    child: Column(
-      children: [
-        Text.rich(
-          TextSpan(
-            text: title == 'EVOCA' ? 'EVOCA ' : 'HERO ',
-            children: [
-              TextSpan(
-                text: title == 'EVOCA' ? 'EROI' : 'SUMMON',
-                style: const TextStyle(color: Color(0xfff5d28b)),
-              ),
-            ],
-          ),
-          style: const TextStyle(
-            fontFamily: 'Georgia',
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              gradient: const RadialGradient(
-                center: Alignment(0, -.3),
-                colors: [Color(0xff624966), Color(0xff152443)],
-              ),
-              border: Border.all(color: const Color(0x88e1bc71)),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: Image.asset(
-                    KardRuneCatalog.heroes
-                        .firstWhere((hero) => hero.id == 'dren')
-                        .cardAsset(
-                          KardRuneCatalog.heroes
-                              .firstWhere((hero) => hero.id == 'dren')
-                              .stages[2],
-                        ),
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                Positioned(
-                  top: 14,
-                  left: 14,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xffd8b35f),
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    child: const Text(
-                      'FEATURED HERO',
-                      style: TextStyle(
-                        color: Color(0xff241b13),
-                        fontSize: 8,
-                        letterSpacing: .8,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ),
-                const Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 10,
-                  child: Column(
-                    children: [
-                      Text(
-                        'EPIC · SHADOW',
-                        style: TextStyle(
-                          color: Color(0xffe9c880),
-                          fontSize: 8,
-                          letterSpacing: 1.1,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      Text(
-                        'DREN',
-                        style: TextStyle(
-                          fontFamily: 'Georgia',
-                          fontSize: 25,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Text(
-                        'The darkness answers his call.',
-                        style: TextStyle(
-                          color: Color(0xffcad1e0),
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 9),
-        _SummonChoice(
-          eyebrow: 'SUMMON PORTAL 01',
-          title: 'Standard Summon',
-          symbol: '✧',
-          action: 'SUMMON 1     ◆ 300',
-          enabled: shards >= 300,
-          onTap: () => onSummon(false),
-        ),
-        const SizedBox(height: 8),
-        _SummonChoice(
-          eyebrow: 'SUMMON PORTAL 02',
-          title: 'Featured Summon',
-          symbol: '✦',
-          action: 'FEATURED PULL     ◆ 600',
-          enabled: shards >= 600,
-          gold: true,
-          onTap: () => onSummon(true),
-        ),
-      ],
-    ),
-  );
-}
-
-class _SummonChoice extends StatelessWidget {
-  const _SummonChoice({
-    required this.eyebrow,
-    required this.title,
-    required this.symbol,
-    required this.action,
-    required this.enabled,
-    required this.onTap,
-    this.gold = false,
-  });
-  final String eyebrow, title, symbol, action;
-  final bool enabled, gold;
-  final VoidCallback onTap;
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(11),
-    decoration: BoxDecoration(
-      color: gold ? const Color(0xff283248) : const Color(0xff12233d),
-      border: Border.all(
-        color: gold ? const Color(0x79d8b769) : const Color(0x5c6887a0),
-      ),
-      borderRadius: BorderRadius.circular(13),
-    ),
-    child: Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    eyebrow,
-                    style: const TextStyle(
-                      color: Color(0xffe9c880),
-                      fontSize: 8,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontFamily: 'Georgia',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Text(
-              symbol,
-              style: const TextStyle(color: Color(0xffe1c07a), fontSize: 28),
-            ),
-          ],
-        ),
-        const SizedBox(height: 5),
-        _RuneButton(label: action, onTap: enabled ? onTap : null, gold: gold),
-      ],
-    ),
-  );
 }
 
 class _Profile extends StatelessWidget {

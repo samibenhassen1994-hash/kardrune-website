@@ -25,6 +25,8 @@ class ArenaLanding extends StatelessWidget {
     builder: (context, bounds) {
       final width = bounds.maxWidth;
       final height = bounds.maxHeight;
+      const imageTop = 40.0;
+      final imageHeight = height - imageTop;
       final wide = width / height > .7;
       final artWidth = wide ? height * 964 / 1632 : width;
       final small = height < 650;
@@ -38,16 +40,19 @@ class ArenaLanding extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.asset(
-                  'assets/idle/arena/arena_background.webp',
-                  fit: wide ? BoxFit.fill : BoxFit.cover,
-                  alignment: Alignment.topCenter,
-                  filterQuality: FilterQuality.medium,
-                  cacheWidth: 1080,
+                Positioned.fill(
+                  top: imageTop,
+                  child: Image.asset(
+                    'assets/idle/arena/arena_background.webp',
+                    fit: wide ? BoxFit.fill : BoxFit.cover,
+                    alignment: Alignment.topCenter,
+                    filterQuality: FilterQuality.medium,
+                    cacheWidth: 1080,
+                  ),
                 ),
                 Positioned(top: 0, left: 0, right: 0, child: header),
                 Positioned(
-                  top: height * (small ? .48 : .515),
+                  top: imageTop + imageHeight * (small ? .48 : .515),
                   left: 0,
                   right: 0,
                   child: Center(
@@ -59,30 +64,31 @@ class ArenaLanding extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (hint.isNotEmpty) Positioned(
-                  top: height * .425,
-                  left: artWidth * .09,
-                  right: artWidth * .09,
-                  child: Text(
-                    hint,
-                    maxLines: 2,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: const Color(0xffffe5af),
-                      fontFamily: 'Georgia',
-                      fontSize: small ? 10 : 12,
-                      fontWeight: FontWeight.w700,
-                      shadows: const [
-                        Shadow(color: Colors.black, blurRadius: 7),
-                      ],
+                if (hint.isNotEmpty)
+                  Positioned(
+                    top: imageTop + imageHeight * .425,
+                    left: artWidth * .09,
+                    right: artWidth * .09,
+                    child: Text(
+                      hint,
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: const Color(0xffffe5af),
+                        fontFamily: 'Georgia',
+                        fontSize: small ? 10 : 12,
+                        fontWeight: FontWeight.w700,
+                        shadows: const [
+                          Shadow(color: Colors.black, blurRadius: 7),
+                        ],
+                      ),
                     ),
                   ),
-                ),
                 Positioned(
-                  top: height * .681,
+                  top: imageTop + imageHeight * .681,
                   left: artWidth * .22,
                   right: artWidth * .22,
-                  height: height * .073,
+                  height: imageHeight * .073,
                   child: Semantics(
                     button: true,
                     label: searching ? 'Searching for opponent' : 'Start match',
@@ -111,7 +117,10 @@ class ArenaLanding extends StatelessWidget {
                                   color: Color(0xffffd25b),
                                   blurRadius: 18,
                                 ),
-                                Shadow(color: Color(0xfff5a329), blurRadius: 28),
+                                Shadow(
+                                  color: Color(0xfff5a329),
+                                  blurRadius: 28,
+                                ),
                               ],
                             ),
                           ),
@@ -125,7 +134,12 @@ class ArenaLanding extends StatelessWidget {
                   right: 12,
                   bottom: small ? 72 : 82,
                   child: searching && onCancel != null
-                      ? Center(child: _SecondaryAction(label: 'CANCEL', onTap: onCancel!))
+                      ? Center(
+                          child: _SecondaryAction(
+                            label: 'CANCEL',
+                            onTap: onCancel!,
+                          ),
+                        )
                       : const SizedBox.shrink(),
                 ),
               ],
