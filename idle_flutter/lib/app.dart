@@ -230,6 +230,7 @@ class _IdleShellState extends State<IdleShell> {
   }
 
   void _cloudChanged() {
+    notificationAccountChanged(_cloud?.identity?.uid ?? 'guest');
     if (_cloud?.identity != null && _pvp == null) {
       _pvp = LiveMatchCoordinator(
         repository: PvpRepository(_cloud!.api),
@@ -492,7 +493,7 @@ class _IdleShellState extends State<IdleShell> {
                             SummonScreen(
                               header: _Header(shards: shards, name: name, avatar: avatar,
                                 transparent: true, onNotifications: () async {
-                                  await enableFreePullNotifications();
+                                  await enableFreePullNotifications(api: _cloud?.identity == null ? null : _cloud?.api, uid: _cloud?.identity?.uid);
                                   if (mounted) setState(() {});
                                 }),
                               shards: shards,

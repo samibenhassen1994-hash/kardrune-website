@@ -66,6 +66,35 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <script>
+  window.kardrunePushSubscribe = async uid => {
+    try {
+      if(!uid || !('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) throw Error('Push unsupported');
+      const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
+      if(permission!=='granted') throw Error('Permission not granted');
+      const r=await fetch(new URL('../api/notifications/vapid',document.baseURI),{cache:'no-store'});
+      if(!r.ok) throw Error('Push configuration unavailable');
+      const settings=await r.json();
+      if(!settings.enabled) throw Error('Web Push keys not configured');
+      const reg=await navigator.serviceWorker.register('kardrune_service_worker.js',{scope:'./'});
+      const data=atob(settings.publicKey.replace(/-/g,'+').replace(/_/g,'/').padEnd(Math.ceil(settings.publicKey.length/4)*4,'='));
+      const key=Uint8Array.from(data,c=>c.charCodeAt(0));
+      let sub=await reg.pushManager.getSubscription();
+      if(sub){const prev=sub.options?.applicationServerKey;const equal=prev&&prev.byteLength===key.length&&Array.from(new Uint8Array(prev)).every((v,i)=>v===key[i]);if(!equal){await sub.unsubscribe();sub=null;}}
+      if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+      localStorage.setItem('idle-push-current-uid',uid);
+      return JSON.stringify({subscription:sub.toJSON()});
+    }catch(e){return JSON.stringify({error:String(e)});}
+  };
+  window.kardrunePushUnsubscribe=async()=>{
+    try{const r=await navigator.serviceWorker.ready;const s=await r.pushManager.getSubscription();const endpoint=s?.endpoint||null;if(s)await s.unsubscribe();localStorage.removeItem('idle-push-current-uid');return JSON.stringify({endpoint});}
+    catch(e){return JSON.stringify({error:String(e)});}
+  };
+  window.kardrunePushAccountChanged=uid=>{
+    const old=localStorage.getItem('idle-push-current-uid');
+    if(old && old!==uid) void window.kardrunePushUnsubscribe();
+  };
+</script>
   <script src="flutter_bootstrap.js" async></script>
   <script>
     // A version endpoint lets iOS home-screen PWAs detect deploys even without
