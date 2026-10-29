@@ -89,7 +89,7 @@ class _DeckBuilderState extends State<DeckBuilder> {
           child: Column(children: [
             Row(children: [
               Expanded(child: Text(
-                _t('MAZZO PVP', 'PVP DECK') + '  ${slots.whereType<String>().length}/9',
+                '${_t('MAZZO PVP', 'PVP DECK')}  ${slots.whereType<String>().length}/9',
                 style: const TextStyle(
                   color: KardRuneTheme.gold, fontFamily: 'Georgia',
                   fontSize: 17, fontWeight: FontWeight.bold),
@@ -190,7 +190,7 @@ class _DeckBuilderState extends State<DeckBuilder> {
                   color: KardRuneTheme.gold, fontSize: 12,
                   fontWeight: FontWeight.w900, letterSpacing: .7),
               )),
-              Text('${widget.owned.length} ' + _t('CARTE', 'CARDS'),
+              Text('${widget.owned.length} ${_t('CARTE', 'CARDS')}',
                 style: const TextStyle(
                   color: Color(0xffb9c9dd), fontSize: 11,
                   fontWeight: FontWeight.w700)),
