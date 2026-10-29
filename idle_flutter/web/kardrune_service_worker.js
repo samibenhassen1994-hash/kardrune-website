@@ -56,6 +56,7 @@ self.addEventListener('push',event=>{
     await self.registration.showNotification(free?'KardRune · Free Summon':'KardRune',{
       body:free?'A free Standard Summon is ready.':'New activity in KardRune.',
       tag:typeof data.id==='string'?data.id:'kardrune',icon:'icons/Icon-192.png',
+      renotify:false,
       data:{url:'./'}
     });
   })());

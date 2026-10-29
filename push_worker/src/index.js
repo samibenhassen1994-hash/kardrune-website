@@ -15,10 +15,15 @@ export default {
   async fetch() {return new Response('Not found',{status:404});}
 };
 export async function processNotifications(env,now=Date.now()) {
-  if (!env.DB || !env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY || !env.VAPID_SUBJECT) {
+  if (!env.DB || (!env.__sendPush &&
+      (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY || !env.VAPID_SUBJECT))) {
     throw Error('Web Push not configured: DB + VAPID vars required');
   }
-  webpush.setVapidDetails(env.VAPID_SUBJECT,env.VAPID_PUBLIC_KEY,env.VAPID_PRIVATE_KEY);
+  if (!env.__sendPush) {
+    webpush.setVapidDetails(env.VAPID_SUBJECT,env.VAPID_PUBLIC_KEY,env.VAPID_PRIVATE_KEY);
+  }
+  const sendPush=env.__sendPush||((subscription,payload,options)=>
+    webpush.sendNotification(subscription,payload,options));
   const events=await env.DB.prepare(`SELECT e.id,e.uid,e.topic,e.due_at,e.expires_at
     FROM notification_events e JOIN notification_preferences p
     ON p.uid=e.uid AND p.topic=e.topic AND p.enabled=1
@@ -40,7 +45,7 @@ export async function processNotifications(env,now=Date.now()) {
         .bind(now+120000,event.id,sub.endpoint,now).run();
       if (!claim.meta?.changes) continue;
       try {
-        await webpush.sendNotification(JSON.parse(sub.subscription_json),
+        await sendPush(JSON.parse(sub.subscription_json),
           JSON.stringify({...payload,id:event.id,topic:event.topic}),
           {TTL:1800,urgency:'normal'});
         await env.DB.prepare(`UPDATE notification_deliveries SET status='sent',sent_at=?

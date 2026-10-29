@@ -82,17 +82,25 @@
       let sub=await reg.pushManager.getSubscription();
       if(sub){const prev=sub.options?.applicationServerKey;const equal=prev&&prev.byteLength===key.length&&Array.from(new Uint8Array(prev)).every((v,i)=>v===key[i]);if(!equal){await sub.unsubscribe();sub=null;}}
       if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
-      localStorage.setItem('idle-push-current-uid',uid);
       return JSON.stringify({subscription:sub.toJSON()});
     }catch(e){return JSON.stringify({error:String(e)});}
+  };
+  window.kardrunePushCommit=uid=>localStorage.setItem('idle-push-current-uid',uid);
+  window.kardrunePushStatus=async uid=>{
+    try{
+      if(!uid||!('serviceWorker' in navigator)||!('PushManager' in window)||Notification.permission!=='granted')return JSON.stringify({active:false});
+      const r=await navigator.serviceWorker.ready;
+      const s=await r.pushManager.getSubscription();
+      return JSON.stringify({active:!!s&&localStorage.getItem('idle-push-current-uid')===uid});
+    }catch(e){return JSON.stringify({active:false,error:String(e)});}
   };
   window.kardrunePushUnsubscribe=async()=>{
     try{const r=await navigator.serviceWorker.ready;const s=await r.pushManager.getSubscription();const endpoint=s?.endpoint||null;if(s)await s.unsubscribe();localStorage.removeItem('idle-push-current-uid');return JSON.stringify({endpoint});}
     catch(e){return JSON.stringify({error:String(e)});}
   };
-  window.kardrunePushAccountChanged=uid=>{
+  window.kardrunePushAccountChanged=async uid=>{
     const old=localStorage.getItem('idle-push-current-uid');
-    if(old && old!==uid) void window.kardrunePushUnsubscribe();
+    if(old && old!==uid) await window.kardrunePushUnsubscribe();
   };
 </script>
   <script src="flutter_bootstrap.js" async></script>

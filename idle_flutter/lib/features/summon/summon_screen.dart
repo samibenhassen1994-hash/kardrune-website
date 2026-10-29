@@ -44,8 +44,8 @@ class _SummonScreenState extends State<SummonScreen> {
     if (widget.active) _refresh();
     ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted || !widget.active) return;
-      if (!notificationsEnabled && freePullNotificationsGranted) {
-        notificationsEnabled = true;
+      if (notificationsEnabled != freePullNotificationsGranted) {
+        notificationsEnabled = freePullNotificationsGranted;
         _scheduleNotification();
       }
       setState(() => now = DateTime.now());
@@ -114,6 +114,9 @@ class _SummonScreenState extends State<SummonScreen> {
 
   void _scheduleNotification() {
     rechargeNotification?.cancel();
+    // Signed-in accounts are notified by the server-side push scheduler.
+    // Keeping the foreground timer as well would alert twice for one charge.
+    if (widget.accountKey != 'guest') return;
     if (!notificationsEnabled || nextAt == null) return;
     final delay = nextAt! - DateTime.now().millisecondsSinceEpoch;
     if (delay <= 0) return;

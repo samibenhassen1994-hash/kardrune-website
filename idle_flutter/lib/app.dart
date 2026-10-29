@@ -230,7 +230,13 @@ class _IdleShellState extends State<IdleShell> {
   }
 
   void _cloudChanged() {
-    notificationAccountChanged(_cloud?.identity?.uid ?? 'guest');
+    unawaited(notificationAccountChanged(_cloud?.identity?.uid ?? 'guest').then((_) async {
+      await refreshFreePullNotifications(
+        api: _cloud?.identity == null ? null : _cloud?.api,
+        uid: _cloud?.identity?.uid,
+      );
+      if (mounted) setState(() {});
+    }));
     if (_cloud?.identity != null && _pvp == null) {
       _pvp = LiveMatchCoordinator(
         repository: PvpRepository(_cloud!.api),
@@ -493,8 +499,19 @@ class _IdleShellState extends State<IdleShell> {
                             SummonScreen(
                               header: _Header(shards: shards, name: name, avatar: avatar,
                                 transparent: true, onNotifications: () async {
-                                  await enableFreePullNotifications(api: _cloud?.identity == null ? null : _cloud?.api, uid: _cloud?.identity?.uid);
-                                  if (mounted) setState(() {});
+                                  try {
+                                    await toggleFreePullNotifications(
+                                      api: _cloud?.identity == null ? null : _cloud?.api,
+                                      uid: _cloud?.identity?.uid,
+                                    );
+                                    if (mounted) setState(() {});
+                                  } catch (error) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Notifications unavailable: $error')),
+                                      );
+                                    }
+                                  }
                                 }),
                               shards: shards,
                               active: tab == 2,
