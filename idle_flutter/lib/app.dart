@@ -1437,7 +1437,7 @@ class _CardsState extends State<_Cards> {
                   const SizedBox(height: 8),
                 ],
                 Text(
-                  isOwned ? (active == id ? 'ACTIVE CHAMPION' : 'OWNED CARD') : 'NOT COLLECTED',
+                  isOwned ? 'ACTIVE CHAMPION' : 'NOT COLLECTED',
                   style: TextStyle(
                     color: isOwned
                         ? const Color(0xff7fd7c3)
@@ -1531,26 +1531,28 @@ class _Profile extends StatelessWidget {
                         fit: BoxFit.contain,
                       ),
                     ),
-                    const Text(
-                      'RUNE ADVENTURER',
-                      style: TextStyle(
-                        color: Color(0xffe8c77d),
-                        fontSize: 8,
-                        letterSpacing: 1.3,
+                    if (!compact) ...[
+                      const Text(
+                        'RUNE ADVENTURER',
+                        style: TextStyle(
+                          color: Color(0xffe8c77d),
+                          fontSize: 8,
+                          letterSpacing: 1.3,
+                        ),
                       ),
-                    ),
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontFamily: 'Georgia',
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontFamily: 'Georgia',
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    const Text(
-                      'LOCAL ACCOUNT · LEVEL 1',
-                      style: TextStyle(color: Color(0xffa6daff), fontSize: 8),
-                    ),
+                      const Text(
+                        'LOCAL ACCOUNT · LEVEL 1',
+                        style: TextStyle(color: Color(0xffa6daff), fontSize: 8),
+                      ),
+                    ],
                   ],
                 ),
               ),

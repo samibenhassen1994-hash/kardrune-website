@@ -16,18 +16,22 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      await tester.pumpWidget(const KardRuneApp(enableCloudBootstrap: false));
+      await tester.pumpWidget(
+        KardRuneApp(
+          enableCloudBootstrap: false,
+          random: () => 0,
+        ),
+      );
       await tester.pumpAndSettle();
       if (target.value != null) {
         await tester.tap(find.text(target.value!).last);
         await tester.pumpAndSettle();
       }
-      if (target.key == 'cards' || target.key == 'profile') {
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 250)),
-        );
-        await tester.pump();
-      }
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 250)),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile('goldens/${target.key}_390x844.png'),

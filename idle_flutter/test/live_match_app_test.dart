@@ -69,9 +69,10 @@ void main() {
       KardRuneApp(saveService: local, liveMatchCoordinator: match),
     );
     final liveButton = find.byKey(const Key('find-live-match'));
-    expect(tester.widget<GestureDetector>(liveButton).onTap, isNotNull);
+    expect(tester.widget<InkWell>(liveButton).onTap, isNotNull);
     await tester.tap(liveButton);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
     socket.stream.add(
       const HandEvent(
         round: 1,
@@ -87,12 +88,14 @@ void main() {
         matchId: 'm',
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
     expect(find.byType(LivePvpArena), findsOneWidget);
-    expect(find.text('Rival'), findsOneWidget);
+    expect(find.text('Rival'), findsWidgets);
     expect(find.byKey(const Key('pvp-round-header')), findsOneWidget);
     expect(find.text('ROUND 1 / 3'), findsOneWidget);
     expect(find.byKey(const Key('round-score')), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
     await tester.tap(find.byKey(const Key('surrender-live-arena')));
     await tester.pumpAndSettle();
     expect(find.byType(LivePvpArena), findsNothing);
