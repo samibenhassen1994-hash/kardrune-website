@@ -4,6 +4,7 @@ import 'dart:js_interop';
 import 'package:web/web.dart' as web;
 
 import '../../services/api_client.dart';
+import 'notification_toggle.dart';
 
 @JS('kardrunePushSubscribe')
 external JSPromise<JSString> _subscribe(JSString uid);
@@ -123,12 +124,16 @@ Future<void> disableFreePullNotifications({ApiClient? api}) async {
 }
 
 Future<bool> toggleFreePullNotifications({ApiClient? api, String? uid}) async {
-  final active = await refreshFreePullNotifications(api: api, uid: uid);
-  if (active) {
-    await disableFreePullNotifications(api: api);
-    return false;
-  }
-  return enableFreePullNotifications(api: api, uid: uid);
+  return toggleNotificationState(
+    ensurePermission: () async {
+      if (web.Notification.permission == 'granted') return true;
+      return (await web.Notification.requestPermission().toDart).toDart ==
+          'granted';
+    },
+    refresh: () => refreshFreePullNotifications(api: api, uid: uid),
+    disable: () => disableFreePullNotifications(api: api),
+    enable: () => enableFreePullNotifications(api: api, uid: uid),
+  );
 }
 
 Future<void> notificationAccountChanged(String uid) async {

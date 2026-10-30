@@ -110,6 +110,21 @@ test('expired push endpoints are removed',async()=>{
   assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS count FROM push_subscriptions').get().count,0);
 });
 
+test('an expired endpoint is skipped for the rest of the loaded batch',async()=>{
+  const db=database();
+  seed(db);
+  const now=1_000_000+43_200_000;
+  db.sqlite.prepare(`INSERT INTO notification_events(id,uid,topic,due_at,expires_at,created_at)
+    VALUES(?,?,'free_pull',?,?,?)`).run('free_pull:user-a:roll-2','user-a',now,now+21_600_000,2);
+  let attempts=0;
+  await processNotifications({DB:db,__sendPush:async()=>{
+    attempts++;
+    throw Object.assign(Error('gone'),{statusCode:410});
+  }},now);
+  assert.equal(attempts,1);
+  assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS count FROM push_subscriptions').get().count,0);
+});
+
 test('completed deliveries do not starve later due events',async()=>{
   const db=database();
   seed(db);

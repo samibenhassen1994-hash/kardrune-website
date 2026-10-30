@@ -40,7 +40,9 @@ export async function processNotifications(env,now=Date.now()) {
       AND (d.event_id IS NULL OR (d.attempts<5 AND
         (d.status='retry' OR (d.status='sending' AND d.claimed_until<?))))
     ORDER BY e.due_at,e.id,s.endpoint LIMIT 15`).bind(now,now,now).all();
+  const removedEndpoints=new Set();
   for (const delivery of deliveries.results||[]) {
+    if (removedEndpoints.has(delivery.endpoint)) continue;
     const payload=topics[delivery.topic];
     if (!payload) continue;
     await env.DB.prepare(`INSERT OR IGNORE INTO notification_deliveries
@@ -62,6 +64,7 @@ export async function processNotifications(env,now=Date.now()) {
       const code=Number(err.statusCode||0);
       if(code===404||code===410) {
         await env.DB.prepare('DELETE FROM push_subscriptions WHERE endpoint=?').bind(delivery.endpoint).run();
+        removedEndpoints.add(delivery.endpoint);
       } else {
         const dead=code===400||code===401||code===403;
         await env.DB.prepare(`UPDATE notification_deliveries SET status=?
