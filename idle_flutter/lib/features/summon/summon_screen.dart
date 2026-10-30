@@ -129,11 +129,11 @@ class _SummonScreenState extends State<SummonScreen> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, box) {
-      final compact = box.maxHeight < 540;
-      final panelHeight = (box.maxHeight * (compact ? .72 : .62)).clamp(
-        290.0,
-        470.0,
-      );
+      final compact = box.maxHeight < 700;
+      final maxPanelHeight = (box.maxHeight - 68).clamp(290.0, 600.0);
+      final panelHeight = (box.maxHeight * (compact ? .88 : .78))
+          .clamp(290.0, maxPanelHeight)
+          .toDouble();
       return Stack(
         fit: StackFit.expand,
         children: [
@@ -176,21 +176,15 @@ class _SummonScreenState extends State<SummonScreen> {
               ),
               child: Column(
                 children: [
+                  _banner(compact),
+                  const SizedBox(height: 7),
                   Row(
                     children: [
-                      _tab(
-                        0,
-                        'STANDARD',
-                        'assets/idle/cards/young_sam/young_sam_stage_1.webp',
-                      ),
+                      _tab(0, 'STANDARD'),
                       const SizedBox(width: 5),
-                      _tab(
-                        1,
-                        'FEATURED',
-                        'assets/idle/cards/dren/dren_stage_3.webp',
-                      ),
+                      _tab(1, 'FEATURED'),
                       const SizedBox(width: 5),
-                      _tab(2, 'EVENT', 'assets/idle/summon/summon_arena.webp'),
+                      _tab(2, 'EVENT'),
                     ],
                   ),
                   const SizedBox(height: 7),
@@ -213,13 +207,123 @@ class _SummonScreenState extends State<SummonScreen> {
     },
   );
 
-  Widget _tab(int index, String label, String image) => Expanded(
-    child: GestureDetector(
-      onTap: () => setState(() => section = index),
+  Widget _banner(bool compact) {
+    final title = switch (section) {
+      0 => 'STANDARD PORTAL',
+      1 => 'DREN · FEATURED SUMMON',
+      _ => 'EVENT PORTAL',
+    };
+    final emptyKey = switch (section) {
+      0 => const Key('summon-banner-empty-standard'),
+      _ => const Key('summon-banner-empty-event'),
+    };
+    return Container(
+      key: const Key('summon-banner-frame'),
+      height: compact ? 70 : 210,
+      width: double.infinity,
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xffffe3a0),
+            Color(0xff9a5c20),
+            Color(0xffffcd69),
+            Color(0xff6d3a14),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [
+          BoxShadow(color: Color(0xaa000000), blurRadius: 12),
+          BoxShadow(color: Color(0x66ffc85d), blurRadius: 10),
+        ],
+      ),
       child: Container(
-        height: 82,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
+          color: const Color(0xff091326),
+          border: Border.all(color: const Color(0xff4f2d13), width: 2),
+          borderRadius: BorderRadius.circular(11),
+        ),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 240),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          child: Stack(
+            key: ValueKey<int>(section),
+            fit: StackFit.expand,
+            children: [
+              if (section == 1)
+                Image.asset(
+                  'assets/idle/summon/banners/Dren_banner.webp',
+                  key: const Key('summon-banner-art-featured'),
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                )
+              else
+                DecoratedBox(
+                  key: emptyKey,
+                  decoration: const BoxDecoration(
+                    gradient: RadialGradient(
+                      colors: [Color(0xff162a47), Color(0xff07101f)],
+                      radius: 1.15,
+                    ),
+                  ),
+                ),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0x06000000),
+                      Color(0x22000000),
+                      Color(0xbb020712),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: compact ? 7 : 12,
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: const Color(0xffffe4a8),
+                    fontFamily: 'Georgia',
+                    fontSize: compact ? 13 : 19,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.1,
+                    shadows: const [
+                      Shadow(color: Colors.black, blurRadius: 7),
+                      Shadow(color: Color(0xffffb638), blurRadius: 8),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _tab(int index, String label) => Expanded(
+    child: GestureDetector(
+      onTap: () => setState(() => section = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        height: 34,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: section == index
+              ? const Color(0xff7a4b1f)
+              : const Color(0xff101c31),
           border: Border.all(
             color: section == index
                 ? const Color(0xffffe2a1)
@@ -231,41 +335,17 @@ class _SummonScreenState extends State<SummonScreen> {
               ? const [BoxShadow(color: Color(0x88f9bf58), blurRadius: 9)]
               : null,
         ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(
-              image,
-              fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
+        child: FittedBox(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xffffe7b5),
+              fontWeight: FontWeight.w900,
+              fontSize: 10,
+              letterSpacing: .4,
+              shadows: [Shadow(color: Colors.black, blurRadius: 5)],
             ),
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0x08000000), Color(0xdd0b1020)],
-                ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 5),
-                child: FittedBox(
-                  child: Text(
-                    label,
-                    style: const TextStyle(
-                      color: Color(0xffffe7b5),
-                      fontWeight: FontWeight.w900,
-                      fontSize: 10,
-                      shadows: [Shadow(color: Colors.black, blurRadius: 5)],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     ),
@@ -299,6 +379,7 @@ class _SummonScreenState extends State<SummonScreen> {
         'SUMMON 1  ◆ 300',
         widget.shards >= 300 && !busy,
         () => _pull(featured: false),
+        key: const Key('summon-paid-button'),
       ),
     ],
   );
@@ -470,8 +551,9 @@ class _SummonScreenState extends State<SummonScreen> {
       ),
     ),
   );
-  Widget _button(String label, bool enabled, VoidCallback action) =>
+  Widget _button(String label, bool enabled, VoidCallback action, {Key? key}) =>
       GestureDetector(
+        key: key,
         onTap: enabled ? action : null,
         child: Container(
           height: 39,

@@ -46,6 +46,42 @@ void main() {
       },
     );
   }
+  testWidgets('summon banner follows the selected section without overflow', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const KardRuneApp(enableCloudBootstrap: false));
+    await tester.tap(find.text('SUMMON').last);
+    await tester.pump();
+
+    expect(find.byKey(const Key('summon-banner-frame')), findsOneWidget);
+    expect(
+      find.byKey(const Key('summon-banner-empty-standard')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('summon-banner-art-featured')), findsNothing);
+    expect(
+      find.byKey(const Key('summon-paid-button')).hitTestable(),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('FEATURED'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('summon-banner-art-featured')), findsOneWidget);
+    expect(find.byKey(const Key('summon-banner-empty-standard')), findsNothing);
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('EVENT'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('summon-banner-empty-event')), findsOneWidget);
+    expect(find.byKey(const Key('summon-banner-art-featured')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
   testWidgets('cards collection and summon update the wallet', (
     tester,
   ) async {

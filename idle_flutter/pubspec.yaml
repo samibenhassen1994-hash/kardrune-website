@@ -76,6 +76,7 @@ flutter:
     - assets/idle/animations/
     - assets/idle/arena/
     - assets/idle/summon/
+    - assets/idle/summon/banners/
     - assets/idle/avatars/
 
   # To add assets to your application, add an assets section, like this:
