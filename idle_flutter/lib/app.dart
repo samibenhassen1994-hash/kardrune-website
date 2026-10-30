@@ -230,6 +230,13 @@ class _IdleShellState extends State<IdleShell> {
   }
 
   void _cloudChanged() {
+    unawaited(notificationAccountChanged(_cloud?.identity?.uid ?? 'guest').then((_) async {
+      await refreshFreePullNotifications(
+        api: _cloud?.identity == null ? null : _cloud?.api,
+        uid: _cloud?.identity?.uid,
+      );
+      if (mounted) setState(() {});
+    }));
     if (_cloud?.identity != null && _pvp == null) {
       _pvp = LiveMatchCoordinator(
         repository: PvpRepository(_cloud!.api),
@@ -492,8 +499,19 @@ class _IdleShellState extends State<IdleShell> {
                             SummonScreen(
                               header: _Header(shards: shards, name: name, avatar: avatar,
                                 transparent: true, onNotifications: () async {
-                                  await enableFreePullNotifications();
-                                  if (mounted) setState(() {});
+                                  try {
+                                    await toggleFreePullNotifications(
+                                      api: _cloud?.identity == null ? null : _cloud?.api,
+                                      uid: _cloud?.identity?.uid,
+                                    );
+                                    if (mounted) setState(() {});
+                                  } catch (error) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Notifications unavailable: $error')),
+                                      );
+                                    }
+                                  }
                                 }),
                               shards: shards,
                               active: tab == 2,
@@ -1419,7 +1437,7 @@ class _CardsState extends State<_Cards> {
                   const SizedBox(height: 8),
                 ],
                 Text(
-                  isOwned ? (active == id ? 'ACTIVE CHAMPION' : 'OWNED CARD') : 'NOT COLLECTED',
+                  isOwned ? 'ACTIVE CHAMPION' : 'NOT COLLECTED',
                   style: TextStyle(
                     color: isOwned
                         ? const Color(0xff7fd7c3)
@@ -1513,26 +1531,28 @@ class _Profile extends StatelessWidget {
                         fit: BoxFit.contain,
                       ),
                     ),
-                    const Text(
-                      'RUNE ADVENTURER',
-                      style: TextStyle(
-                        color: Color(0xffe8c77d),
-                        fontSize: 8,
-                        letterSpacing: 1.3,
+                    if (!compact) ...[
+                      const Text(
+                        'RUNE ADVENTURER',
+                        style: TextStyle(
+                          color: Color(0xffe8c77d),
+                          fontSize: 8,
+                          letterSpacing: 1.3,
+                        ),
                       ),
-                    ),
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontFamily: 'Georgia',
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontFamily: 'Georgia',
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    const Text(
-                      'LOCAL ACCOUNT · LEVEL 1',
-                      style: TextStyle(color: Color(0xffa6daff), fontSize: 8),
-                    ),
+                      const Text(
+                        'LOCAL ACCOUNT · LEVEL 1',
+                        style: TextStyle(color: Color(0xffa6daff), fontSize: 8),
+                      ),
+                    ],
                   ],
                 ),
               ),

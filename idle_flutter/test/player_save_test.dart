@@ -16,6 +16,7 @@ void main() {
       'practiceDaily': {'day': '', 'count': 0},
       'attacks': {'sam:1': 40},
       'crits': {'sam:1': 4},
+      'skills': {},
       'pendingDuplicate': null,
     });
   });

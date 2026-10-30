@@ -1,0 +1,12 @@
+name = "idle-kardrune-web-push"
+main = "src/index.js"
+compatibility_date = "2026-10-29"
+compatibility_flags = ["nodejs_compat"]
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "idle-kardrune"
+database_id = "REPLACE_WITH_EXISTING_D1_DATABASE_ID"

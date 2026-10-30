@@ -16,25 +16,39 @@ void main() {
       ),
     ),
   );
-  testWidgets('shows nine slots and tap inserts then saves a valid deck', (
+  testWidgets('shows nine slots and explicit add saves a valid deck', (
     tester,
   ) async {
     List<String>? result;
     await tester.pumpWidget(app((v) => result = v));
     expect(find.byKey(const Key('deck-slot')), findsNWidgets(9));
-    await tester.tap(find.byKey(const Key('inventory-sam:1')));
+    final add = find.byKey(const Key('add-deck-card-sam:1'));
+    final ownedScroll = find.descendant(
+      of: find.byKey(const Key('deck-owned-scroll-grid')),
+      matching: find.byType(Scrollable),
+    );
+    await tester.drag(ownedScroll, const Offset(0, -180));
+    await tester.pump();
+    await tester.tap(add);
     await tester.pump();
     expect(find.byKey(const Key('slot-card-sam:1')), findsOneWidget);
-    await tester.tap(find.text('SAVE DECK'));
+    await tester.tap(find.byKey(const Key('save-deck')));
     expect(result, ['sam:1']);
   });
-  testWidgets('immediate drag follows pointer and drops into chosen slot', (
+  testWidgets('long-press drag follows pointer and drops into chosen slot', (
     tester,
   ) async {
     await tester.pumpWidget(app((_) {}));
     final source = find.byKey(const Key('inventory-lira:1')),
         target = find.byKey(const ValueKey('deck-slot-4'));
+    final ownedScroll = find.descendant(
+      of: find.byKey(const Key('deck-owned-scroll-grid')),
+      matching: find.byType(Scrollable),
+    );
+    await tester.drag(ownedScroll, const Offset(0, -100));
+    await tester.pump();
     final gesture = await tester.startGesture(tester.getCenter(source));
+    await tester.pump(const Duration(milliseconds: 700));
     await gesture.moveTo(tester.getCenter(target));
     await tester.pump();
     expect(find.byKey(const Key('deck-drag-feedback')), findsOneWidget);
@@ -52,8 +66,17 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(app((_) {}));
+    final ownedScroll = find.descendant(
+      of: find.byKey(const Key('deck-owned-scroll-grid')),
+      matching: find.byType(Scrollable),
+    );
+    await tester.drag(ownedScroll, const Offset(0, -280));
+    await tester.pump();
     final source = find.byKey(const Key('inventory-dren:2'));
-    await tester.drag(source, const Offset(-200, -200));
+    final gesture = await tester.startGesture(tester.getCenter(source));
+    await tester.pump(const Duration(milliseconds: 600));
+    await gesture.moveBy(const Offset(-200, -200));
+    await gesture.up();
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('slot-card-dren:2')), findsNothing);
     expect(find.byKey(const Key('inventory-dren:2')), findsOneWidget);

@@ -29,19 +29,24 @@ void main() {
         addTearDown(tester.view.resetDevicePixelRatio);
         await tester.pumpWidget(const KardRuneApp());
         await tester.pump();
-        expect(find.text('TOURNAMENT'), findsWidgets);
-        expect(find.text('TOURNAMENT'), findsWidgets);
+        expect(find.byKey(const Key('find-live-match')), findsOneWidget);
         expect(tester.takeException(), isNull);
-        for (final label in ['CARDS', 'SUMMON', 'PROFILE']) {
-          await tester.tap(find.text(label).last);
-          await tester.pump();
-          expect(find.text(label), findsWidgets);
-          expect(tester.takeException(), isNull);
-        }
+        await tester.tap(find.text('CARDS').last);
+        await tester.pump();
+        expect(find.byKey(const Key('collection-scroll-grid')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.tap(find.text('SUMMON').last);
+        await tester.pump();
+        expect(find.text('STANDARD SUMMON'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.tap(find.text('PROFILE').last);
+        await tester.pump();
+        expect(find.byKey(const Key('account-section')), findsOneWidget);
+        expect(tester.takeException(), isNull);
       },
     );
   }
-  testWidgets('cards are paginated and summon updates the wallet', (
+  testWidgets('cards collection and summon update the wallet', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -51,7 +56,8 @@ void main() {
     await tester.pumpWidget(KardRuneApp(random: () => 0));
     await tester.tap(find.text('CARDS').last);
     await tester.pump();
-    expect(find.text('1 / 7'), findsOneWidget);
+    expect(find.byKey(const Key('collection-scroll-grid')), findsOneWidget);
+    expect(find.textContaining('1/27'), findsOneWidget);
     await tester.tap(find.text('SUMMON').last);
     await tester.pump();
     expect(find.text('1,500'), findsOneWidget);
@@ -59,7 +65,7 @@ void main() {
     await tester.pump();
     expect(find.text('1,200'), findsOneWidget);
   });
-  testWidgets('training resolves a duel and grants the exact win reward', (
+  testWidgets('arena routes signed-out players to Profile without rewards', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -67,11 +73,10 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(KardRuneApp(random: () => 0));
-    await tester.tap(find.byKey(const Key('start-practice-duel')));
+    await tester.tap(find.byKey(const Key('find-live-match')));
     await tester.pump();
-    expect(find.text('VICTORY · +100 SHARDS'), findsOneWidget);
-    expect(find.text('1,600'), findsOneWidget);
-    expect(find.text('Rewarded duels remaining today: 9/10'), findsOneWidget);
+    expect(find.byKey(const Key('account-section')), findsOneWidget);
+    expect(find.text('1,500'), findsOneWidget);
   });
   testWidgets('duplicate pull requires keep or replace and keep refunds 100', (
     tester,
@@ -110,16 +115,19 @@ void main() {
     await tester.tap(find.textContaining('SUMMON 1'));
     await tester.pumpAndSettle();
     expect(find.text('DUPLICATE CARD'), findsOneWidget);
-    expect(service.load().pendingDuplicate,{'id':'sam:1','attack':81,'crit':0});
+    expect(service.load().pendingDuplicate,{
+      'id':'sam:1','attack':1,'crit':0,'skillId':'C5','skillVersion':1,
+    });
     expect(find.descendant(of:find.byKey(const Key('summon-delta-atk')),
-      matching:find.byIcon(Icons.arrow_upward)),findsOneWidget);
+      matching:find.byIcon(Icons.arrow_downward)),findsOneWidget);
     expect(find.descendant(of:find.byKey(const Key('summon-delta-crit')),
       matching:find.byIcon(Icons.arrow_downward)),findsOneWidget);
     expect(service.load().attacks['sam:1'],40);
     await tester.tap(find.byKey(const Key('summon-replace')));
     await tester.pumpAndSettle();
-    expect(service.load().attacks['sam:1'],81);
+    expect(service.load().attacks['sam:1'],1);
     expect(service.load().crits['sam:1'],0);
+    expect(service.load().skills['sam:1'],'C5');
     expect(service.load().pendingDuplicate,isNull);
   });
 
@@ -164,7 +172,7 @@ void main() {
     await tester.pumpWidget(const KardRuneApp());
     await tester.tap(find.text('CARDS').last);
     await tester.pump();
-    await tester.tap(find.textContaining('EDIT DECK IN CARDS'));
+    await tester.tap(find.byKey(const Key('collection-edit-deck')));
     await tester.pump();
     expect(find.byKey(const Key('deck-slot')), findsNWidgets(9));
   });
@@ -237,7 +245,7 @@ void main() {
     await tester.tap(find.byKey(const Key('card-art-sam:2')));
     await tester.pump();
     expect(find.byKey(const Key('card-details-sam:2')), findsOneWidget);
-    expect(find.text('SELECTED CHAMPION'), findsOneWidget);
+    expect(find.text('ACTIVE CHAMPION'), findsOneWidget);
     expect(service.load().active, 'sam:2');
   });
 
@@ -254,6 +262,16 @@ void main() {
     await tester.pumpWidget(KardRuneApp(saveService: service));
     await tester.tap(find.text('CARDS').last);
     await tester.pump();
+    await tester.tap(find.text('ALL'));
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('card-art-sam:3')),
+      250,
+      scrollable: find.descendant(
+        of: find.byKey(const Key('collection-scroll-grid')),
+        matching: find.byType(Scrollable),
+      ),
+    );
     await tester.tap(find.byKey(const Key('card-art-sam:3')));
     await tester.pump();
     final details = find.byKey(const Key('card-details-sam:3'));
@@ -270,7 +288,7 @@ void main() {
     expect(service.load().active, 'sam:1');
   });
 
-  testWidgets('selected saved ATK and Stage determine the practice result', (
+  testWidgets('selected saved ATK and Stage persist when returning to Arena', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -294,11 +312,10 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('CLOSE'));
     await tester.pump();
-    await tester.tap(find.text('TOURNAMENT').last);
+    await tester.tap(find.text('ARENA').last);
     await tester.pump();
-    await tester.tap(find.byKey(const Key('start-practice-duel')));
-    await tester.pump();
-    expect(find.text('VICTORY · +100 SHARDS'), findsOneWidget);
+    expect(service.load().active, 'sam:2');
+    expect(service.load().attacks['sam:2'], 100);
   });
 
   testWidgets(
@@ -324,7 +341,7 @@ void main() {
       expect(service.load().crits['sam:1'], 0);
     },
   );
-  testWidgets('runtime loads legacy save and persists exact practice result', (
+  testWidgets('runtime loads and displays the legacy save', (
     tester,
   ) async {
     final storage = _MemoryStorage();
@@ -342,18 +359,14 @@ void main() {
     await tester.tap(find.text('PROFILE').last);
     await tester.pump();
     expect(find.text('Saved Hero'), findsOneWidget);
-    await tester.tap(find.text('TOURNAMENT').last);
-    await tester.pump();
-    await tester.tap(find.byKey(const Key('start-practice-duel')));
-    await tester.pump();
-    expect(find.text('DEFEAT · +35 SHARDS'), findsOneWidget);
     final saved = service.load(
       nowMs: DateTime(2026, 10, 25).millisecondsSinceEpoch,
     );
-    expect(saved.shards, 935);
-    expect(saved.duels, 1);
+    expect(saved.name, 'Saved Hero');
+    expect(saved.shards, 900);
+    expect(saved.duels, 0);
     expect(saved.wins, 0);
-    expect(saved.practiceCount, 1);
+    expect(saved.practiceCount, 0);
   });
 
   testWidgets('animation preference persists outside the game save', (
@@ -361,13 +374,14 @@ void main() {
   ) async {
     final storage = _MemoryStorage(), service = LocalSaveService(storage);
     await tester.pumpWidget(KardRuneApp(saveService: service));
+    final gameSaveBefore = storage.values[LocalSaveService.legacySaveKey];
     await tester.tap(find.text('PROFILE').last);
     await tester.pump();
     await tester.tap(find.byKey(const Key('motion-reduced')));
     await tester.pump();
     expect(storage.values['idle-motion-preference-v1'], 'reduced');
     expect(find.byKey(const Key('motion-reduced-selected')), findsOneWidget);
-    expect(storage.values[LocalSaveService.legacySaveKey], isNull);
+    expect(storage.values[LocalSaveService.legacySaveKey], gameSaveBefore);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpWidget(KardRuneApp(saveService: service));

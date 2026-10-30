@@ -5,13 +5,16 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_kardrune/main.dart';
 
 void main() {
   testWidgets('app foundation uses the KardRune identity', (tester) async {
     await tester.pumpWidget(const KardRuneApp());
-    expect(find.text('IDLE KARDRUNE'), findsOneWidget);
+    expect(tester.widget<MaterialApp>(find.byType(MaterialApp)).title,
+        'Idle KardRune');
+    expect(find.text('ARENA'), findsOneWidget);
     expect(find.text('Flutter Demo Home Page'), findsNothing);
   });
 }

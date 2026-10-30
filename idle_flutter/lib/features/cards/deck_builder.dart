@@ -490,12 +490,7 @@ class _DeckBuilderState extends State<DeckBuilder> {
                   return Column(children: [
                     Expanded(child: Stack(fit: StackFit.expand, children: [
                       _draggable(id, onTap: () => _toggleCard(id), slot: false),
-                      Center(child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          key: Key('toggle-deck-card-$id'),
-                          borderRadius: BorderRadius.circular(9),
-                          onTap: () => _toggleCard(id),
+                      Center(child: IgnorePointer(
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 18, vertical: 9),
@@ -517,7 +512,6 @@ class _DeckBuilderState extends State<DeckBuilder> {
                                 letterSpacing: 1),
                             ),
                           ),
-                        ),
                       )),
                     ])),
                     SizedBox(height: 29, child: Row(children: [
