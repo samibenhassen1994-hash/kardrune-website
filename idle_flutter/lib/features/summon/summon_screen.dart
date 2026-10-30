@@ -211,7 +211,7 @@ class _SummonScreenState extends State<SummonScreen> {
     final title = switch (section) {
       0 => 'STANDARD PORTAL',
       1 => 'DREN · FEATURED SUMMON',
-      _ => 'EVENT PORTAL',
+      _ => 'COMING SOON',
     };
     final emptyKey = switch (section) {
       0 => const Key('summon-banner-empty-standard'),
@@ -219,7 +219,7 @@ class _SummonScreenState extends State<SummonScreen> {
     };
     return Container(
       key: const Key('summon-banner-frame'),
-      height: compact ? 70 : 210,
+      height: compact ? 92 : 250,
       width: double.infinity,
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
@@ -242,7 +242,7 @@ class _SummonScreenState extends State<SummonScreen> {
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: const Color(0xff091326),
+          color: const Color(0x66091326),
           border: Border.all(color: const Color(0xff4f2d13), width: 2),
           borderRadius: BorderRadius.circular(11),
         ),
@@ -254,12 +254,23 @@ class _SummonScreenState extends State<SummonScreen> {
             key: ValueKey<int>(section),
             fit: StackFit.expand,
             children: [
-              if (section == 1)
+              if (section == 0)
+                Opacity(
+                  opacity: .9,
+                  child: Image.asset(
+                    'assets/idle/summon/banners/Standard_banner.jpg',
+                    key: const Key('summon-banner-art-standard'),
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                  ),
+                )
+              else if (section == 1)
                 Image.asset(
                   'assets/idle/summon/banners/Dren_banner.webp',
                   key: const Key('summon-banner-art-featured'),
                   fit: BoxFit.cover,
                   alignment: Alignment.center,
+                  opacity: const AlwaysStoppedAnimation(.9),
                 )
               else
                 DecoratedBox(
@@ -277,9 +288,9 @@ class _SummonScreenState extends State<SummonScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Color(0x06000000),
-                      Color(0x22000000),
-                      Color(0xbb020712),
+                      Color(0x00000000),
+                      Color(0x12000000),
+                      Color(0x88020712),
                     ],
                   ),
                 ),
@@ -288,21 +299,31 @@ class _SummonScreenState extends State<SummonScreen> {
                 left: 12,
                 right: 12,
                 bottom: compact ? 7 : 12,
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: const Color(0xffffe4a8),
-                    fontFamily: 'Georgia',
-                    fontSize: compact ? 13 : 19,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.1,
-                    shadows: const [
-                      Shadow(color: Colors.black, blurRadius: 7),
-                      Shadow(color: Color(0xffffb638), blurRadius: 8),
-                    ],
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0x88020712),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: const Color(0xffffedbd),
+                      fontFamily: 'Georgia',
+                      fontSize: compact ? 14 : 22,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                      shadows: const [
+                        Shadow(color: Colors.black, blurRadius: 8),
+                        Shadow(color: Color(0xffffb638), blurRadius: 10),
+                      ],
+                    ),
                   ),
                 ),
               ),

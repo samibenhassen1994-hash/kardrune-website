@@ -59,10 +59,7 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(const Key('summon-banner-frame')), findsOneWidget);
-    expect(
-      find.byKey(const Key('summon-banner-empty-standard')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('summon-banner-art-standard')), findsOneWidget);
     expect(find.byKey(const Key('summon-banner-art-featured')), findsNothing);
     expect(
       find.byKey(const Key('summon-paid-button')).hitTestable(),
@@ -73,18 +70,17 @@ void main() {
     await tester.tap(find.text('FEATURED'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('summon-banner-art-featured')), findsOneWidget);
-    expect(find.byKey(const Key('summon-banner-empty-standard')), findsNothing);
+    expect(find.byKey(const Key('summon-banner-art-standard')), findsNothing);
     expect(tester.takeException(), isNull);
 
     await tester.tap(find.text('EVENT'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('summon-banner-empty-event')), findsOneWidget);
     expect(find.byKey(const Key('summon-banner-art-featured')), findsNothing);
+    expect(find.text('COMING SOON'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
-  testWidgets('cards collection and summon update the wallet', (
-    tester,
-  ) async {
+  testWidgets('cards collection and summon update the wallet', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -136,56 +132,87 @@ void main() {
     await tester.pump();
     expect(find.text('1,300'), findsOneWidget);
   });
-  testWidgets('duplicate arrows and pending save survive until choice', (tester) async {
+  testWidgets('duplicate arrows and pending save survive until choice', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final storage = _MemoryStorage(), service = LocalSaveService(storage);
-    var index=0;
-    const rolls=[0.0,0.0,0.0,0.8,0.0];
-    await tester.pumpWidget(KardRuneApp(saveService: service,
-      enableCloudBootstrap:false,random:()=>rolls[index++ % rolls.length]));
+    var index = 0;
+    const rolls = [0.0, 0.0, 0.0, 0.8, 0.0];
+    await tester.pumpWidget(
+      KardRuneApp(
+        saveService: service,
+        enableCloudBootstrap: false,
+        random: () => rolls[index++ % rolls.length],
+      ),
+    );
     await tester.tap(find.text('SUMMON').last);
     await tester.pump();
     await tester.tap(find.textContaining('SUMMON 1'));
     await tester.pumpAndSettle();
     expect(find.text('DUPLICATE CARD'), findsOneWidget);
-    expect(service.load().pendingDuplicate,{
-      'id':'sam:1','attack':1,'crit':0,'skillId':'C5','skillVersion':1,
+    expect(service.load().pendingDuplicate, {
+      'id': 'sam:1',
+      'attack': 1,
+      'crit': 0,
+      'skillId': 'C5',
+      'skillVersion': 1,
     });
-    expect(find.descendant(of:find.byKey(const Key('summon-delta-atk')),
-      matching:find.byIcon(Icons.arrow_downward)),findsOneWidget);
-    expect(find.descendant(of:find.byKey(const Key('summon-delta-crit')),
-      matching:find.byIcon(Icons.arrow_downward)),findsOneWidget);
-    expect(service.load().attacks['sam:1'],40);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('summon-delta-atk')),
+        matching: find.byIcon(Icons.arrow_downward),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('summon-delta-crit')),
+        matching: find.byIcon(Icons.arrow_downward),
+      ),
+      findsOneWidget,
+    );
+    expect(service.load().attacks['sam:1'], 40);
     await tester.tap(find.byKey(const Key('summon-replace')));
     await tester.pumpAndSettle();
-    expect(service.load().attacks['sam:1'],1);
-    expect(service.load().crits['sam:1'],0);
-    expect(service.load().skills['sam:1'],'C5');
-    expect(service.load().pendingDuplicate,isNull);
+    expect(service.load().attacks['sam:1'], 1);
+    expect(service.load().crits['sam:1'], 0);
+    expect(service.load().skills['sam:1'], 'C5');
+    expect(service.load().pendingDuplicate, isNull);
   });
 
-  testWidgets('unresolved duplicate is reopened after app restart', (tester) async {
-    tester.view.physicalSize=const Size(390,844);
-    tester.view.devicePixelRatio=1;
+  testWidgets('unresolved duplicate is reopened after app restart', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    final service=LocalSaveService(_MemoryStorage());
-    service.save(PlayerSave.initial().copyWith(shards:1200,
-      pendingDuplicate:{'id':'sam:1','attack':92,'crit':2}));
-    await tester.pumpWidget(KardRuneApp(saveService:service,enableCloudBootstrap:false));
+    final service = LocalSaveService(_MemoryStorage());
+    service.save(
+      PlayerSave.initial().copyWith(
+        shards: 1200,
+        pendingDuplicate: {'id': 'sam:1', 'attack': 92, 'crit': 2},
+      ),
+    );
+    await tester.pumpWidget(
+      KardRuneApp(saveService: service, enableCloudBootstrap: false),
+    );
     await tester.pumpAndSettle();
-    expect(find.text('DUPLICATE CARD'),findsOneWidget);
+    expect(find.text('DUPLICATE CARD'), findsOneWidget);
     await tester.tap(find.byKey(const Key('summon-keep')));
     await tester.pumpAndSettle();
-    expect(service.load().shards,1300);
-    expect(service.load().pendingDuplicate,isNull);
+    expect(service.load().shards, 1300);
+    expect(service.load().pendingDuplicate, isNull);
     await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pumpWidget(KardRuneApp(saveService:service,enableCloudBootstrap:false));
+    await tester.pumpWidget(
+      KardRuneApp(saveService: service, enableCloudBootstrap: false),
+    );
     await tester.pumpAndSettle();
-    expect(find.text('DUPLICATE CARD'),findsNothing);
+    expect(find.text('DUPLICATE CARD'), findsNothing);
   });
 
   testWidgets('profile language toggle exposes Italian navigation', (
@@ -377,9 +404,7 @@ void main() {
       expect(service.load().crits['sam:1'], 0);
     },
   );
-  testWidgets('runtime loads and displays the legacy save', (
-    tester,
-  ) async {
+  testWidgets('runtime loads and displays the legacy save', (tester) async {
     final storage = _MemoryStorage();
     final service = LocalSaveService(storage);
     service.save(
