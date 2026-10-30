@@ -162,12 +162,13 @@ class _SummonScreenState extends State<SummonScreen> {
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
+              key: const Key('summon-content-panel'),
               width: double.infinity,
               height: panelHeight,
               margin: const EdgeInsets.fromLTRB(10, 0, 10, 5),
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
               decoration: BoxDecoration(
-                color: const Color(0xe5111b31),
+                color: const Color(0x8a111b31),
                 border: Border.all(color: const Color(0xffddb46b), width: 1.5),
                 borderRadius: BorderRadius.circular(15),
                 boxShadow: const [

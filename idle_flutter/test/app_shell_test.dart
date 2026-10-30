@@ -59,6 +59,11 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(const Key('summon-banner-frame')), findsOneWidget);
+    final panel = tester.widget<Container>(
+      find.byKey(const Key('summon-content-panel')),
+    );
+    final panelDecoration = panel.decoration! as BoxDecoration;
+    expect(panelDecoration.color!.a, lessThan(.75));
     expect(find.byKey(const Key('summon-banner-art-standard')), findsOneWidget);
     expect(find.byKey(const Key('summon-banner-art-featured')), findsNothing);
     expect(
