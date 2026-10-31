@@ -74,6 +74,7 @@ flutter:
     - assets/idle/cards/tor/
     - assets/idle/cards/young_sam/
     - assets/idle/animations/
+    - assets/idle/animations/dice_kr_v2/
     - assets/idle/arena/
     - assets/idle/summon/
     - assets/idle/summon/banners/

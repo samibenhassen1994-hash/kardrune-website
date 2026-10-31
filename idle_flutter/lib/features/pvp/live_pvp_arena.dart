@@ -44,10 +44,31 @@ class ArenaViewController extends ChangeNotifier {
     if (identical(card, opponentCard)) return runtimeSkillState[1];
     return null;
   }
+
   String matchWinner = 'draw';
   int roundsPlayed = 0;
+  DiceEvent? dice;
+  bool diceVisible = false, diceSettled = false;
   VoidCallback? onReady;
   Timer? _clock;
+  Timer? _diceSettle, _diceHide;
+
+  void showDice(DiceEvent value) {
+    dice = value;
+    diceVisible = true;
+    diceSettled = false;
+    _diceSettle?.cancel();
+    _diceHide?.cancel();
+    _diceSettle = Timer(const Duration(milliseconds: 900), () {
+      diceSettled = true;
+      notifyListeners();
+    });
+    _diceHide = Timer(const Duration(milliseconds: 2400), () {
+      diceVisible = false;
+      notifyListeners();
+    });
+    notifyListeners();
+  }
 
   void startHand(HandEvent value) {
     hand = value;
@@ -77,7 +98,9 @@ class ArenaViewController extends ChangeNotifier {
     _clock = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (seconds == 0) return timer.cancel();
       seconds = value.deadline > 1000000000000
-          ? ((value.deadline - DateTime.now().millisecondsSinceEpoch) / 1000).ceil().clamp(0, 30)
+          ? ((value.deadline - DateTime.now().millisecondsSinceEpoch) / 1000)
+                .ceil()
+                .clamp(0, 30)
           : (seconds - 1).clamp(0, 30);
       notifyListeners();
     });
@@ -85,7 +108,12 @@ class ArenaViewController extends ChangeNotifier {
   }
 
   bool select(String id) {
-    if (hand == null || lockedCard != null || _replaying || used.contains(id) || !hand!.hand.any((c) => c.id == id)) return false;
+    if (hand == null ||
+        lockedCard != null ||
+        _replaying ||
+        used.contains(id) ||
+        !hand!.hand.any((c) => c.id == id))
+      return false;
     lock(id, automatic: false);
     return true;
   }
@@ -120,10 +148,14 @@ class ArenaViewController extends ChangeNotifier {
         Map<String, dynamic>.from(cards[1] as Map),
       );
       final startHp = json['startHp'] as List?;
-      playerHp = startHp != null && startHp.length > 1 && startHp[selfIndex] is int
-          ? startHp[selfIndex] as int : CombatRules.hpForStage(playerCard!.stage);
-      opponentHp = startHp != null && startHp.length > 1 && startHp[1-selfIndex] is int
-          ? startHp[1-selfIndex] as int : CombatRules.hpForStage(opponentCard!.stage);
+      playerHp =
+          startHp != null && startHp.length > 1 && startHp[selfIndex] is int
+          ? startHp[selfIndex] as int
+          : CombatRules.hpForStage(playerCard!.stage);
+      opponentHp =
+          startHp != null && startHp.length > 1 && startHp[1 - selfIndex] is int
+          ? startHp[1 - selfIndex] as int
+          : CombatRules.hpForStage(opponentCard!.stage);
       attackActor = -1;
       effect = null;
       notifyListeners();
@@ -138,9 +170,12 @@ class ArenaViewController extends ChangeNotifier {
       if (token != generation || serial != _replaySequence) return;
       final log = Map<String, dynamic>.from(raw as Map);
       final kind = log['kind'] as String? ?? 'hit';
-      final target = localIndex(log['target'] as int? ?? 1 - (log['actor'] as int? ?? 0));
+      final target = localIndex(
+        log['target'] as int? ?? 1 - (log['actor'] as int? ?? 0),
+      );
       if (kind == 'status_apply') {
-        runtimeSkillState[target] = '${log['status'] ?? 'Attiva'} · ${log['turns'] ?? 0} azioni';
+        runtimeSkillState[target] =
+            '${log['status'] ?? 'Attiva'} · ${log['turns'] ?? 0} azioni';
         notifyListeners();
         continue;
       }
@@ -149,25 +184,38 @@ class ArenaViewController extends ChangeNotifier {
         notifyListeners();
         continue;
       }
-      if (kind == 'attack_start' || kind == 'round_end' ||
-          kind == 'knock_out' || kind == 'shield') {
+      if (kind == 'attack_start' ||
+          kind == 'round_end' ||
+          kind == 'knock_out' ||
+          kind == 'shield') {
         continue;
       }
       if (kind == 'skill') {
-        skillActor = localIndex(log['source'] as int? ?? log['actor'] as int? ?? 0);
-        skillTarget = localIndex(log['target'] as int? ?? log['actor'] as int? ?? 0);
+        skillActor = localIndex(
+          log['source'] as int? ?? log['actor'] as int? ?? 0,
+        );
+        skillTarget = localIndex(
+          log['target'] as int? ?? log['actor'] as int? ?? 0,
+        );
         lastSkillId = log['skillId'] as String?;
         runtimeSkillState[skillActor] = log['charges'] == 0
-            ? 'CONSUMATA' : (log['status'] as String? ?? 'ATTIVA').toUpperCase();
+            ? 'CONSUMATA'
+            : (log['status'] as String? ?? 'ATTIVA').toUpperCase();
         skillSerial++;
         final skill = SkillCatalog.byId(lastSkillId);
-        actionText = skill == null ? 'SKILL ACTIVATED' : skill.name.toUpperCase();
+        actionText = skill == null
+            ? 'SKILL ACTIVATED'
+            : skill.name.toUpperCase();
         effect = actionText;
         notifyListeners();
-        if (hitDuration > Duration.zero) await Future<void>.delayed(const Duration(milliseconds: 310));
+        if (hitDuration > Duration.zero)
+          await Future<void>.delayed(const Duration(milliseconds: 310));
         continue;
       }
-      if (kind == 'dot' || kind == 'heal' || kind == 'dodge' || kind == 'skip') {
+      if (kind == 'dot' ||
+          kind == 'heal' ||
+          kind == 'dodge' ||
+          kind == 'skip') {
         final effectSkillId = log['skillId'] as String?;
         if (effectSkillId != null) {
           skillActor = localIndex(log['source'] as int? ?? 0);
@@ -179,15 +227,25 @@ class ArenaViewController extends ChangeNotifier {
           if (target == 0) playerHp = log['hp'] as int;
           if (target == 1) opponentHp = log['hp'] as int;
         }
-        actionText = SkillCatalog.byId(log['skillId'] as String?)?.name.toUpperCase() ?? kind.toUpperCase();
-        effect = kind == 'heal' ? '+${log['heal'] ?? 0} HP' :
-          kind == 'dodge' ? 'SCHIVATA' : kind == 'skip' ? 'CONGELATO' : '-${log['damage'] ?? 0} HP';
+        actionText =
+            SkillCatalog.byId(log['skillId'] as String?)?.name.toUpperCase() ??
+            kind.toUpperCase();
+        effect = kind == 'heal'
+            ? '+${log['heal'] ?? 0} HP'
+            : kind == 'dodge'
+            ? 'SCHIVATA'
+            : kind == 'skip'
+            ? 'CONGELATO'
+            : '-${log['damage'] ?? 0} HP';
         notifyListeners();
-        if (hitDuration > Duration.zero) await Future<void>.delayed(const Duration(milliseconds: 390));
+        if (hitDuration > Duration.zero)
+          await Future<void>.delayed(const Duration(milliseconds: 390));
         continue;
       }
       attackActor = localIndex(log['actor'] as int? ?? 0);
-      actionText = attackActor == 0 ? 'YOU ATTACK → RIVAL' : 'RIVAL ATTACK → YOU';
+      actionText = attackActor == 0
+          ? 'YOU ATTACK → RIVAL'
+          : 'RIVAL ATTACK → YOU';
       attackWindup = true;
       hitSerial++;
       notifyListeners();
@@ -202,7 +260,8 @@ class ArenaViewController extends ChangeNotifier {
       lastDamage = log['damage'] as int;
       lastCritical = log['critical'] == true;
       notifyListeners();
-      if (hitDuration > Duration.zero) await Future<void>.delayed(const Duration(milliseconds: 390));
+      if (hitDuration > Duration.zero)
+        await Future<void>.delayed(const Duration(milliseconds: 390));
     }
     if (token != generation || serial != _replaySequence) return;
     actionText = 'ROUND COMPLETE';
@@ -233,15 +292,19 @@ class ArenaViewController extends ChangeNotifier {
     final finalHp = payload['finalHp'] as List?;
     if (finalHp != null && finalHp.length > 1) {
       playerHp = finalHp[selfIndex] as int;
-      opponentHp = finalHp[1-selfIndex] as int;
+      opponentHp = finalHp[1 - selfIndex] as int;
     }
-    if (payload['score'] is List) score = List<int>.from(payload['score'] as List);
+    if (payload['score'] is List)
+      score = List<int>.from(payload['score'] as List);
     roundsPlayed = payload['round'] as int? ?? roundsPlayed;
     attackWindup = false;
     _replaying = false;
     actionText = 'ROUND COMPLETE';
-    popup = payload['winner'] == 0 ? 'ROUND WON' :
-      payload['winner'] == 1 ? 'ROUND LOST' : 'ROUND DRAW';
+    popup = payload['winner'] == 0
+        ? 'ROUND WON'
+        : payload['winner'] == 1
+        ? 'ROUND LOST'
+        : 'ROUND DRAW';
     notifyListeners();
     Future<void>.delayed(const Duration(seconds: 2), () {
       if (serial == _replaySequence) _sendReady();
@@ -279,6 +342,10 @@ class ArenaViewController extends ChangeNotifier {
     matchFinished = false;
     matchWinner = 'draw';
     roundsPlayed = 0;
+    _diceSettle?.cancel();
+    _diceHide?.cancel();
+    dice = null;
+    diceVisible = diceSettled = false;
     attackWindup = false;
     actionText = '';
     _replaying = false;
@@ -302,6 +369,8 @@ class ArenaViewController extends ChangeNotifier {
   @override
   void dispose() {
     _clock?.cancel();
+    _diceSettle?.cancel();
+    _diceHide?.cancel();
     super.dispose();
   }
 }
@@ -385,44 +454,115 @@ class _LivePvpArenaState extends State<LivePvpArena> {
 
   void _inspect(PvpCard card) {
     _audio.unlock();
-    final hero = KardRuneCatalog.heroes.firstWhere((item) => item.id == card.hero);
+    final hero = KardRuneCatalog.heroes.firstWhere(
+      (item) => item.id == card.hero,
+    );
     final skill = SkillCatalog.byId(card.skillId);
-    showDialog<void>(context: context, builder: (dialogContext) => Dialog(
-      backgroundColor: const Color(0xff111e35),
-      shape: RoundedRectangleBorder(side: const BorderSide(color: Color(0xffd5ae61)),
-        borderRadius: BorderRadius.circular(12)),
-      child: SizedBox(width: 390, height: MediaQuery.sizeOf(dialogContext).height * .82,
-        child: SingleChildScrollView(child: Padding(padding: const EdgeInsets.all(14), child: Column(
-        mainAxisSize: MainAxisSize.min, children: [
-        Text(hero.name.toUpperCase(), style: const TextStyle(color: Color(0xffffd993),
-          fontSize: 18, fontWeight: FontWeight.w900)),
-        Text(hero.element.toUpperCase(), style: const TextStyle(color: Color(0xffb7cceb), fontSize: 11)),
-        const SizedBox(height: 10),
-        _BattleCard(card: card, selected: false, width: 220, height: 290),
-        const SizedBox(height: 12),
-        Text('STAGE ${card.stage}  ·  ATK ${card.attack}  ·  CRIT ${card.crit}%  ·  HP ${CombatRules.hpForStage(card.stage)}',
-          textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
-        if (skill != null) ...[
-          const SizedBox(height: 8),
-          Center(child: SkillRarityBadge(skill: skill)),
-          Text(skill.description,textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xffd1dfed),fontSize: 11)),
-          Text('${skill.trigger} · ${skill.limit}',textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xffa9bdd4),fontSize: 10)),
-          Text('Stato: ${widget.controller.runtimeFor(card) ?? 'DISPONIBILE'}',
-            style: const TextStyle(color: Color(0xffd1dfed),fontSize: 10)),
-          Text('Stage ${card.stage}: ${(SkillCatalog.weights[card.stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% per pull',
-            style: const TextStyle(color: Color(0xffa9bdd4),fontSize: 10)),
-          SkillPreviewButton(skill: skill),
-        ],
-        const SizedBox(height: 12),
-        Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CLOSE')),
-          if (widget.controller.lockedCard == null) TextButton(
-            onPressed: () { Navigator.pop(dialogContext); _play(card.id); },
-            child: const Text('PLAY CARD')),
-        ]),
-      ]))))));
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: const Color(0xff111e35),
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(color: Color(0xffd5ae61)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: SizedBox(
+          width: 390,
+          height: MediaQuery.sizeOf(dialogContext).height * .82,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    hero.name.toUpperCase(),
+                    style: const TextStyle(
+                      color: Color(0xffffd993),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  Text(
+                    hero.element.toUpperCase(),
+                    style: const TextStyle(
+                      color: Color(0xffb7cceb),
+                      fontSize: 11,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _BattleCard(
+                    card: card,
+                    selected: false,
+                    width: 220,
+                    height: 290,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'STAGE ${card.stage}  ·  ATK ${card.attack}  ·  CRIT ${card.crit}%  ·  HP ${CombatRules.hpForStage(card.stage)}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  if (skill != null) ...[
+                    const SizedBox(height: 8),
+                    Center(child: SkillRarityBadge(skill: skill)),
+                    Text(
+                      skill.description,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xffd1dfed),
+                        fontSize: 11,
+                      ),
+                    ),
+                    Text(
+                      '${skill.trigger} · ${skill.limit}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xffa9bdd4),
+                        fontSize: 10,
+                      ),
+                    ),
+                    Text(
+                      'Stato: ${widget.controller.runtimeFor(card) ?? 'DISPONIBILE'}',
+                      style: const TextStyle(
+                        color: Color(0xffd1dfed),
+                        fontSize: 10,
+                      ),
+                    ),
+                    Text(
+                      'Stage ${card.stage}: ${(SkillCatalog.weights[card.stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% per pull',
+                      style: const TextStyle(
+                        color: Color(0xffa9bdd4),
+                        fontSize: 10,
+                      ),
+                    ),
+                    SkillPreviewButton(skill: skill),
+                  ],
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: const Text('CLOSE'),
+                      ),
+                      if (widget.controller.lockedCard == null)
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(dialogContext);
+                            _play(card.id);
+                          },
+                          child: const Text('PLAY CARD'),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -430,266 +570,854 @@ class _LivePvpArenaState extends State<LivePvpArena> {
     final c = widget.controller;
     final reduced = MediaQuery.disableAnimationsOf(context);
     final cards = c.hand?.hand ?? const <PvpCard>[];
-    final battle = c.battleStarted && c.playerCard != null && c.opponentCard != null;
+    final battle =
+        c.battleStarted && c.playerCard != null && c.opponentCard != null;
     final choosing = c.hand != null && c.lockedCard == null && !c.battleStarted;
     final handCards = cards.where((card) => !c.used.contains(card.id)).toList();
     return Scaffold(
       backgroundColor: const Color(0xff091225),
-      body: SafeArea(child: LayoutBuilder(builder: (context, bounds) => Container(
-        decoration: const BoxDecoration(gradient: LinearGradient(
-          begin: Alignment.topCenter, end: Alignment.bottomCenter,
-          colors: [Color(0xff203959), Color(0xff091225), Color(0xff1a1232)])),
-        child: Column(children: [
-          Container(key: const Key('pvp-round-header'),
-            padding: EdgeInsets.symmetric(horizontal: 9, vertical: bounds.maxHeight < 620 ? 5 : 8),
-            decoration: const BoxDecoration(color: Color(0xff121e33),
-              border: Border(bottom: BorderSide(color: Color(0xffdfb76c)))),
-            child: Row(children: [
-                Expanded(child: _profileIdentity(
-                  label: 'TU', name: c.hand?.playerName ?? widget.playerName,
-                  avatar: c.hand?.playerAvatar ?? widget.playerAvatar,
-                  imageKey: const Key('player-avatar'), accent: const Color(0xff4ba8ff),
-                  compact: bounds.maxWidth < 360 || bounds.maxHeight < 620)),
-                SizedBox(width: bounds.maxWidth < 360 ? 94 : 104,
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    FittedBox(fit: BoxFit.scaleDown, child: Text(
-                      'ROUND ${c.hand?.round ?? 1} / 3',
-                      key: const Key('round-counter'),
-                      style: const TextStyle(color: Color(0xffffe0a1),
-                        fontSize: 13, fontWeight: FontWeight.w900))),
-                    const SizedBox(height: 5),
-                    Row(key: const Key('round-score'),
-                      mainAxisAlignment: MainAxisAlignment.center, children: [
-                      _roundWin(c.score[0], const Color(0xff4ba8ff)),
-                      const Padding(padding: EdgeInsets.symmetric(horizontal: 5),
-                        child: Text('VS', style: TextStyle(color: Color(0xffffd993),
-                          fontFamily: 'Georgia', fontSize: 13, fontWeight: FontWeight.w900))),
-                      _roundWin(c.score[1], const Color(0xffff6c6c)),
-                    ]),
-                  ])),
-                Expanded(child: _profileIdentity(
-                  label: 'RIVALE', name: c.hand?.opponent ?? 'SEARCHING',
-                  avatar: c.hand?.opponentAvatar ?? 'player',
-                  imageKey: const Key('opponent-avatar'),
-                  accent: const Color(0xffff6c6c),
-                  compact: bounds.maxWidth < 360 || bounds.maxHeight < 620,
-                  reverse: true)),
-            ])),
-          Container(key: const Key('pvp-timer'), margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
-            decoration: BoxDecoration(color: const Color(0xff162941),
-              border: Border.all(color: c.seconds <= 10 && choosing ? Colors.redAccent : const Color(0xffd7b26e)),
-              borderRadius: BorderRadius.circular(9)),
-            child: Row(children: [
-              const Icon(Icons.timer_outlined, color: Color(0xffffd993)),
-              const SizedBox(width: 8),
-              Expanded(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
-                child: Text(choosing ? 'CHOOSE YOUR CARD' : battle ? 'BATTLE IN PROGRESS' : c.lockedCard != null ? 'WAITING FOR RIVAL' : 'READY',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)))),
-              const SizedBox(width: 8),
-              if (widget.onSurrender != null && !c.matchFinished) ...[
-                GestureDetector(
-                  key: const Key('surrender-live-arena'),
-                  behavior: HitTestBehavior.opaque,
-                  onTap: widget.onSurrender,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: const Color(0xff49212b),
-                      border: Border.all(color: const Color(0xffff7777)),
-                      borderRadius: BorderRadius.circular(7)),
-                    child: const Text('ARRENDITI', style: TextStyle(
-                      color: Color(0xffffc7c7), fontSize: 10,
-                      fontWeight: FontWeight.w900)),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, bounds) => Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xff203959),
+                  Color(0xff091225),
+                  Color(0xff1a1232),
+                ],
+              ),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  key: const Key('pvp-round-header'),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: bounds.maxHeight < 620 ? 5 : 8,
+                  ),
+                  decoration: const BoxDecoration(
+                    color: Color(0xff121e33),
+                    border: Border(
+                      bottom: BorderSide(color: Color(0xffdfb76c)),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _profileIdentity(
+                          label: 'TU',
+                          name: c.hand?.playerName ?? widget.playerName,
+                          avatar: c.hand?.playerAvatar ?? widget.playerAvatar,
+                          imageKey: const Key('player-avatar'),
+                          accent: const Color(0xff4ba8ff),
+                          compact:
+                              bounds.maxWidth < 360 || bounds.maxHeight < 620,
+                        ),
+                      ),
+                      SizedBox(
+                        width: bounds.maxWidth < 360 ? 94 : 104,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'ROUND ${c.hand?.round ?? 1} / 3',
+                                key: const Key('round-counter'),
+                                style: const TextStyle(
+                                  color: Color(0xffffe0a1),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Row(
+                              key: const Key('round-score'),
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _roundWin(c.score[0], const Color(0xff4ba8ff)),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 5),
+                                  child: Text(
+                                    'VS',
+                                    style: TextStyle(
+                                      color: Color(0xffffd993),
+                                      fontFamily: 'Georgia',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                                _roundWin(c.score[1], const Color(0xffff6c6c)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: _profileIdentity(
+                          label: 'RIVALE',
+                          name: c.hand?.opponent ?? 'SEARCHING',
+                          avatar: c.hand?.opponentAvatar ?? 'player',
+                          imageKey: const Key('opponent-avatar'),
+                          accent: const Color(0xffff6c6c),
+                          compact:
+                              bounds.maxWidth < 360 || bounds.maxHeight < 620,
+                          reverse: true,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                Container(
+                  key: const Key('pvp-timer'),
+                  margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xff162941),
+                    border: Border.all(
+                      color: c.seconds <= 10 && choosing
+                          ? Colors.redAccent
+                          : const Color(0xffd7b26e),
+                    ),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.timer_outlined,
+                        color: Color(0xffffd993),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            choosing
+                                ? 'CHOOSE YOUR CARD'
+                                : battle
+                                ? 'BATTLE IN PROGRESS'
+                                : c.lockedCard != null
+                                ? 'WAITING FOR RIVAL'
+                                : 'READY',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      if (widget.onSurrender != null && !c.matchFinished) ...[
+                        GestureDetector(
+                          key: const Key('surrender-live-arena'),
+                          behavior: HitTestBehavior.opaque,
+                          onTap: widget.onSurrender,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xff49212b),
+                              border: Border.all(
+                                color: const Color(0xffff7777),
+                              ),
+                              borderRadius: BorderRadius.circular(7),
+                            ),
+                            child: const Text(
+                              'ARRENDITI',
+                              style: TextStyle(
+                                color: Color(0xffffc7c7),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Text(
+                        c.seconds.toString() + 's',
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 7, 12, 5),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Positioned.fill(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: const Color(0xaa0c172c),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color(0xff496183),
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (!battle && !c.matchFinished)
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _slot(
+                                'RIVAL CARD',
+                                'Opponent selects secretly',
+                                const Color(0xff9c718c),
+                                const Key('opponent-play-zone'),
+                              ),
+                              const Text(
+                                'VS',
+                                style: TextStyle(
+                                  color: Color(0xffffd993),
+                                  fontSize: 26,
+                                  fontFamily: 'Georgia',
+                                ),
+                              ),
+                              DragTarget<String>(
+                                key: const Key('play-zone'),
+                                onWillAcceptWithDetails: (_) => choosing,
+                                onAcceptWithDetails: (details) =>
+                                    _play(details.data),
+                                builder: (context, candidate, rejected) {
+                                  final selected = c.lockedCard == null
+                                      ? null
+                                      : cards
+                                            .where(
+                                              (card) => card.id == c.lockedCard,
+                                            )
+                                            .firstOrNull;
+                                  if (selected != null) {
+                                    return Container(
+                                      key: const Key('player-play-zone'),
+                                      height: bounds.maxHeight < 620 ? 90 : 104,
+                                      alignment: Alignment.center,
+                                      child: _BattleCard(
+                                        card: selected,
+                                        selected: true,
+                                        width: 70,
+                                        height: 98,
+                                      ),
+                                    );
+                                  }
+                                  return _slot(
+                                    'YOUR CARD SLOT',
+                                    'DRAG A CARD HERE',
+                                    candidate.isNotEmpty
+                                        ? Colors.greenAccent
+                                        : const Color(0xffd5ae61),
+                                    const Key('player-play-zone'),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        if (battle && !c.matchFinished)
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                'BATTLE ARENA',
+                                style: TextStyle(
+                                  color: Color(0xffffd993),
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                c.actionText,
+                                key: const Key('pvp-attack-direction'),
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Color(0xffffe2a4),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              if (c.replaying)
+                                TextButton(
+                                  onPressed: c.skipReplay,
+                                  child: const Text('SKIP REPLAY'),
+                                ),
+                              const SizedBox(height: 5),
+                              SizedBox(
+                                height: bounds.maxHeight < 620 ? 165 : 250,
+                                child: LiveFlameBattleStage(
+                                  key: ValueKey('live-battle-${c.generation}'),
+                                  controller: c,
+                                  audio: _audio,
+                                  onInspect: _inspect,
+                                ),
+                              ),
+                            ],
+                          ),
+                        if (c.matchFinished)
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                c.matchWinner == 'you'
+                                    ? 'VICTORY'
+                                    : c.matchWinner == 'opponent'
+                                    ? 'DEFEAT'
+                                    : 'DRAW',
+                                key: const Key('pvp-final-result'),
+                                style: const TextStyle(
+                                  color: Color(0xffffd993),
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'FINAL SCORE  ${c.score[0]} - ${c.score[1]}',
+                                key: const Key('pvp-final-score'),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '${c.roundsPlayed} / 3 ROUNDS PLAYED',
+                                style: const TextStyle(
+                                  color: Color(0xffb7cceb),
+                                  fontSize: 14,
+                                ),
+                              ),
+                              if (c.playerCard != null &&
+                                  c.opponentCard != null)
+                                SizedBox(
+                                  height: 92,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () => _inspect(c.playerCard!),
+                                        child: _BattleCard(
+                                          card: c.playerCard!,
+                                          selected: false,
+                                          width: 62,
+                                          height: 86,
+                                          hp: c.playerHp,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 18),
+                                      GestureDetector(
+                                        onTap: () => _inspect(c.opponentCard!),
+                                        child: _BattleCard(
+                                          card: c.opponentCard!,
+                                          selected: false,
+                                          width: 62,
+                                          height: 86,
+                                          hp: c.opponentHp,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              const SizedBox(height: 8),
+                              Text(
+                                c.actionText,
+                                style: const TextStyle(
+                                  color: Color(0xffffd993),
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              ElevatedButton(
+                                key: const Key('pvp-complete'),
+                                onPressed: widget.onComplete,
+                                child: const Text(
+                                  'COMPLETE',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                        if (!c.matchFinished && c.popup != null)
+                          Container(
+                            key: const Key('battle-announcement'),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 13,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xf009172d),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xffffd993),
+                                width: 2,
+                              ),
+                            ),
+                            child: Text(
+                              c.popup!,
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xffffd993),
+                              ),
+                            ),
+                          ),
+                        if (c.diceVisible && c.dice != null)
+                          Positioned.fill(child: _diceIntro(c)),
+                      ],
+                    ),
+                  ),
+                ),
+                if (!c.matchFinished)
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(10, 7, 10, 9),
+                    decoration: const BoxDecoration(
+                      color: Color(0xff111f34),
+                      border: Border(top: BorderSide(color: Color(0xffd5ae61))),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              'HAND',
+                              style: TextStyle(
+                                color: Color(0xffffd993),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const Spacer(),
+                            const Icon(
+                              Icons.layers_outlined,
+                              key: Key('deck-pile'),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              (c.hand == null
+                                          ? 0
+                                          : c.hand!.deckSize - c.used.length)
+                                      .toString() +
+                                  ' LEFT',
+                              key: const Key('deck-remaining'),
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'USED ' + c.used.length.toString(),
+                              key: const Key('discard-count'),
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 7),
+                        SizedBox(
+                          height: bounds.maxHeight < 620 ? 95 : 124,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              SizedBox(
+                                width: 46,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.inventory_2_outlined,
+                                      color: Color(0xffd5ae61),
+                                    ),
+                                    Text(
+                                      '${c.used.length}',
+                                      key: const Key('discard-count-pile'),
+                                      style: const TextStyle(
+                                        color: Color(0xffffd993),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const Text(
+                                      'USED',
+                                      style: TextStyle(fontSize: 9),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              for (
+                                var index = 0;
+                                index < handCards.length;
+                                index++
+                              )
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 2,
+                                    ),
+                                    child: GestureDetector(
+                                      key: const Key('hand-card'),
+                                      onTap: () => _inspect(handCards[index]),
+                                      child: Draggable<String>(
+                                        data: handCards[index].id,
+                                        maxSimultaneousDrags: choosing ? 1 : 0,
+                                        feedback: Material(
+                                          color: Colors.transparent,
+                                          child: _BattleCard(
+                                            card: handCards[index],
+                                            selected: true,
+                                          ),
+                                        ),
+                                        childWhenDragging: Opacity(
+                                          opacity: .3,
+                                          child: _BattleCard(
+                                            card: handCards[index],
+                                            selected: false,
+                                            width: bounds.maxHeight < 620
+                                                ? 65
+                                                : 88,
+                                            height: bounds.maxHeight < 620
+                                                ? 90
+                                                : 122,
+                                          ),
+                                        ),
+                                        child: AnimatedSlide(
+                                          duration: reduced
+                                              ? Duration.zero
+                                              : const Duration(
+                                                  milliseconds: 380,
+                                                ),
+                                          curve: Curves.easeOutCubic,
+                                          offset: index < dealt
+                                              ? Offset.zero
+                                              : const Offset(1.5, -.9),
+                                          child: AnimatedOpacity(
+                                            duration: reduced
+                                                ? Duration.zero
+                                                : const Duration(
+                                                    milliseconds: 300,
+                                                  ),
+                                            opacity: index < dealt ? 1 : 0,
+                                            child: _BattleCard(
+                                              key: ValueKey(
+                                                'hand-${handCards[index].id}',
+                                              ),
+                                              card: handCards[index],
+                                              selected: false,
+                                              width: bounds.maxHeight < 620
+                                                  ? 65
+                                                  : 88,
+                                              height: bounds.maxHeight < 620
+                                                  ? 90
+                                                  : 122,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              if (handCards.isEmpty)
+                                const Expanded(
+                                  child: Center(
+                                    child: Text('CARD LOCKED / DISCARDED'),
+                                  ),
+                                ),
+                              SizedBox(
+                                width: 46,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.layers_outlined,
+                                      key: Key('deck-pile-bottom'),
+                                      color: Color(0xffd5ae61),
+                                      size: 30,
+                                    ),
+                                    Text(
+                                      '${c.hand == null ? 0 : (c.hand!.deckSize - c.used.length).clamp(0, 99)}',
+                                      style: const TextStyle(
+                                        color: Color(0xffffd993),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const Text(
+                                      'DECK',
+                                      style: TextStyle(fontSize: 9),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (c.automatic)
+                          const Text(
+                            'TIME EXPIRED — RANDOM CARD SELECTED',
+                            style: TextStyle(
+                              color: Colors.orangeAccent,
+                              fontSize: 11,
+                            ),
+                          ),
+                        Text(
+                          c.used.isEmpty
+                              ? 'Each card can be used only once'
+                              : 'USED: ' + c.used.join(' · '),
+                          key: const Key('used-card'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xffadbbce),
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
-              Text(c.seconds.toString() + 's', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
-            ])),
-          Expanded(child: Padding(padding: const EdgeInsets.fromLTRB(12, 7, 12, 5),
-            child: Stack(alignment: Alignment.center, children: [
-              Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(
-                color: const Color(0xaa0c172c), borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xff496183))))),
-              if (!battle && !c.matchFinished) Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                _slot('RIVAL CARD', 'Opponent selects secretly', const Color(0xff9c718c), const Key('opponent-play-zone')),
-                const Text('VS', style: TextStyle(color: Color(0xffffd993), fontSize: 26, fontFamily: 'Georgia')),
-                DragTarget<String>(key: const Key('play-zone'),
-                  onWillAcceptWithDetails: (_) => choosing,
-                  onAcceptWithDetails: (details) => _play(details.data),
-                  builder: (context, candidate, rejected) {
-                    final selected = c.lockedCard == null ? null : cards.where((card) => card.id == c.lockedCard).firstOrNull;
-                    if (selected != null) {
-                      return Container(key: const Key('player-play-zone'), height: bounds.maxHeight < 620 ? 90 : 104,
-                        alignment: Alignment.center,
-                        child: _BattleCard(card: selected, selected: true, width: 70, height: 98));
-                    }
-                    return _slot('YOUR CARD SLOT', 'DRAG A CARD HERE',
-                      candidate.isNotEmpty ? Colors.greenAccent : const Color(0xffd5ae61),
-                      const Key('player-play-zone'));
-                  }),
-              ]),
-              if (battle && !c.matchFinished) Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                const Text('BATTLE ARENA', style: TextStyle(color: Color(0xffffd993), fontWeight: FontWeight.bold, letterSpacing: 2)),
-                const SizedBox(height: 5),
-                Text(c.actionText, key: const Key('pvp-attack-direction'), textAlign: TextAlign.center,
-                  style: const TextStyle(color: Color(0xffffe2a4), fontSize: 15, fontWeight: FontWeight.w900)),
-                if (c.replaying) TextButton(
-                  onPressed: c.skipReplay,
-                  child: const Text('SKIP REPLAY')),
-                const SizedBox(height: 5),
-                SizedBox(height: bounds.maxHeight < 620 ? 165 : 250,
-                  child: LiveFlameBattleStage(key: ValueKey('live-battle-${c.generation}'),
-                    controller: c, audio: _audio, onInspect: _inspect)),
-              ]),
-              if (c.matchFinished) Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Text(c.matchWinner == 'you' ? 'VICTORY' : c.matchWinner == 'opponent' ? 'DEFEAT' : 'DRAW',
-                  key: const Key('pvp-final-result'), style: const TextStyle(color: Color(0xffffd993), fontSize: 30, fontWeight: FontWeight.w900)),
-                const SizedBox(height: 12),
-                Text('FINAL SCORE  ${c.score[0]} - ${c.score[1]}', key: const Key('pvp-final-score'),
-                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text('${c.roundsPlayed} / 3 ROUNDS PLAYED', style: const TextStyle(color: Color(0xffb7cceb), fontSize: 14)),
-                if (c.playerCard != null && c.opponentCard != null)
-                  SizedBox(height: 92, child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    GestureDetector(onTap: () => _inspect(c.playerCard!),
-                      child: _BattleCard(card: c.playerCard!, selected: false, width: 62, height: 86, hp: c.playerHp)),
-                    const SizedBox(width: 18),
-                    GestureDetector(onTap: () => _inspect(c.opponentCard!),
-                      child: _BattleCard(card: c.opponentCard!, selected: false, width: 62, height: 86, hp: c.opponentHp)),
-                  ])),
-                const SizedBox(height: 8),
-                Text(c.actionText, style: const TextStyle(color: Color(0xffffd993), fontSize: 13)),
-                const SizedBox(height: 24),
-                ElevatedButton(key: const Key('pvp-complete'), onPressed: widget.onComplete,
-                  child: const Text('COMPLETE', style: TextStyle(fontWeight: FontWeight.bold))),
-              ]),
-              if (!c.matchFinished && c.popup != null) Container(key: const Key('battle-announcement'),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-                decoration: BoxDecoration(color: const Color(0xf009172d), borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xffffd993), width: 2)),
-                child: Text(c.popup!, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xffffd993)))),
-            ]))),
-          if (!c.matchFinished) Container(padding: const EdgeInsets.fromLTRB(10, 7, 10, 9),
-            decoration: const BoxDecoration(color: Color(0xff111f34),
-              border: Border(top: BorderSide(color: Color(0xffd5ae61)))),
-            child: Column(children: [
-              Row(children: [
-                const Text('HAND', style: TextStyle(color: Color(0xffffd993), fontSize: 11, fontWeight: FontWeight.w900)),
-                const Spacer(),
-                const Icon(Icons.layers_outlined, key: Key('deck-pile'), size: 16),
-                const SizedBox(width: 3),
-                Text((c.hand == null ? 0 : c.hand!.deckSize - c.used.length).toString() + ' LEFT',
-                  key: const Key('deck-remaining'), style: const TextStyle(fontSize: 11)),
-                const SizedBox(width: 8),
-                Text('USED ' + c.used.length.toString(), key: const Key('discard-count'),
-                  style: const TextStyle(fontSize: 11)),
-              ]),
-              const SizedBox(height: 7),
-              SizedBox(height: bounds.maxHeight < 620 ? 95 : 124,
-                child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                  SizedBox(width: 46, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    const Icon(Icons.inventory_2_outlined, color: Color(0xffd5ae61)),
-                    Text('${c.used.length}', key: const Key('discard-count-pile'),
-                      style: const TextStyle(color: Color(0xffffd993), fontWeight: FontWeight.bold)),
-                    const Text('USED', style: TextStyle(fontSize: 9)),
-                  ])),
-                  for (var index = 0; index < handCards.length; index++) Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: GestureDetector(key: const Key('hand-card'),
-                      onTap: () => _inspect(handCards[index]),
-                      child: Draggable<String>(
-                        data: handCards[index].id, maxSimultaneousDrags: choosing ? 1 : 0,
-                        feedback: Material(color: Colors.transparent,
-                          child: _BattleCard(card: handCards[index], selected: true)),
-                        childWhenDragging: Opacity(opacity: .3, child: _BattleCard(card: handCards[index], selected: false,
-                          width: bounds.maxHeight < 620 ? 65 : 88, height: bounds.maxHeight < 620 ? 90 : 122)),
-                        child: AnimatedSlide(duration: reduced ? Duration.zero : const Duration(milliseconds: 380),
-                          curve: Curves.easeOutCubic,
-                          offset: index < dealt ? Offset.zero : const Offset(1.5, -.9),
-                          child: AnimatedOpacity(duration: reduced ? Duration.zero : const Duration(milliseconds: 300),
-                            opacity: index < dealt ? 1 : 0,
-                            child: _BattleCard(key: ValueKey('hand-${handCards[index].id}'),
-                              card: handCards[index], selected: false,
-                              width: bounds.maxHeight < 620 ? 65 : 88,
-                              height: bounds.maxHeight < 620 ? 90 : 122))))))),
-                  if (handCards.isEmpty) const Expanded(child: Center(child: Text('CARD LOCKED / DISCARDED'))),
-                  SizedBox(width: 46, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    const Icon(Icons.layers_outlined, key: Key('deck-pile-bottom'),
-                      color: Color(0xffd5ae61), size: 30),
-                    Text('${c.hand == null ? 0 : (c.hand!.deckSize - c.used.length).clamp(0, 99)}',
-                      style: const TextStyle(color: Color(0xffffd993), fontWeight: FontWeight.bold)),
-                    const Text('DECK', style: TextStyle(fontSize: 9)),
-                  ])),
-                ])),
-              if (c.automatic) const Text('TIME EXPIRED — RANDOM CARD SELECTED',
-                style: TextStyle(color: Colors.orangeAccent, fontSize: 11)),
-              Text(c.used.isEmpty ? 'Each card can be used only once' : 'USED: ' + c.used.join(' · '),
-                key: const Key('used-card'), maxLines: 1, overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Color(0xffadbbce), fontSize: 10)),
-            ])),
-        ]),
-      ))),
+            ),
+          ),
+        ),
+      ),
     );
   }
+
+  Widget _diceIntro(ArenaViewController controller) {
+    final event = controller.dice!;
+    Widget die(int value, Key key, String label) {
+      final file = controller.diceSettled
+          ? 'settle_${value.toString().padLeft(2, '0')}.webp'
+          : 'spin.webp';
+      return Expanded(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xffd9e4f2),
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 5),
+            SizedBox(
+              width: 112,
+              height: 112,
+              child: Image.asset(
+                'assets/idle/animations/dice_kr_v2/$file',
+                key: key,
+                fit: BoxFit.contain,
+                cacheWidth: 224,
+              ),
+            ),
+            Text(
+              controller.diceSettled ? '$value' : '…',
+              style: const TextStyle(
+                color: Color(0xffffe0a1),
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      key: const Key('pvp-dice-intro'),
+      decoration: const BoxDecoration(
+        color: Color(0xf20a1427),
+        borderRadius: BorderRadius.all(Radius.circular(16)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            'INITIATIVE ROLL',
+            style: TextStyle(
+              color: Color(0xffffd993),
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              die(event.rolls[0], const Key('pvp-player-die'), 'YOU'),
+              const Text(
+                'VS',
+                style: TextStyle(
+                  color: Color(0xffffd993),
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              die(event.rolls[1], const Key('pvp-rival-die'), 'RIVAL'),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            event.starter == 0 ? 'YOU START' : 'RIVAL STARTS',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _slot(String title, String detail, Color accent, Key key) => Container(
-    key: key, height: MediaQuery.sizeOf(context).height < 620 ? 90 : 104, width: double.infinity,
+    key: key,
+    height: MediaQuery.sizeOf(context).height < 620 ? 90 : 104,
+    width: double.infinity,
     margin: const EdgeInsets.symmetric(horizontal: 18),
-    decoration: BoxDecoration(color: const Color(0xff182940),
-      border: Border.all(color: accent, width: 2), borderRadius: BorderRadius.circular(13)),
-    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      const Icon(Icons.add_circle_outline, color: Color(0xffffd993), size: 24),
-      const SizedBox(height: 4),
-      Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
-      Text(detail, style: const TextStyle(color: Color(0xffb3c7dd), fontSize: 11)),
-    ]));
+    decoration: BoxDecoration(
+      color: const Color(0xff182940),
+      border: Border.all(color: accent, width: 2),
+      borderRadius: BorderRadius.circular(13),
+    ),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(
+          Icons.add_circle_outline,
+          color: Color(0xffffd993),
+          size: 24,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+        ),
+        Text(
+          detail,
+          style: const TextStyle(color: Color(0xffb3c7dd), fontSize: 11),
+        ),
+      ],
+    ),
+  );
 
   Widget _roundWin(int wins, Color accent) => Container(
-    width: 25, height: 30, alignment: Alignment.center,
+    width: 25,
+    height: 30,
+    alignment: Alignment.center,
     decoration: BoxDecoration(
       color: accent.withValues(alpha: .18),
       border: Border.all(color: accent, width: 1.5),
       borderRadius: BorderRadius.circular(7),
-      boxShadow: [BoxShadow(color: accent.withValues(alpha: .2), blurRadius: 8)]),
-    child: Text('$wins', style: TextStyle(color: accent,
-      fontSize: 17, fontWeight: FontWeight.w900)));
+      boxShadow: [
+        BoxShadow(color: accent.withValues(alpha: .2), blurRadius: 8),
+      ],
+    ),
+    child: Text(
+      '$wins',
+      style: TextStyle(
+        color: accent,
+        fontSize: 17,
+        fontWeight: FontWeight.w900,
+      ),
+    ),
+  );
 
-  Widget _profileIdentity({required String label, required String name,
-    required String avatar, required Key imageKey, required Color accent,
-    required bool compact, bool reverse = false}) {
-    final safeAvatar = const ['player', 'guard', 'vassal', 'king'].contains(avatar)
-        ? avatar : 'player';
+  Widget _profileIdentity({
+    required String label,
+    required String name,
+    required String avatar,
+    required Key imageKey,
+    required Color accent,
+    required bool compact,
+    bool reverse = false,
+  }) {
+    final safeAvatar =
+        const ['player', 'guard', 'vassal', 'king'].contains(avatar)
+        ? avatar
+        : 'player';
     final size = compact ? 44.0 : 56.0;
-    final portrait = Container(key: imageKey, width: size, height: size,
+    final portrait = Container(
+      key: imageKey,
+      width: size,
+      height: size,
       padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(shape: BoxShape.circle,
-        gradient: LinearGradient(colors: [accent, const Color(0xffffd993), accent]),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [accent, const Color(0xffffd993), accent],
+        ),
         border: Border.all(color: accent, width: 2),
-        boxShadow: [BoxShadow(color: accent.withValues(alpha: .55), blurRadius: 9)]),
-      child: Container(decoration: BoxDecoration(shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xff101b31), width: 2),
-        image: DecorationImage(image: AssetImage(
-          'assets/idle/avatars/avatar_$safeAvatar.webp'), fit: BoxFit.cover))));
-    final identity = Expanded(child: Column(
-      crossAxisAlignment: reverse ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min, children: [
-      Text(label, style: TextStyle(color: accent,
-        fontSize: 9, fontWeight: FontWeight.w900)),
-      Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
-        textAlign: reverse ? TextAlign.right : TextAlign.left,
-        style: const TextStyle(color: Color(0xffffe4a3), fontSize: 11,
-          fontWeight: FontWeight.w900)),
-    ]));
-    return Row(children: reverse
-      ? [identity, const SizedBox(width: 4), portrait]
-      : [portrait, const SizedBox(width: 4), identity]);
+        boxShadow: [
+          BoxShadow(color: accent.withValues(alpha: .55), blurRadius: 9),
+        ],
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: const Color(0xff101b31), width: 2),
+          image: DecorationImage(
+            image: AssetImage('assets/idle/avatars/avatar_$safeAvatar.webp'),
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+    );
+    final identity = Expanded(
+      child: Column(
+        crossAxisAlignment: reverse
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: accent,
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: reverse ? TextAlign.right : TextAlign.left,
+            style: const TextStyle(
+              color: Color(0xffffe4a3),
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+    return Row(
+      children: reverse
+          ? [identity, const SizedBox(width: 4), portrait]
+          : [portrait, const SizedBox(width: 4), identity],
+    );
   }
-
 }
 
 class LiveFlameBattleStage extends StatefulWidget {
-  const LiveFlameBattleStage({super.key, required this.controller, required this.audio,
-    required this.onInspect});
+  const LiveFlameBattleStage({
+    super.key,
+    required this.controller,
+    required this.audio,
+    required this.onInspect,
+  });
   final ArenaViewController controller;
   final FlameBattleAudio audio;
   final ValueChanged<PvpCard> onInspect;
@@ -708,10 +1436,13 @@ class _LiveFlameBattleStageState extends State<LiveFlameBattleStage> {
   @override
   void initState() {
     super.initState();
-    game = LiveFlameBattleGame(audio: widget.audio, onPose: (player, rival) {
-      playerPose.value = player;
-      rivalPose.value = rival;
-    });
+    game = LiveFlameBattleGame(
+      audio: widget.audio,
+      onPose: (player, rival) {
+        playerPose.value = player;
+        rivalPose.value = rival;
+      },
+    );
     widget.controller.addListener(_changed);
   }
 
@@ -728,11 +1459,15 @@ class _LiveFlameBattleStageState extends State<LiveFlameBattleStage> {
       seenImpact = false;
       final card = c.attackActor == 0 ? c.playerCard : c.opponentCard;
       if (card != null) game.strike(c.attackActor, card);
-    } else if (seenStrike == c.hitSerial && !c.attackWindup &&
-        !seenImpact && c.effect != null && c.attackActor >= 0) {
+    } else if (seenStrike == c.hitSerial &&
+        !c.attackWindup &&
+        !seenImpact &&
+        c.effect != null &&
+        c.attackActor >= 0) {
       seenImpact = true;
       final card = c.attackActor == 0 ? c.playerCard : c.opponentCard;
-      if (card != null) game.impact(c.attackActor, card, c.lastDamage, c.lastCritical);
+      if (card != null)
+        game.impact(c.attackActor, card, c.lastDamage, c.lastCritical);
     }
     if (mounted) setState(() {});
   }
@@ -750,41 +1485,99 @@ class _LiveFlameBattleStageState extends State<LiveFlameBattleStage> {
   Widget build(BuildContext context) {
     final c = widget.controller;
     final cardWidth = MediaQuery.sizeOf(context).width < 360 ? 104.0 : 135.0;
-    final cardHeight = MediaQuery.sizeOf(context).height < 620 ? 112.0 :
-      MediaQuery.sizeOf(context).height < 900 ? 128.0 : 175.0;
-    Widget fighter(PvpCard card, int hp, String side, ValueNotifier<LiveCardPose> pose) =>
-      Expanded(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Text(side == 'you' ? 'YOU' : 'RIVAL', style: const TextStyle(
-          color: Color(0xffd9e4f2), fontWeight: FontWeight.bold)),
-        const SizedBox(height: 5),
-        ValueListenableBuilder<LiveCardPose>(valueListenable: pose,
-          builder: (context, value, child) => Transform.translate(
-            offset: Offset(value.x, value.y),
-            child: Transform.rotate(angle: value.angle, child: child)),
-          child: RepaintBoundary(child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => widget.onInspect(card),
-            child: _BattleCard(card: card, selected: false,
-              width: cardWidth, height: cardHeight, hp: hp)))),
-        const SizedBox(height: 5),
-        Text('$hp HP', key: Key('pvp-$side-hp'), style: const TextStyle(
-          color: Color(0xff88c9ff), fontWeight: FontWeight.w900)),
-      ]));
-    return Stack(children: [
-      Row(children: [
-        fighter(c.playerCard!, c.playerHp, 'you', playerPose),
-        const SizedBox(width: 24, child: Center(child: Text('VS', style: TextStyle(
-          color: Color(0xffffd993), fontWeight: FontWeight.w900)))),
-        fighter(c.opponentCard!, c.opponentHp, 'rival', rivalPose),
-      ]),
-      Positioned.fill(child: IgnorePointer(child: RepaintBoundary(
-        child: GameWidget(game: game)))),
-    ]);
+    final cardHeight = MediaQuery.sizeOf(context).height < 620
+        ? 112.0
+        : MediaQuery.sizeOf(context).height < 900
+        ? 128.0
+        : 175.0;
+    Widget fighter(
+      PvpCard card,
+      int hp,
+      String side,
+      ValueNotifier<LiveCardPose> pose,
+    ) => Expanded(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            side == 'you' ? 'YOU' : 'RIVAL',
+            style: const TextStyle(
+              color: Color(0xffd9e4f2),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 5),
+          ValueListenableBuilder<LiveCardPose>(
+            valueListenable: pose,
+            builder: (context, value, child) => Transform.translate(
+              offset: Offset(value.x, value.y),
+              child: Transform.rotate(angle: value.angle, child: child),
+            ),
+            child: RepaintBoundary(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => widget.onInspect(card),
+                child: _BattleCard(
+                  card: card,
+                  selected: false,
+                  width: cardWidth,
+                  height: cardHeight,
+                  hp: hp,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            '$hp HP',
+            key: Key('pvp-$side-hp'),
+            style: const TextStyle(
+              color: Color(0xff88c9ff),
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+    return Stack(
+      children: [
+        Row(
+          children: [
+            fighter(c.playerCard!, c.playerHp, 'you', playerPose),
+            const SizedBox(
+              width: 24,
+              child: Center(
+                child: Text(
+                  'VS',
+                  style: TextStyle(
+                    color: Color(0xffffd993),
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+            fighter(c.opponentCard!, c.opponentHp, 'rival', rivalPose),
+          ],
+        ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: RepaintBoundary(child: GameWidget(game: game)),
+          ),
+        ),
+      ],
+    );
   }
 }
 
 class _BattleCard extends StatelessWidget {
-  const _BattleCard({super.key, required this.card, required this.selected, this.width = 88, this.height = 122, this.hp});
+  const _BattleCard({
+    super.key,
+    required this.card,
+    required this.selected,
+    this.width = 88,
+    this.height = 122,
+    this.hp,
+  });
   final PvpCard card;
   final bool selected;
   final double width, height;

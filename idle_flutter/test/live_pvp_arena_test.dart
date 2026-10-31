@@ -9,89 +9,197 @@ const cards = [
   PvpCard(id: 'dren:1', hero: 'dren', stage: 1, attack: 65, crit: 7),
 ];
 void main() {
+  testWidgets('authoritative dice intro shows both rolls before card choice', (
+    tester,
+  ) async {
+    final c = ArenaViewController();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LivePvpArena(controller: c, onPlay: (_) {}, onReady: () {}),
+      ),
+    );
+    c.showDice(
+      const DiceEvent(
+        rolls: [7, 18],
+        attempts: [
+          [7, 18],
+        ],
+        starter: 1,
+        matchId: 'dice',
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(const Key('pvp-dice-intro')), findsOneWidget);
+    expect(find.byKey(const Key('pvp-player-die')), findsOneWidget);
+    expect(find.byKey(const Key('pvp-rival-die')), findsOneWidget);
+    expect(find.text('RIVAL STARTS'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    c.dispose();
+  });
   testWidgets('live hand fits a large iPhone viewport', (tester) async {
     tester.view.physicalSize = const Size(430, 932);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final c = ArenaViewController();
-    await tester.pumpWidget(MaterialApp(home: LivePvpArena(
-      controller: c, onPlay: (_) {}, onReady: () {})));
-    c.startHand(const HandEvent(round: 1, opponent: 'Rival', score: [0, 0],
-      hand: cards, deckSize: 9, usedCount: 0, durationMs: 30000,
-      deadline: 30000, matchId: 'large'));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LivePvpArena(controller: c, onPlay: (_) {}, onReady: () {}),
+      ),
+    );
+    c.startHand(
+      const HandEvent(
+        round: 1,
+        opponent: 'Rival',
+        score: [0, 0],
+        hand: cards,
+        deckSize: 9,
+        usedCount: 0,
+        durationMs: 30000,
+        deadline: 30000,
+        matchId: 'large',
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 1100));
     expect(find.byKey(const Key('hand-card')), findsNWidgets(3));
     expect(tester.takeException(), isNull);
   });
-  testWidgets('header shows both names, profile images and round wins', (tester) async {
+  testWidgets('header shows both names, profile images and round wins', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(320, 568);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final c = ArenaViewController();
-    await tester.pumpWidget(MaterialApp(home: LivePvpArena(
-      controller: c, onPlay: (_) {}, onReady: () {})));
-    c.startHand(const HandEvent(round: 2, opponent: 'Rival', score: [1, 0],
-      playerName: 'Sam', playerAvatar: 'guard', opponentAvatar: 'king',
-      hand: cards, deckSize: 9, usedCount: 1, durationMs: 30000,
-      deadline: 30000, matchId: 'score'));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LivePvpArena(controller: c, onPlay: (_) {}, onReady: () {}),
+      ),
+    );
+    c.startHand(
+      const HandEvent(
+        round: 2,
+        opponent: 'Rival',
+        score: [1, 0],
+        playerName: 'Sam',
+        playerAvatar: 'guard',
+        opponentAvatar: 'king',
+        hand: cards,
+        deckSize: 9,
+        usedCount: 1,
+        durationMs: 30000,
+        deadline: 30000,
+        matchId: 'score',
+      ),
+    );
     await tester.pump();
     expect(find.text('Sam'), findsOneWidget);
     expect(find.text('Rival'), findsOneWidget);
     expect(find.byKey(const Key('player-avatar')), findsOneWidget);
     expect(find.byKey(const Key('opponent-avatar')), findsOneWidget);
-    expect(tester.getSize(find.byKey(const Key('player-avatar'))).width, greaterThanOrEqualTo(44));
-    expect(tester.getSize(find.byKey(const Key('opponent-avatar'))).width, greaterThanOrEqualTo(44));
+    expect(
+      tester.getSize(find.byKey(const Key('player-avatar'))).width,
+      greaterThanOrEqualTo(44),
+    );
+    expect(
+      tester.getSize(find.byKey(const Key('opponent-avatar'))).width,
+      greaterThanOrEqualTo(44),
+    );
     expect(find.textContaining('LIVE RUNE CLASH'), findsNothing);
-    final roundCenter = tester.getCenter(find.byKey(const Key('round-counter')));
+    final roundCenter = tester.getCenter(
+      find.byKey(const Key('round-counter')),
+    );
     expect((roundCenter.dx - 160).abs(), lessThan(8));
     expect(find.text('1'), findsOneWidget);
     expect(find.byKey(const Key('round-score')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
-  testWidgets('surrender button stays clear of the avatar on a small iPhone', (tester) async {
+  testWidgets('surrender button stays clear of the avatar on a small iPhone', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(320, 568);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final c = ArenaViewController();
     var surrendered = false;
-    await tester.pumpWidget(MaterialApp(home: LivePvpArena(
-      controller: c, onPlay: (_) {}, onReady: () {},
-      onSurrender: () => surrendered = true)));
-    c.startHand(const HandEvent(round: 1, opponent: 'Rival', score: [0, 0],
-      hand: cards, deckSize: 9, usedCount: 0, durationMs: 30000,
-      deadline: 30000, matchId: 'surrender'));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LivePvpArena(
+          controller: c,
+          onPlay: (_) {},
+          onReady: () {},
+          onSurrender: () => surrendered = true,
+        ),
+      ),
+    );
+    c.startHand(
+      const HandEvent(
+        round: 1,
+        opponent: 'Rival',
+        score: [0, 0],
+        hand: cards,
+        deckSize: 9,
+        usedCount: 0,
+        durationMs: 30000,
+        deadline: 30000,
+        matchId: 'surrender',
+      ),
+    );
     await tester.pump();
-    final button = tester.getRect(find.byKey(const Key('surrender-live-arena')));
+    final button = tester.getRect(
+      find.byKey(const Key('surrender-live-arena')),
+    );
     final avatar = tester.getRect(find.byKey(const Key('player-avatar')));
     expect(button.overlaps(avatar), isFalse);
     expect(tester.takeException(), isNull);
     await tester.tap(find.byKey(const Key('surrender-live-arena')));
     expect(surrendered, isTrue);
   });
-  testWidgets('live hand and Flame stage fit a small iPhone viewport', (tester) async {
+  testWidgets('live hand and Flame stage fit a small iPhone viewport', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(320, 568);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    final c = ArenaViewController(hitDuration: const Duration(milliseconds: 940));
-    await tester.pumpWidget(MaterialApp(home: LivePvpArena(
-      controller: c, onPlay: (_) {}, onReady: () {})));
-    c.startHand(const HandEvent(round: 1, opponent: 'Rival', score: [0, 0],
-      hand: cards, deckSize: 9, usedCount: 0, durationMs: 30000,
-      deadline: 30000, matchId: 'small'));
+    final c = ArenaViewController(
+      hitDuration: const Duration(milliseconds: 940),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LivePvpArena(controller: c, onPlay: (_) {}, onReady: () {}),
+      ),
+    );
+    c.startHand(
+      const HandEvent(
+        round: 1,
+        opponent: 'Rival',
+        score: [0, 0],
+        hand: cards,
+        deckSize: 9,
+        usedCount: 0,
+        durationMs: 30000,
+        deadline: 30000,
+        matchId: 'small',
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 1100));
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('deck-pile-bottom')), findsOneWidget);
     expect(find.byKey(const Key('discard-count-pile')), findsOneWidget);
-    final replay = c.replay({'winner': 0, 'round': 1, 'score': [1, 0],
+    final replay = c.replay({
+      'winner': 0,
+      'round': 1,
+      'score': [1, 0],
       'cards': [
         {'id': 'sam:1', 'hero': 'sam', 'stage': 1, 'attack': 40, 'crit': 4},
         {'id': 'dren:1', 'hero': 'dren', 'stage': 1, 'attack': 65, 'crit': 7},
       ],
-      'log': [{'actor': 0, 'damage': 40, 'critical': false, 'hp': 200}],
+      'log': [
+        {'actor': 0, 'damage': 40, 'critical': false, 'hp': 200},
+      ],
     });
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.byType(LiveFlameBattleStage), findsOneWidget);
@@ -100,14 +208,34 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     await replay;
   });
-  testWidgets('two round wins display final result until COMPLETE', (tester) async {
+  testWidgets('two round wins display final result until COMPLETE', (
+    tester,
+  ) async {
     final c = ArenaViewController(hitDuration: Duration.zero);
     var completed = false;
-    await tester.pumpWidget(MaterialApp(home: LivePvpArena(
-      controller: c, onPlay: (_) {}, onReady: () {}, onComplete: () => completed = true)));
-    c.startHand(const HandEvent(round: 2, opponent: 'Rival', score: [1, 0],
-      hand: cards, deckSize: 3, usedCount: 1, durationMs: 30000,
-      deadline: 30000, matchId: 'best-of-three'));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LivePvpArena(
+          controller: c,
+          onPlay: (_) {},
+          onReady: () {},
+          onComplete: () => completed = true,
+        ),
+      ),
+    );
+    c.startHand(
+      const HandEvent(
+        round: 2,
+        opponent: 'Rival',
+        score: [1, 0],
+        hand: cards,
+        deckSize: 3,
+        usedCount: 1,
+        durationMs: 30000,
+        deadline: 30000,
+        matchId: 'best-of-three',
+      ),
+    );
     c.finish('you', [2, 0], rewarded: true);
     await tester.pump();
     expect(find.byKey(const Key('pvp-final-result')), findsOneWidget);
@@ -150,9 +278,7 @@ void main() {
     expect(find.text('240'), findsNWidgets(3));
     expect(find.byKey(const Key('battle-card-frame-sam:1')), findsOneWidget);
   });
-  testWidgets('tap enlarges card and PLAY CARD selects once', (
-    tester,
-  ) async {
+  testWidgets('tap enlarges card and PLAY CARD selects once', (tester) async {
     final c = ArenaViewController();
     final played = <String>[];
     await tester.pumpWidget(
@@ -176,7 +302,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1200));
     await tester.tap(find.byKey(const ValueKey('hand-sam:1')));
     await tester.pump();
-    expect(find.text('STAGE 1  ·  ATK 40  ·  CRIT 4%  ·  HP 240'), findsOneWidget);
+    expect(
+      find.text('STAGE 1  ·  ATK 40  ·  CRIT 4%  ·  HP 240'),
+      findsOneWidget,
+    );
     expect(played, isEmpty);
     await tester.tap(find.text('PLAY CARD'));
     await tester.pump();

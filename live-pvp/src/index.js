@@ -1,10 +1,11 @@
-import {buildHand,resolveDuel,pickWinner} from './rules.js';
+import {buildHand,resolveDuelFromStarter,pickWinner,rollInitiative,starterForRound} from './rules.js';
 import {validSkillForStage,SKILL_BY_ID,SKILL_VERSION} from '../../shared/skill_catalog.js';
 const CHOOSE_MS=30000;
 const MAX_ROUNDS=3;
 const WINS_TO_WIN=2;
 const PONG_GRACE_MS=18000;
 const send=(ws,obj)=>{try{if(ws.readyState===1)ws.send(JSON.stringify(obj))}catch{}};
+const secureRandom=()=>crypto.getRandomValues(new Uint32Array(1))[0]/0x100000000;
 export default {
  async fetch(request,env){
   const url=new URL(request.url);
@@ -67,8 +68,14 @@ export class PvpLobby {
   server.addEventListener('error',()=>this.drop(player));
   const waiting=this.waiting;this.waiting=null;
   if(waiting&&waiting.uid!==uid&&this.sockets.get(waiting.uid)===waiting){
-   const match={id:crypto.randomUUID(),players:[waiting,player],round:0,scores:[0,0],selectTimer:null,readyTimer:null,awaiting:null};
+   const initiative=rollInitiative(secureRandom);
+   const match={id:crypto.randomUUID(),players:[waiting,player],round:0,scores:[0,0],selectTimer:null,readyTimer:null,awaiting:null,initiative};
    waiting.match=match;player.match=match;this.matches.set(match.id,match);
+   send(waiting.ws,{type:'dice',rolls:initiative.rolls,attempts:initiative.attempts,
+    starter:initiative.starter,matchId:match.id});
+   send(player.ws,{type:'dice',rolls:[...initiative.rolls].reverse(),
+    attempts:initiative.attempts.map(rolls=>[...rolls].reverse()),
+    starter:1-initiative.starter,matchId:match.id});
    this.next(match);
   }else{this.waiting=player;send(server,{type:'waiting'})}
   return new Response(null,{status:101,webSocket:client});
@@ -126,17 +133,18 @@ export class PvpLobby {
   this.clearTimers(match);
   const [a,b]=match.players;
   a.used.push(a.chosen.id);b.used.push(b.chosen.id);
-  const result=resolveDuel(a.chosen,b.chosen);
+  const roundStarter=starterForRound(match.initiative?.starter??0,match.round);
+  const result=resolveDuelFromStarter(a.chosen,b.chosen,roundStarter);
   const timeline=result.log.map(entry=>({...entry,round:match.round,matchId:match.id}));
   if(result.winner===0)match.scores[0]++;
   if(result.winner===1)match.scores[1]++;
   const event={type:'round_result',round:match.round,cards:[a.chosen,b.chosen],winner:result.winner,
    log:timeline,startHp:result.startHp,finalHp:result.hp,maxHp:result.maxHp,
-   score:match.scores,selfIndex:0};
+   score:match.scores,selfIndex:0,starter:roundStarter};
   match.awaiting=new Set([a.uid,b.uid]);
   send(a.ws,event);
   send(b.ws,{...event,cards:[b.chosen,a.chosen],winner:result.winner==='draw'?'draw':1-result.winner,
-   selfIndex:1,score:[...match.scores].reverse()});
+   selfIndex:1,starter:1-roundStarter,score:[...match.scores].reverse()});
   match.readyTimer=setTimeout(()=>{if(!this.matches.has(match.id)||!match.awaiting)return;
    const late=[...match.awaiting];this.finish(match,'replay_timeout',late.length===1?late[0]:null)
   },180000);

@@ -71,6 +71,12 @@ class LiveMatchCoordinator extends ChangeNotifier {
       case WaitingEvent():
         state = LiveMatchState.waiting;
         message = 'Waiting for an opponent…';
+      case DiceEvent():
+        arena.showDice(event);
+        state = LiveMatchState.arena;
+        message = event.starter == 0
+            ? 'You won initiative.'
+            : 'Rival won initiative.';
       case HandEvent():
         arena.startHand(event);
         state = LiveMatchState.arena;
@@ -82,7 +88,11 @@ class LiveMatchCoordinator extends ChangeNotifier {
       case RoundResultEvent():
         arena.replay(event.json);
       case FinishedEvent():
-        arena.finish(event.winner, event.score, rewarded: event.reason == 'completed');
+        arena.finish(
+          event.winner,
+          event.score,
+          rewarded: event.reason == 'completed',
+        );
         final id = _protocol?.matchId;
         if (id != null) onMatchFinished?.call(id, event.reason);
       case ErrorEvent():

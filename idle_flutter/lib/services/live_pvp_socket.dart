@@ -37,6 +37,15 @@ sealed class PvpEvent {
         return const PingEvent();
       case 'waiting':
         return const WaitingEvent();
+      case 'dice':
+        return DiceEvent(
+          rolls: List<int>.from(j['rolls'] as List),
+          attempts: (j['attempts'] as List)
+              .map((value) => List<int>.from(value as List))
+              .toList(),
+          starter: j['starter'] as int,
+          matchId: j['matchId'] as String,
+        );
       case 'hand':
         return HandEvent(
           round: j['round'] as int,
@@ -80,6 +89,19 @@ class PingEvent extends PvpEvent {
 
 class WaitingEvent extends PvpEvent {
   const WaitingEvent();
+}
+
+class DiceEvent extends PvpEvent {
+  const DiceEvent({
+    required this.rolls,
+    required this.attempts,
+    required this.starter,
+    required this.matchId,
+  });
+  final List<int> rolls;
+  final List<List<int>> attempts;
+  final int starter;
+  final String matchId;
 }
 
 class OpponentLockedEvent extends PvpEvent {

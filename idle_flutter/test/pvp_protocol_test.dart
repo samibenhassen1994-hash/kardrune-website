@@ -13,6 +13,26 @@ class FakeSocket implements PvpSocketPort {
 }
 
 void main() {
+  test('decodes authoritative dice rolls and relative starter', () {
+    final event = PvpEvent.decode({
+      'type': 'dice',
+      'rolls': [7, 18],
+      'attempts': [
+        [11, 11],
+        [7, 18],
+      ],
+      'starter': 1,
+      'matchId': 'm',
+    });
+    expect(event, isA<DiceEvent>());
+    final dice = event as DiceEvent;
+    expect(dice.rolls, [7, 18]);
+    expect(dice.attempts, [
+      [11, 11],
+      [7, 18],
+    ]);
+    expect(dice.starter, 1);
+  });
   test('decodes the existing hand event without changing fields', () {
     final e = PvpEvent.decode({
       'type': 'hand',
