@@ -17,7 +17,7 @@ async function handle({request,env},write){
  try{
   const user=await userFromRequest(request,env);
   if(!env.DB)return json({error:'D1 not configured'},503);
-  if(write)await requireActiveAccount(env,user.uid,{allowMissing:true});
+  await requireActiveAccount(env,user.uid,{allowMissing:true});
   if(!write){
    const row=await env.DB.prepare('SELECT save_json,revision,updated_at FROM demo_saves WHERE uid=?').bind(user.uid).first();
    if(!row)return json({save:null,revision:0});
