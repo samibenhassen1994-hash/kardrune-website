@@ -112,8 +112,9 @@ class ArenaViewController extends ChangeNotifier {
         lockedCard != null ||
         _replaying ||
         used.contains(id) ||
-        !hand!.hand.any((c) => c.id == id))
+        !hand!.hand.any((c) => c.id == id)) {
       return false;
+    }
     lock(id, automatic: false);
     return true;
   }
@@ -208,8 +209,9 @@ class ArenaViewController extends ChangeNotifier {
             : skill.name.toUpperCase();
         effect = actionText;
         notifyListeners();
-        if (hitDuration > Duration.zero)
+        if (hitDuration > Duration.zero) {
           await Future<void>.delayed(const Duration(milliseconds: 310));
+        }
         continue;
       }
       if (kind == 'dot' ||
@@ -238,8 +240,9 @@ class ArenaViewController extends ChangeNotifier {
             ? 'CONGELATO'
             : '-${log['damage'] ?? 0} HP';
         notifyListeners();
-        if (hitDuration > Duration.zero)
+        if (hitDuration > Duration.zero) {
           await Future<void>.delayed(const Duration(milliseconds: 390));
+        }
         continue;
       }
       attackActor = localIndex(log['actor'] as int? ?? 0);
@@ -260,8 +263,9 @@ class ArenaViewController extends ChangeNotifier {
       lastDamage = log['damage'] as int;
       lastCritical = log['critical'] == true;
       notifyListeners();
-      if (hitDuration > Duration.zero)
+      if (hitDuration > Duration.zero) {
         await Future<void>.delayed(const Duration(milliseconds: 390));
+      }
     }
     if (token != generation || serial != _replaySequence) return;
     actionText = 'ROUND COMPLETE';
@@ -294,8 +298,9 @@ class ArenaViewController extends ChangeNotifier {
       playerHp = finalHp[selfIndex] as int;
       opponentHp = finalHp[1 - selfIndex] as int;
     }
-    if (payload['score'] is List)
+    if (payload['score'] is List) {
       score = List<int>.from(payload['score'] as List);
+    }
     roundsPlayed = payload['round'] as int? ?? roundsPlayed;
     attackWindup = false;
     _replaying = false;
@@ -1468,8 +1473,9 @@ class _LiveFlameBattleStageState extends State<LiveFlameBattleStage> {
         c.attackActor >= 0) {
       seenImpact = true;
       final card = c.attackActor == 0 ? c.playerCard : c.opponentCard;
-      if (card != null)
+      if (card != null) {
         game.impact(c.attackActor, card, c.lastDamage, c.lastCritical);
+      }
     }
     if (mounted) setState(() {});
   }

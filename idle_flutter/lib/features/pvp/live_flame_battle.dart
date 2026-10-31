@@ -169,8 +169,9 @@ class _LiveStrikeEffects extends Component {
     );
     final victim = (x: shake, y: shake.abs() * .13, angle: shake * .006);
     onPose(actor == 0 ? active : victim, actor == 0 ? victim : active);
-    if (strikeAge > 1.3 && impactAge > .75 && skillAge > 1.1)
+    if (strikeAge > 1.3 && impactAge > .75 && skillAge > 1.1) {
       findGame()?.pauseEngine();
+    }
   }
 
   @override

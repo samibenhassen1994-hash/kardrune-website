@@ -676,8 +676,9 @@ class _IdleShellState extends State<IdleShell> {
     }
     if (_summonOpen ||
         _summonRequestPending ||
-        (!free && shards < SummonRules.cost(featured)))
+        (!free && shards < SummonRules.cost(featured))) {
       return;
+    }
     if (free && (featured || (await _freeSummonStatus())['available'] == 0)) {
       return;
     }
@@ -751,8 +752,9 @@ class _IdleShellState extends State<IdleShell> {
     _summonRequestPending = true;
     final rollId = _pendingOnlineRollId ??= _newRollId();
     try {
-      if (!await cloud.prepareServerMutation())
+      if (!await cloud.prepareServerMutation()) {
         throw StateError('Cloud save needs review');
+      }
       final result = await cloud.api.post('/api/summon', {
         'featured': featured,
         'free': free,
@@ -876,14 +878,16 @@ class _IdleShellState extends State<IdleShell> {
     String rollId,
     bool replace,
   ) async {
-    if (_summonRequestPending || _cloud?.state != CloudAccountState.synced)
+    if (_summonRequestPending || _cloud?.state != CloudAccountState.synced) {
       return;
+    }
     _summonRequestPending = true;
     final cloud = _cloud!;
     final accountUid = cloud.identity?.uid;
     try {
-      if (!await cloud.prepareServerMutation())
+      if (!await cloud.prepareServerMutation()) {
         throw StateError('Cloud save needs review');
+      }
       final response = await cloud.api.post('/api/summon/decision', {
         'rollId': rollId,
         'replace': replace,
@@ -1339,10 +1343,13 @@ class _CardsState extends State<_Cards> {
       final id = '${card.key.id}:${card.value}';
       final isOwned = owned.contains(id);
       final skill = SkillCatalog.byId(skills[id]);
-      if (ownership == 'owned' && !isOwned || ownership == 'missing' && isOwned)
+      if (ownership == 'owned' && !isOwned ||
+          ownership == 'missing' && isOwned) {
         return false;
-      if (stageFilter != 'all' && card.value.toString() != stageFilter)
+      }
+      if (stageFilter != 'all' && card.value.toString() != stageFilter) {
         return false;
+      }
       if (rarity != 'all' && skill?.rarity != rarity) return false;
       if (skillFilter != 'all' && skill?.id != skillFilter) return false;
       final q = query.text.trim().toLowerCase();
