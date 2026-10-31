@@ -175,7 +175,7 @@ void main() {
     expect(find.text('DUPLICATE CARD'), findsOneWidget);
     expect(service.load().pendingDuplicate, {
       'id': 'sam:1',
-      'attack': 1,
+      'attack': 25,
       'crit': 0,
       'skillId': 'C5',
       'skillVersion': 1,
@@ -197,7 +197,7 @@ void main() {
     expect(service.load().attacks['sam:1'], 40);
     await tester.tap(find.byKey(const Key('summon-replace')));
     await tester.pumpAndSettle();
-    expect(service.load().attacks['sam:1'], 1);
+    expect(service.load().attacks['sam:1'], 25);
     expect(service.load().crits['sam:1'], 0);
     expect(service.load().skills['sam:1'], 'C5');
     expect(service.load().pendingDuplicate, isNull);
@@ -311,7 +311,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.descendant(of: stats, matching: find.text('19%')),
+      find.descendant(of: stats, matching: find.text('16%')),
       findsOneWidget,
     );
     final frameRect = tester.getRect(frame);
@@ -397,7 +397,7 @@ void main() {
     await tester.tap(find.text('ARENA').last);
     await tester.pump();
     expect(service.load().active, 'sam:2');
-    expect(service.load().attacks['sam:2'], 100);
+    expect(service.load().attacks['sam:2'], 75);
   });
 
   testWidgets(
@@ -417,9 +417,9 @@ void main() {
       await tester.pump();
       await tester.tap(find.text('CARDS').last);
       await tester.pump();
-      expect(find.text('1'), findsWidgets);
+      expect(find.text('25'), findsWidgets);
       expect(find.text('0%'), findsWidgets);
-      expect(service.load().attacks['sam:1'], 1);
+      expect(service.load().attacks['sam:1'], 25);
       expect(service.load().crits['sam:1'], 0);
     },
   );
