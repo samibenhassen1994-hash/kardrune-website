@@ -48,22 +48,29 @@ class ArenaViewController extends ChangeNotifier {
   String matchWinner = 'draw';
   int roundsPlayed = 0;
   DiceEvent? dice;
-  bool diceVisible = false, diceSettled = false;
+  bool diceVisible = false, diceSettled = false, diceResultVisible = false;
   VoidCallback? onReady;
   Timer? _clock;
-  Timer? _diceSettle, _diceHide;
+  Timer? _diceSettle, _diceReveal, _diceHide;
 
   void showDice(DiceEvent value) {
     dice = value;
     diceVisible = true;
     diceSettled = false;
+    diceResultVisible = false;
     _diceSettle?.cancel();
+    _diceReveal?.cancel();
     _diceHide?.cancel();
-    _diceSettle = Timer(const Duration(milliseconds: 900), () {
+    // Give both sprite animations time to play before showing the rolls.
+    _diceSettle = Timer(const Duration(milliseconds: 1200), () {
       diceSettled = true;
       notifyListeners();
     });
-    _diceHide = Timer(const Duration(milliseconds: 2400), () {
+    _diceReveal = Timer(const Duration(milliseconds: 2200), () {
+      diceResultVisible = true;
+      notifyListeners();
+    });
+    _diceHide = Timer(const Duration(milliseconds: 4600), () {
       diceVisible = false;
       notifyListeners();
     });
@@ -109,6 +116,7 @@ class ArenaViewController extends ChangeNotifier {
 
   bool select(String id) {
     if (hand == null ||
+        diceVisible ||
         lockedCard != null ||
         _replaying ||
         used.contains(id) ||
@@ -350,9 +358,10 @@ class ArenaViewController extends ChangeNotifier {
     matchWinner = 'draw';
     roundsPlayed = 0;
     _diceSettle?.cancel();
+    _diceReveal?.cancel();
     _diceHide?.cancel();
     dice = null;
-    diceVisible = diceSettled = false;
+    diceVisible = diceSettled = diceResultVisible = false;
     attackWindup = false;
     actionText = '';
     _replaying = false;
@@ -377,6 +386,7 @@ class ArenaViewController extends ChangeNotifier {
   void dispose() {
     _clock?.cancel();
     _diceSettle?.cancel();
+    _diceReveal?.cancel();
     _diceHide?.cancel();
     super.dispose();
   }
@@ -581,7 +591,9 @@ class _LivePvpArenaState extends State<LivePvpArena> {
         c.battleStarted && c.playerCard != null && c.opponentCard != null;
     final choosing = c.hand != null && c.lockedCard == null && !c.battleStarted;
     final handCards = cards.where((card) => !c.used.contains(card.id)).toList();
-    return Scaffold(
+    return Stack(
+      children: [
+        Scaffold(
       backgroundColor: const Color(0xff091225),
       body: SafeArea(
         child: LayoutBuilder(
@@ -984,8 +996,6 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                               ),
                             ),
                           ),
-                        if (c.diceVisible && c.dice != null)
-                          Positioned.fill(child: _diceIntro(c)),
                       ],
                     ),
                   ),
@@ -1197,13 +1207,27 @@ class _LivePvpArenaState extends State<LivePvpArena> {
           ),
         ),
       ),
+    ),
+        if (c.diceVisible && c.dice != null)
+          Positioned.fill(
+            child: AbsorbPointer(
+              child: ColoredBox(
+                color: const Color(0xf5091225),
+                child: SafeArea(child: Center(child: _diceIntro(c))),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
   Widget _diceIntro(ArenaViewController controller) {
     final event = controller.dice!;
+    final size = ((MediaQuery.sizeOf(context).width - 110) / 2)
+        .clamp(96.0, 156.0);
     Widget die(int value, Key key, String label) {
-      final file = controller.diceSettled
+      final settled = controller.diceSettled;
+      final file = settled
           ? 'settle_${value.toString().padLeft(2, '0')}.webp'
           : 'spin.webp';
       return Expanded(
@@ -1215,24 +1239,27 @@ class _LivePvpArenaState extends State<LivePvpArena> {
               style: const TextStyle(
                 color: Color(0xffd9e4f2),
                 fontWeight: FontWeight.w900,
+                fontSize: 16,
               ),
             ),
-            const SizedBox(height: 5),
-            SizedBox(
-              width: 112,
-              height: 112,
-              child: Image.asset(
-                'assets/idle/animations/dice_kr_v2/$file',
-                key: key,
-                fit: BoxFit.contain,
-                cacheWidth: 224,
-              ),
+            const SizedBox(height: 10),
+            _KrV2Die(
+              key: key,
+              asset: 'assets/idle/animations/dice_kr_v2/$file',
+              size: size,
+              columns: 6,
+              rows: settled ? 4 : 5,
+              duration: settled
+                  ? const Duration(milliseconds: 920)
+                  : const Duration(milliseconds: 1000),
+              repeat: !settled,
             ),
+            const SizedBox(height: 8),
             Text(
-              controller.diceSettled ? '$value' : '…',
+              controller.diceResultVisible ? '$value' : '…',
               style: const TextStyle(
                 color: Color(0xffffe0a1),
-                fontSize: 24,
+                fontSize: 30,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -1241,49 +1268,67 @@ class _LivePvpArenaState extends State<LivePvpArena> {
       );
     }
 
-    return Container(
+    return Padding(
       key: const Key('pvp-dice-intro'),
-      decoration: const BoxDecoration(
-        color: Color(0xf20a1427),
-        borderRadius: BorderRadius.all(Radius.circular(16)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
-            'INITIATIVE ROLL',
-            style: TextStyle(
-              color: Color(0xffffd993),
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.4,
-            ),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 26),
+          decoration: BoxDecoration(
+            color: const Color(0xff15233b),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xffffd993), width: 2),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x99ffca65),
+                blurRadius: 24,
+                spreadRadius: 1,
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              die(event.rolls[0], const Key('pvp-player-die'), 'YOU'),
               const Text(
-                'VS',
+                'INITIATIVE ROLL',
                 style: TextStyle(
                   color: Color(0xffffd993),
-                  fontSize: 20,
+                  fontSize: 21,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.4,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  die(event.rolls[0], const Key('pvp-player-die'), 'YOU'),
+                  const Text(
+                    'VS',
+                    style: TextStyle(
+                      color: Color(0xffffd993),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  die(event.rolls[1], const Key('pvp-rival-die'), 'RIVAL'),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Text(
+                controller.diceResultVisible
+                    ? (event.starter == 0 ? 'YOU START' : 'RIVAL STARTS')
+                    : 'ROLLING D20…',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 19,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              die(event.rolls[1], const Key('pvp-rival-die'), 'RIVAL'),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            event.starter == 0 ? 'YOU START' : 'RIVAL STARTS',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1628,4 +1673,101 @@ class _BattleCard extends StatelessWidget {
       ),
     ),
   );
+}
+
+
+/// Renders one cell from the original kr_v2 WebP atlas, not the entire sheet.
+/// spin.webp is 6x5 (30 frames); each settle_XX.webp is 6x4 (24 frames).
+class _KrV2Die extends StatefulWidget {
+  const _KrV2Die({
+    super.key,
+    required this.asset,
+    required this.size,
+    required this.columns,
+    required this.rows,
+    required this.duration,
+    required this.repeat,
+  });
+
+  final String asset;
+  final double size;
+  final int columns, rows;
+  final Duration duration;
+  final bool repeat;
+
+  @override
+  State<_KrV2Die> createState() => _KrV2DieState();
+}
+
+class _KrV2DieState extends State<_KrV2Die>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animation = AnimationController(vsync: this, duration: widget.duration)
+      ..addListener(() {
+        if (mounted) setState(() {});
+      });
+    _start();
+  }
+
+  void _start() {
+    _animation.stop();
+    _animation.duration = widget.duration;
+    if (widget.repeat) {
+      _animation.repeat();
+    } else {
+      _animation.forward(from: 0);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _KrV2Die oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.asset != widget.asset ||
+        oldWidget.duration != widget.duration ||
+        oldWidget.repeat != widget.repeat) {
+      _start();
+    }
+  }
+
+  @override
+  void dispose() {
+    _animation.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final count = widget.columns * widget.rows;
+    final frame = (_animation.value * count).floor().clamp(0, count - 1);
+    final x = frame % widget.columns;
+    final y = frame ~/ widget.columns;
+    return SizedBox(
+      width: widget.size,
+      height: widget.size,
+      child: ClipRect(
+        child: OverflowBox(
+          alignment: Alignment.topLeft,
+          minWidth: widget.size * widget.columns,
+          maxWidth: widget.size * widget.columns,
+          minHeight: widget.size * widget.rows,
+          maxHeight: widget.size * widget.rows,
+          child: Transform.translate(
+            offset: Offset(-x * widget.size, -y * widget.size),
+            child: Image.asset(
+              widget.asset,
+              width: widget.size * widget.columns,
+              height: widget.size * widget.rows,
+              fit: BoxFit.fill,
+              filterQuality: FilterQuality.medium,
+              gaplessPlayback: true,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
