@@ -47,6 +47,6 @@
 
 ### Task 3: Validation and release
 
-- [ ] Run Flutter analyze/test/build and Worker/Functions suites.
-- [ ] Review complete diff and verify no migration or match-rule changes.
+- [x] Run Flutter analyze/test/build and Worker/Functions suites.
+- [x] Review complete diff and verify no migration or match-rule changes.
 - [ ] Merge to `main`, verify Pages, and deploy Worker only if Worker source changed.
