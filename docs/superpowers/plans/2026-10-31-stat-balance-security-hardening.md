@@ -60,6 +60,6 @@
 
 ### Task 5: Full verification and branch push
 
-- [ ] Run Flutter analyze/tests/build, Functions tests, Worker tests and migration checks.
-- [ ] Perform whole-branch security review and fix Critical/Important findings through RED→GREEN.
-- [ ] Push the new branch only; do not merge or deploy.
+- [x] Run Flutter analyze/tests/build, Functions tests, Worker tests and migration checks.
+- [x] Perform whole-branch security review and fix Critical/Important findings through RED→GREEN.
+- [x] Push the new branch only; do not merge or deploy.
