@@ -36,7 +36,7 @@ void main() {
         expect(find.byKey(const Key('collection-scroll-grid')), findsOneWidget);
         expect(tester.takeException(), isNull);
         await tester.tap(find.text('SUMMON').last);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('STANDARD SUMMON'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await tester.tap(find.text('PROFILE').last);
@@ -56,7 +56,7 @@ void main() {
 
     await tester.pumpWidget(const KardRuneApp(enableCloudBootstrap: false));
     await tester.tap(find.text('SUMMON').last);
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('summon-banner-frame')), findsOneWidget);
     final panel = tester.widget<Container>(
@@ -85,6 +85,20 @@ void main() {
     expect(find.text('COMING SOON'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('summon content panel enters upward when opened', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const KardRuneApp(enableCloudBootstrap: false));
+    await tester.tap(find.text('SUMMON').last);
+    await tester.pump();
+    final panel = find.byKey(const Key('summon-content-panel'));
+    final enteringY = tester.getTopLeft(panel).dy;
+    await tester.pump(const Duration(milliseconds: 500));
+    final settledY = tester.getTopLeft(panel).dy;
+    expect(enteringY - settledY, greaterThan(40));
+  });
   testWidgets('cards collection and summon update the wallet', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -96,7 +110,7 @@ void main() {
     expect(find.byKey(const Key('collection-scroll-grid')), findsOneWidget);
     expect(find.textContaining('1/27'), findsOneWidget);
     await tester.tap(find.text('SUMMON').last);
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('1,500'), findsOneWidget);
     await tester.tap(find.textContaining('SUMMON 1'));
     await tester.pump();
@@ -124,7 +138,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(KardRuneApp(random: () => 0));
     await tester.tap(find.text('SUMMON').last);
-    await tester.pump();
+    await tester.pumpAndSettle();
     await tester.tap(find.textContaining('SUMMON 1'));
     await tester.pump();
     await tester.pumpAndSettle();
@@ -155,7 +169,7 @@ void main() {
       ),
     );
     await tester.tap(find.text('SUMMON').last);
-    await tester.pump();
+    await tester.pumpAndSettle();
     await tester.tap(find.textContaining('SUMMON 1'));
     await tester.pumpAndSettle();
     expect(find.text('DUPLICATE CARD'), findsOneWidget);
@@ -395,7 +409,7 @@ void main() {
         KardRuneApp(saveService: service, random: () => 0),
       );
       await tester.tap(find.text('SUMMON').last);
-      await tester.pump();
+      await tester.pumpAndSettle();
       await tester.tap(find.textContaining('SUMMON 1'));
       await tester.pump();
       await tester.pumpAndSettle();

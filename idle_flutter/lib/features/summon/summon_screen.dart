@@ -29,7 +29,8 @@ class SummonScreen extends StatefulWidget {
   State<SummonScreen> createState() => _SummonScreenState();
 }
 
-class _SummonScreenState extends State<SummonScreen> {
+class _SummonScreenState extends State<SummonScreen>
+    with SingleTickerProviderStateMixin {
   int section = 0, available = 0;
   int? nextAt;
   DateTime now = DateTime.now();
@@ -37,10 +38,24 @@ class _SummonScreenState extends State<SummonScreen> {
   Timer? rechargeNotification;
   bool notificationsEnabled = freePullNotificationsGranted;
   bool busy = false;
+  late final AnimationController _entranceController;
+  late final Animation<Offset> _entranceOffset;
 
   @override
   void initState() {
     super.initState();
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+    _entranceOffset =
+        Tween<Offset>(begin: const Offset(0, .35), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+    if (widget.active) _entranceController.forward();
     if (widget.active) _refresh();
     ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted || !widget.active) return;
@@ -59,6 +74,9 @@ class _SummonScreenState extends State<SummonScreen> {
     if ((widget.active && !oldWidget.active) ||
         widget.accountKey != oldWidget.accountKey) {
       _refresh();
+    }
+    if (widget.active && !oldWidget.active) {
+      _entranceController.forward(from: 0);
     }
   }
 
@@ -107,6 +125,7 @@ class _SummonScreenState extends State<SummonScreen> {
 
   @override
   void dispose() {
+    _entranceController.dispose();
     ticker?.cancel();
     rechargeNotification?.cancel();
     super.dispose();
@@ -159,46 +178,53 @@ class _SummonScreenState extends State<SummonScreen> {
               ),
             ),
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              key: const Key('summon-content-panel'),
-              width: double.infinity,
-              height: panelHeight,
-              margin: const EdgeInsets.fromLTRB(10, 0, 10, 5),
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-              decoration: BoxDecoration(
-                color: const Color(0x8a111b31),
-                border: Border.all(color: const Color(0xffddb46b), width: 1.5),
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: const [
-                  BoxShadow(color: Color(0x99000000), blurRadius: 18),
-                ],
-              ),
-              child: Column(
-                children: [
-                  _banner(compact),
-                  const SizedBox(height: 7),
-                  Row(
-                    children: [
-                      _tab(0, 'STANDARD'),
-                      const SizedBox(width: 5),
-                      _tab(1, 'FEATURED'),
-                      const SizedBox(width: 5),
-                      _tab(2, 'EVENT'),
-                    ],
+          SlideTransition(
+            position: _entranceOffset,
+            transformHitTests: false,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                key: const Key('summon-content-panel'),
+                width: double.infinity,
+                height: panelHeight,
+                margin: const EdgeInsets.fromLTRB(10, 0, 10, 5),
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+                decoration: BoxDecoration(
+                  color: const Color(0x8a111b31),
+                  border: Border.all(
+                    color: const Color(0xffddb46b),
+                    width: 1.5,
                   ),
-                  const SizedBox(height: 7),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: switch (section) {
-                        0 => _standard(),
-                        1 => _featured(),
-                        _ => _event(),
-                      },
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0x99000000), blurRadius: 18),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    _banner(compact),
+                    const SizedBox(height: 7),
+                    Row(
+                      children: [
+                        _tab(0, 'STANDARD'),
+                        const SizedBox(width: 5),
+                        _tab(1, 'FEATURED'),
+                        const SizedBox(width: 5),
+                        _tab(2, 'EVENT'),
+                      ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 7),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: switch (section) {
+                          0 => _standard(),
+                          1 => _featured(),
+                          _ => _event(),
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

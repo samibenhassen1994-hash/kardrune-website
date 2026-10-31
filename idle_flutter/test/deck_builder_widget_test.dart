@@ -81,4 +81,29 @@ void main() {
     expect(find.byKey(const Key('slot-card-dren:2')), findsNothing);
     expect(find.byKey(const Key('inventory-dren:2')), findsOneWidget);
   });
+  testWidgets('auto deck fills strongest cards and remains editable', (
+    tester,
+  ) async {
+    List<String>? result;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 430,
+            height: 650,
+            child: DeckBuilder(
+              owned: const ['sam:1', 'lira:1', 'dren:2'],
+              initial: const [],
+              attacks: const {'sam:1': 30, 'lira:1': 80, 'dren:2': 60},
+              onSave: (value) => result = value,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const Key('auto-deck')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('save-deck')));
+    expect(result, ['lira:1', 'dren:2', 'sam:1']);
+  });
 }
