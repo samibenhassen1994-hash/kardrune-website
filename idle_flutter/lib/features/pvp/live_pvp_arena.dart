@@ -1207,6 +1207,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
           ),
         ),
       ),
+    ),
         if (c.diceVisible && c.dice != null)
           Positioned.fill(
             child: AbsorbPointer(
