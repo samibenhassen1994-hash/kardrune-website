@@ -95,7 +95,6 @@ class _IdleShellState extends State<IdleShell> {
   static const _freeSummonKey = 'idle-free-standard-v1';
   static const _freeSummonWindowMs = 12 * 60 * 60 * 1000;
   static const _motionKey = 'idle-motion-preference-v1';
-  static const _pvpRewardKey = 'idle-pvp-completed-rewards-v1';
   int tab = 0, shards = 1500, page = 0;
   String name = 'Runebearer', avatar = 'player';
   bool italian = false;
@@ -147,12 +146,17 @@ class _IdleShellState extends State<IdleShell> {
     attacks.addAll(save.attacks);
     crits.addAll(save.crits);
     skills.addAll(save.skills);
-    if (_saveService?.storage.read(CloudAccountController.lastUserKey) == null) {
+    if (_saveService?.storage.read(CloudAccountController.lastUserKey) ==
+        null) {
       var migrated = false;
       for (final id in owned) {
         if (skills.containsKey(id)) continue;
         final stage = int.tryParse(id.split(':').last) ?? 1;
-        skills[id] = SkillCatalog.roll(stage, widget.random(), widget.random()).id;
+        skills[id] = SkillCatalog.roll(
+          stage,
+          widget.random(),
+          widget.random(),
+        ).id;
         migrated = true;
       }
       if (migrated) _saveService?.save(save.copyWith(skills: Map.of(skills)));
@@ -230,13 +234,16 @@ class _IdleShellState extends State<IdleShell> {
   }
 
   void _cloudChanged() {
-    unawaited(notificationAccountChanged(_cloud?.identity?.uid ?? 'guest').then((_) async {
-      await refreshFreePullNotifications(
-        api: _cloud?.identity == null ? null : _cloud?.api,
-        uid: _cloud?.identity?.uid,
-      );
-      if (mounted) setState(() {});
-    }));
+    unawaited(
+      notificationAccountChanged(_cloud?.identity?.uid ?? 'guest')
+          .then((_) async {
+            await refreshFreePullNotifications(
+              api: _cloud?.identity == null ? null : _cloud?.api,
+              uid: _cloud?.identity?.uid,
+            );
+            if (mounted) setState(() {});
+          }),
+    );
     if (_cloud?.identity != null && _pvp == null) {
       _pvp = LiveMatchCoordinator(
         repository: PvpRepository(_cloud!.api),
@@ -252,26 +259,9 @@ class _IdleShellState extends State<IdleShell> {
     if (mounted) setState(() {});
   }
 
-  void _pvpFinished(String matchId, String reason) {
-    if (reason == 'completed' && _cloud?.identity != null) {
+  void _pvpFinished(String matchId, String reason, int reward) {
+    if (reason == 'completed' && reward == 100 && _cloud?.identity != null) {
       _claimPvpReward(matchId);
-      return;
-    }
-    if (reason == 'completed' && _saveService != null) {
-      final storage = _saveService.storage;
-      final claimed = <String>[];
-      try {
-        final decoded = jsonDecode(storage.read(_pvpRewardKey) ?? '[]');
-        if (decoded is List) claimed.addAll(decoded.whereType<String>());
-      } catch (_) {}
-      if (!claimed.contains(matchId)) {
-        claimed.add(matchId);
-        // Durable marker is written before the reward. Demo wallet is local;
-        // never award the same server match twice after re-entry.
-        storage.write(_pvpRewardKey, jsonEncode(claimed.take(500).toList()));
-        setState(() => shards += 100);
-        _persist();
-      }
     }
   }
 
@@ -283,7 +273,8 @@ class _IdleShellState extends State<IdleShell> {
       try {
         if (cloud.state != CloudAccountState.synced) await cloud.loadCloud();
         final response = await cloud.api.post('/api/pvp/reward', {
-          'matchId': matchId, 'revision': cloud.revision,
+          'matchId': matchId,
+          'revision': cloud.revision,
         });
         if (!mounted || cloud.identity?.uid != accountUid) return;
         cloud.applyServerSave(response);
@@ -291,8 +282,11 @@ class _IdleShellState extends State<IdleShell> {
       } catch (error) {
         if (attempt == 5) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('PvP reward pending. Cloud result: $error')));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('PvP reward pending. Cloud result: $error'),
+              ),
+            );
           }
           return;
         }
@@ -304,8 +298,10 @@ class _IdleShellState extends State<IdleShell> {
   void _pvpChanged() {
     _updates?.setMatchActive(_pvp?.state == LiveMatchState.arena);
     final hand = _pvp?.arena.hand;
-    if (_pvp?.state == LiveMatchState.arena && hand != null &&
-        hand.round == 1 && hand.matchId != _introMatchId) {
+    if (_pvp?.state == LiveMatchState.arena &&
+        hand != null &&
+        hand.round == 1 &&
+        hand.matchId != _introMatchId) {
       _introMatchId = hand.matchId;
       _showOpponentIntro = true;
       _opponentIntroTimer?.cancel();
@@ -338,8 +334,9 @@ class _IdleShellState extends State<IdleShell> {
         await _pvp!.saveDeck(deck);
       } catch (error) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Deck saved locally · Cloud: $error')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Deck saved locally · Cloud: $error')),
+          );
         }
       }
     }
@@ -357,7 +354,7 @@ class _IdleShellState extends State<IdleShell> {
       pulls = save.pulls;
       practiceDay = save.practiceDay;
       practiceCount = save.practiceCount;
-        owned
+      owned
         ..clear()
         ..addAll(save.owned);
       attacks
@@ -414,8 +411,10 @@ class _IdleShellState extends State<IdleShell> {
     if (_pvp?.state == LiveMatchState.arena) {
       return _motionWrap(
         _withUpdate(
-          Stack(children: [
-            Positioned.fill(child: LivePvpArena(
+          Stack(
+            children: [
+              Positioned.fill(
+                child: LivePvpArena(
                   controller: _pvp!.arena,
                   audio: _flameAudio,
                   playerName: name,
@@ -427,12 +426,17 @@ class _IdleShellState extends State<IdleShell> {
                     setState(() => tab = 0);
                     _pvp?.close();
                   },
-            )),
-            if (_showOpponentIntro && _pvp!.arena.hand != null)
-              Positioned.fill(child: _OpponentIntro(
-                name: _pvp!.arena.hand!.opponent,
-                avatar: _pvp!.arena.hand!.opponentAvatar ?? 'player')),
-          ]),
+                ),
+              ),
+              if (_showOpponentIntro && _pvp!.arena.hand != null)
+                Positioned.fill(
+                  child: _OpponentIntro(
+                    name: _pvp!.arena.hand!.opponent,
+                    avatar: _pvp!.arena.hand!.opponentAvatar ?? 'player',
+                  ),
+                ),
+            ],
+          ),
         ),
       );
     }
@@ -459,25 +463,40 @@ class _IdleShellState extends State<IdleShell> {
                   constraints: const BoxConstraints(maxWidth: 720),
                   child: Column(
                     children: [
-                      if (tab != 0 && tab != 2) _Header(shards: shards, name: name, avatar: avatar),
+                      if (tab != 0 && tab != 2)
+                        _Header(shards: shards, name: name, avatar: avatar),
                       Expanded(
                         child: IndexedStack(
                           index: tab,
                           children: [
                             ArenaLanding(
-                              header: _Header(shards: shards, name: name, avatar: avatar, transparent: true),
+                              header: _Header(
+                                shards: shards,
+                                name: name,
+                                avatar: avatar,
+                                transparent: true,
+                              ),
                               hint: _cloud?.identity == null
-                                  ? (italian ? 'ACCEDI DAL PROFILO PER GIOCARE' : 'SIGN IN FROM PROFILE TO PLAY LIVE')
+                                  ? (italian
+                                        ? 'ACCEDI DAL PROFILO PER GIOCARE'
+                                        : 'SIGN IN FROM PROFILE TO PLAY LIVE')
                                   : deck.length < 3
-                                      ? (italian ? 'AGGIUNGI TRE CARTE AL MAZZO' : 'ADD THREE CARDS TO YOUR DECK')
-                                      : _pvp?.state == LiveMatchState.idle
-                                          ? ''
-                                          : _pvp?.message ?? '',
-                              searching: _pvp?.state == LiveMatchState.connecting ||
+                                  ? (italian
+                                        ? 'AGGIUNGI TRE CARTE AL MAZZO'
+                                        : 'ADD THREE CARDS TO YOUR DECK')
+                                  : _pvp?.state == LiveMatchState.idle
+                                  ? ''
+                                  : _pvp?.message ?? '',
+                              searching:
+                                  _pvp?.state == LiveMatchState.connecting ||
                                   _pvp?.state == LiveMatchState.waiting,
                               onStart: _pvp != null && deck.length >= 3
                                   ? _pvp!.findMatch
-                                  : () => setState(() => tab = _cloud?.identity == null ? 3 : 1),
+                                  : () => setState(
+                                      () => tab = _cloud?.identity == null
+                                          ? 3
+                                          : 1,
+                                    ),
                               onCancel: _pvp?.close,
                             ),
                             _Cards(
@@ -497,22 +516,35 @@ class _IdleShellState extends State<IdleShell> {
                               },
                             ),
                             SummonScreen(
-                              header: _Header(shards: shards, name: name, avatar: avatar,
-                                transparent: true, onNotifications: () async {
+                              header: _Header(
+                                shards: shards,
+                                name: name,
+                                avatar: avatar,
+                                transparent: true,
+                                onNotifications: () async {
                                   try {
                                     await toggleFreePullNotifications(
-                                      api: _cloud?.identity == null ? null : _cloud?.api,
+                                      api: _cloud?.identity == null
+                                          ? null
+                                          : _cloud?.api,
                                       uid: _cloud?.identity?.uid,
                                     );
                                     if (mounted) setState(() {});
                                   } catch (error) {
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Notifications unavailable: $error')),
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Notifications unavailable: $error',
+                                          ),
+                                        ),
                                       );
                                     }
                                   }
-                                }),
+                                },
+                              ),
                               shards: shards,
                               active: tab == 2,
                               accountKey: _cloud?.identity?.uid ?? 'guest',
@@ -614,17 +646,24 @@ class _IdleShellState extends State<IdleShell> {
     if (_cloud?.identity != null) return _cloud!.api.get('/api/summon');
     final now = widget.nowMs();
     final used = _localFreeSummons(now);
-    return {'available': 2 - used.length,
+    return {
+      'available': 2 - used.length,
       'nextAt': used.isEmpty ? null : used.first + _freeSummonWindowMs,
-      'serverNow': now};
+      'serverNow': now,
+    };
   }
 
   List<int> _localFreeSummons(int now) {
     try {
-      final decoded = jsonDecode(_saveService?.storage.read(_freeSummonKey) ?? '[]');
+      final decoded = jsonDecode(
+        _saveService?.storage.read(_freeSummonKey) ?? '[]',
+      );
       if (decoded is List) {
-        return decoded.whereType<int>()
-          .where((v) => v > now - _freeSummonWindowMs && v <= now).toList()..sort();
+        return decoded
+            .whereType<int>()
+            .where((v) => v > now - _freeSummonWindowMs && v <= now)
+            .toList()
+          ..sort();
       }
     } catch (_) {}
     return [];
@@ -635,15 +674,21 @@ class _IdleShellState extends State<IdleShell> {
       _resumeDuplicate();
       return;
     }
-    if (_summonOpen || _summonRequestPending || (!free && shards < SummonRules.cost(featured))) return;
+    if (_summonOpen ||
+        _summonRequestPending ||
+        (!free && shards < SummonRules.cost(featured)))
+      return;
     if (free && (featured || (await _freeSummonStatus())['available'] == 0)) {
       return;
     }
     if (!mounted) return;
     if (_cloud?.identity != null) {
       if (_cloud!.state != CloudAccountState.synced) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Review or sync your cloud save before summoning.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Review or sync your cloud save before summoning.'),
+          ),
+        );
         return;
       }
       await _summonOnline(featured, free: free);
@@ -662,11 +707,18 @@ class _IdleShellState extends State<IdleShell> {
     final crit = CombatRules.rollCrit(widget.random);
     final skill = SkillCatalog.roll(stage, widget.random(), widget.random());
     setState(() {
-      if (!free) { shards -= SummonRules.cost(featured); }
+      if (!free) {
+        shards -= SummonRules.cost(featured);
+      }
       pulls++;
       if (duplicate) {
-        _pendingDuplicate = {'id': id, 'attack': attack, 'crit': crit,
-          'skillId': skill.id, 'skillVersion': SkillCatalog.version};
+        _pendingDuplicate = {
+          'id': id,
+          'attack': attack,
+          'crit': crit,
+          'skillId': skill.id,
+          'skillVersion': SkillCatalog.version,
+        };
       } else {
         owned.add(id);
         attacks[id] = attack;
@@ -675,8 +727,10 @@ class _IdleShellState extends State<IdleShell> {
       }
     });
     if (free) {
-      _saveService?.storage.write(_freeSummonKey,
-        jsonEncode([..._localFreeSummons(widget.nowMs()), widget.nowMs()]));
+      _saveService?.storage.write(
+        _freeSummonKey,
+        jsonEncode([..._localFreeSummons(widget.nowMs()), widget.nowMs()]),
+      );
     }
     _persist();
     _reveal(id, attack, crit, duplicate, skill.id);
@@ -697,22 +751,31 @@ class _IdleShellState extends State<IdleShell> {
     _summonRequestPending = true;
     final rollId = _pendingOnlineRollId ??= _newRollId();
     try {
-      if (!await cloud.prepareServerMutation()) throw StateError('Cloud save needs review');
+      if (!await cloud.prepareServerMutation())
+        throw StateError('Cloud save needs review');
       final result = await cloud.api.post('/api/summon', {
-        'featured': featured, 'free': free,
-        'revision': cloud.revision, 'rollId': rollId,
+        'featured': featured,
+        'free': free,
+        'revision': cloud.revision,
+        'rollId': rollId,
       });
       if (!mounted || cloud.identity?.uid != accountUid) return;
       cloud.applyServerSave(result);
       _pendingOnlineRollId = null;
       if (result['card'] is! Map) return;
       final card = Map<String, dynamic>.from(result['card'] as Map);
-      _reveal(card['id'] as String, card['attack'] as int,
-        card['crit'] as int, result['duplicate'] == true, card['skillId'] as String);
+      _reveal(
+        card['id'] as String,
+        card['attack'] as int,
+        card['crit'] as int,
+        result['duplicate'] == true,
+        card['skillId'] as String,
+      );
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Summon unavailable: $error')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Summon unavailable: $error')));
       }
     } finally {
       _summonRequestPending = false;
@@ -722,11 +785,22 @@ class _IdleShellState extends State<IdleShell> {
   void _resumeDuplicate() {
     if (_pendingDuplicate == null || _summonOpen) return;
     final p = _pendingDuplicate!;
-    _reveal(p['id'] as String, p['attack'] as int, p['crit'] as int, true,
-      p['skillId'] as String?);
+    _reveal(
+      p['id'] as String,
+      p['attack'] as int,
+      p['crit'] as int,
+      true,
+      p['skillId'] as String?,
+    );
   }
 
-  void _reveal(String id, int attack, int crit, bool duplicate, String? skillId) {
+  void _reveal(
+    String id,
+    int attack,
+    int crit,
+    bool duplicate,
+    String? skillId,
+  ) {
     if (!mounted || _summonOpen) return;
     final parts = id.split(':');
     final stage = int.parse(parts.last);
@@ -737,8 +811,11 @@ class _IdleShellState extends State<IdleShell> {
       final rollId = _pendingDuplicate!['rollId'];
       if (rollId is String) {
         if (_cloud?.identity == null) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Sign in to resolve this saved online summon.')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Sign in to resolve this saved online summon.'),
+            ),
+          );
         } else {
           _decideOnline(dialogContext, rollId, replace);
         }
@@ -776,10 +853,12 @@ class _IdleShellState extends State<IdleShell> {
         onKeep: () => decide(dialogContext, false),
         onReplace: () => decide(dialogContext, true),
         onContinue: () => Navigator.of(dialogContext).pop(),
-        onLater: duplicate ? () {
-          _snoozeDuplicate = true;
-          Navigator.of(dialogContext).pop();
-        } : null,
+        onLater: duplicate
+            ? () {
+                _snoozeDuplicate = true;
+                Navigator.of(dialogContext).pop();
+              }
+            : null,
       ),
     ).whenComplete(() {
       _summonOpen = false;
@@ -792,23 +871,32 @@ class _IdleShellState extends State<IdleShell> {
     });
   }
 
-  Future<void> _decideOnline(BuildContext dialogContext, String rollId, bool replace) async {
-    if (_summonRequestPending || _cloud?.state != CloudAccountState.synced) return;
+  Future<void> _decideOnline(
+    BuildContext dialogContext,
+    String rollId,
+    bool replace,
+  ) async {
+    if (_summonRequestPending || _cloud?.state != CloudAccountState.synced)
+      return;
     _summonRequestPending = true;
     final cloud = _cloud!;
     final accountUid = cloud.identity?.uid;
     try {
-      if (!await cloud.prepareServerMutation()) throw StateError('Cloud save needs review');
+      if (!await cloud.prepareServerMutation())
+        throw StateError('Cloud save needs review');
       final response = await cloud.api.post('/api/summon/decision', {
-        'rollId': rollId, 'replace': replace, 'revision': cloud.revision,
+        'rollId': rollId,
+        'replace': replace,
+        'revision': cloud.revision,
       });
       if (!mounted || cloud.identity?.uid != accountUid) return;
       cloud.applyServerSave(response);
       if (dialogContext.mounted) Navigator.of(dialogContext).pop();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Decision unavailable: $error')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Decision unavailable: $error')));
       }
     } finally {
       _summonRequestPending = false;
@@ -822,37 +910,88 @@ class _OpponentIntro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final safeAvatar = const ['player', 'guard', 'vassal', 'king'].contains(avatar)
-        ? avatar : 'player';
-    return ColoredBox(color: const Color(0xff080e20), child: Center(
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const Text('YOUR OPPONENT', style: TextStyle(color: Color(0xffffd78c),
-          fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: 2)),
-        const SizedBox(height: 20),
-        Container(width: 120, height: 120, padding: const EdgeInsets.all(5),
-          decoration: BoxDecoration(shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xffff8075), width: 3),
-            boxShadow: const [BoxShadow(color: Color(0xaaff493d), blurRadius: 24)]),
-          child: CircleAvatar(backgroundImage: AssetImage(
-            'assets/idle/avatars/avatar_$safeAvatar.webp'))),
-        const SizedBox(height: 16),
-        Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: Color(0xffffe4b3), fontFamily: 'Georgia',
-            fontSize: 25, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 24),
-        const SizedBox(width: 28, height: 28, child: CircularProgressIndicator(
-          color: Color(0xffffd78c), strokeWidth: 2.5)),
-        const SizedBox(height: 10),
-        const Text('ENTERING THE ARENA', style: TextStyle(
-          color: Color(0xffb7c9df), fontSize: 11, letterSpacing: 1.4)),
-      ]),
-    ));
+    final safeAvatar =
+        const ['player', 'guard', 'vassal', 'king'].contains(avatar)
+        ? avatar
+        : 'player';
+    return ColoredBox(
+      color: const Color(0xff080e20),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'YOUR OPPONENT',
+              style: TextStyle(
+                color: Color(0xffffd78c),
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              width: 120,
+              height: 120,
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xffff8075), width: 3),
+                boxShadow: const [
+                  BoxShadow(color: Color(0xaaff493d), blurRadius: 24),
+                ],
+              ),
+              child: CircleAvatar(
+                backgroundImage: AssetImage(
+                  'assets/idle/avatars/avatar_$safeAvatar.webp',
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xffffe4b3),
+                fontFamily: 'Georgia',
+                fontSize: 25,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                color: Color(0xffffd78c),
+                strokeWidth: 2.5,
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'ENTERING THE ARENA',
+              style: TextStyle(
+                color: Color(0xffb7c9df),
+                fontSize: 11,
+                letterSpacing: 1.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.shards, required this.name, required this.avatar,
-    this.transparent = false, this.onNotifications});
+  const _Header({
+    required this.shards,
+    required this.name,
+    required this.avatar,
+    this.transparent = false,
+    this.onNotifications,
+  });
   final int shards;
   final String name, avatar;
   final bool transparent;
@@ -860,8 +999,10 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final safeAvatar = const ['player', 'guard', 'vassal', 'king'].contains(avatar)
-        ? avatar : 'player';
+    final safeAvatar =
+        const ['player', 'guard', 'vassal', 'king'].contains(avatar)
+        ? avatar
+        : 'player';
     return Container(
       height: transparent ? 68 : 76,
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -869,58 +1010,98 @@ class _Header extends StatelessWidget {
         color: transparent ? const Color(0x99071120) : const Color(0xdd071226),
         border: const Border(bottom: BorderSide(color: Color(0x65d2b780))),
       ),
-      child: Row(children: [
-        Container(
-          width: 55, height: 55,
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const SweepGradient(colors: [
-              Color(0xff7b391c), Color(0xffffe7a4), Color(0xffba692b),
-              Color(0xffffe7a4), Color(0xff7b391c),
-            ]),
-            border: Border.all(color: const Color(0xffffeab3), width: 1.5),
-            boxShadow: const [BoxShadow(color: Color(0xccd69339), blurRadius: 12)],
+      child: Row(
+        children: [
+          Container(
+            width: 55,
+            height: 55,
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const SweepGradient(
+                colors: [
+                  Color(0xff7b391c),
+                  Color(0xffffe7a4),
+                  Color(0xffba692b),
+                  Color(0xffffe7a4),
+                  Color(0xff7b391c),
+                ],
+              ),
+              border: Border.all(color: const Color(0xffffeab3), width: 1.5),
+              boxShadow: const [
+                BoxShadow(color: Color(0xccd69339), blurRadius: 12),
+              ],
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xff5b2c18), width: 2),
+              ),
+              child: CircleAvatar(
+                backgroundImage: AssetImage(
+                  'assets/idle/avatars/avatar_$safeAvatar.webp',
+                ),
+              ),
+            ),
           ),
-          child: Container(
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xff5b2c18), width: 2)),
-            child: CircleAvatar(backgroundImage: AssetImage(
-              'assets/idle/avatars/avatar_$safeAvatar.webp')),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xffffe1a6),
+                fontFamily: 'Georgia',
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+                shadows: [Shadow(color: Colors.black, blurRadius: 6)],
+              ),
+            ),
           ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: Color(0xffffe1a6), fontFamily: 'Georgia',
-            fontWeight: FontWeight.w800, fontSize: 16,
-            shadows: [Shadow(color: Colors.black, blurRadius: 6)]))),
-        if (onNotifications != null) IconButton(
-          tooltip: 'Free Summon notifications',
-          onPressed: onNotifications,
-          icon: Icon(freePullNotificationsGranted
-            ? Icons.notifications_active_outlined : Icons.notifications_outlined,
-            color: const Color(0xffffd982)),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-          decoration: BoxDecoration(
-            color: const Color(0x99132132),
-            border: Border.all(color: const Color(0x99d5b477)),
-            borderRadius: BorderRadius.circular(20),
+          if (onNotifications != null)
+            IconButton(
+              tooltip: 'Free Summon notifications',
+              onPressed: onNotifications,
+              icon: Icon(
+                freePullNotificationsGranted
+                    ? Icons.notifications_active_outlined
+                    : Icons.notifications_outlined,
+                color: const Color(0xffffd982),
+              ),
+            ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: const Color(0x99132132),
+              border: Border.all(color: const Color(0x99d5b477)),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('◆', style: TextStyle(color: Color(0xff72d8ff))),
+                const SizedBox(width: 5),
+                Text(
+                  shards.toString().replaceAllMapped(
+                    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+                    (_) => ',',
+                  ),
+                  style: const TextStyle(
+                    color: Color(0xffffe1a6),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
           ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            const Text('◆', style: TextStyle(color: Color(0xff72d8ff))),
-            const SizedBox(width: 5),
-            Text(shards.toString().replaceAllMapped(
-              RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ','),
-              style: const TextStyle(color: Color(0xffffe1a6), fontWeight: FontWeight.w800)),
-          ]),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }
+
 class _RuneNavigation extends StatelessWidget {
   const _RuneNavigation({
     required this.current,
@@ -1034,10 +1215,7 @@ class _Eyebrow extends StatelessWidget {
 }
 
 class _RuneButton extends StatelessWidget {
-  const _RuneButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _RuneButton({required this.label, required this.onTap});
   final String label;
   final VoidCallback? onTap;
   @override
@@ -1106,7 +1284,11 @@ class _Cards extends StatefulWidget {
 
 class _CardsState extends State<_Cards> {
   final TextEditingController query = TextEditingController();
-  String ownership = 'owned', rarity = 'all', stageFilter = 'all', skillFilter = 'all', sort = 'atk';
+  String ownership = 'owned',
+      rarity = 'all',
+      stageFilter = 'all',
+      skillFilter = 'all',
+      sort = 'atk';
   bool expandedFilters = false;
   String get title => widget.title;
   List<String> get owned => widget.owned;
@@ -1118,154 +1300,332 @@ class _CardsState extends State<_Cards> {
   ValueChanged<List<String>> get onDeck => widget.onDeck;
   ValueChanged<String> get onSelect => widget.onSelect;
   @override
-  void initState() {super.initState(); query.addListener(_changed);}
-  void _changed() {if(mounted) setState((){});}
+  void initState() {
+    super.initState();
+    query.addListener(_changed);
+  }
+
+  void _changed() {
+    if (mounted) setState(() {});
+  }
+
   @override
-  void dispose() {query.removeListener(_changed);query.dispose();super.dispose();}
-  void reset() {query.clear();setState(() {
-    ownership='owned';rarity='all';stageFilter='all';skillFilter='all';sort='atk';expandedFilters=false;
-  });}
+  void dispose() {
+    query.removeListener(_changed);
+    query.dispose();
+    super.dispose();
+  }
+
+  void reset() {
+    query.clear();
+    setState(() {
+      ownership = 'owned';
+      rarity = 'all';
+      stageFilter = 'all';
+      skillFilter = 'all';
+      sort = 'atk';
+      expandedFilters = false;
+    });
+  }
+
   String _t(String it, String en) => title == 'CARTE' ? it : en;
   @override
   Widget build(BuildContext context) {
-    final all = [for(final h in KardRuneCatalog.heroes)
-      for(var s=1;s<=3;s++) MapEntry(h,s)];
+    final all = [
+      for (final h in KardRuneCatalog.heroes)
+        for (var s = 1; s <= 3; s++) MapEntry(h, s),
+    ];
     final found = all.where((card) {
       final id = '${card.key.id}:${card.value}';
       final isOwned = owned.contains(id);
       final skill = SkillCatalog.byId(skills[id]);
-      if(ownership=='owned'&&!isOwned || ownership=='missing'&&isOwned)return false;
-      if(stageFilter!='all'&&card.value.toString()!=stageFilter)return false;
-      if(rarity!='all'&&skill?.rarity!=rarity)return false;
-      if(skillFilter!='all'&&skill?.id!=skillFilter)return false;
-      final q=query.text.trim().toLowerCase();
-      return q.isEmpty || card.key.name.toLowerCase().contains(q)
-        || (skill?.name.toLowerCase().contains(q)??false)
-        || (skill?.description.toLowerCase().contains(q)??false);
+      if (ownership == 'owned' && !isOwned || ownership == 'missing' && isOwned)
+        return false;
+      if (stageFilter != 'all' && card.value.toString() != stageFilter)
+        return false;
+      if (rarity != 'all' && skill?.rarity != rarity) return false;
+      if (skillFilter != 'all' && skill?.id != skillFilter) return false;
+      final q = query.text.trim().toLowerCase();
+      return q.isEmpty ||
+          card.key.name.toLowerCase().contains(q) ||
+          (skill?.name.toLowerCase().contains(q) ?? false) ||
+          (skill?.description.toLowerCase().contains(q) ?? false);
     }).toList();
-    found.sort((a,b){
-      final ai='${a.key.id}:${a.value}',bi='${b.key.id}:${b.value}';
-      final ao=owned.contains(ai),bo=owned.contains(bi);
-      if(ao!=bo)return ao?-1:1;
-      final result=switch(sort){
-        'atk'=>(attacks[bi]??-1).compareTo(attacks[ai]??-1),
-        'crit'=>(crits[bi]??-1).compareTo(crits[ai]??-1),
-        'stage'=>b.value.compareTo(a.value),
-        'rarity'=>SkillCatalog.rarities.indexOf(SkillCatalog.byId(skills[bi])?.rarity??'common')
-          .compareTo(SkillCatalog.rarities.indexOf(SkillCatalog.byId(skills[ai])?.rarity??'common')),
-        _=>a.key.name.compareTo(b.key.name),
+    found.sort((a, b) {
+      final ai = '${a.key.id}:${a.value}', bi = '${b.key.id}:${b.value}';
+      final ao = owned.contains(ai), bo = owned.contains(bi);
+      if (ao != bo) return ao ? -1 : 1;
+      final result = switch (sort) {
+        'atk' => (attacks[bi] ?? -1).compareTo(attacks[ai] ?? -1),
+        'crit' => (crits[bi] ?? -1).compareTo(crits[ai] ?? -1),
+        'stage' => b.value.compareTo(a.value),
+        'rarity' =>
+          SkillCatalog.rarities
+              .indexOf(SkillCatalog.byId(skills[bi])?.rarity ?? 'common')
+              .compareTo(
+                SkillCatalog.rarities.indexOf(
+                  SkillCatalog.byId(skills[ai])?.rarity ?? 'common',
+                ),
+              ),
+        _ => a.key.name.compareTo(b.key.name),
       };
-      return result!=0?result:ai.compareTo(bi);
+      return result != 0 ? result : ai.compareTo(bi);
     });
-    return Padding(padding:const EdgeInsets.fromLTRB(12,8,12,5),
-      child:Column(children:[
-        Row(children:[
-          Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-            Text(title=='CARTE'?'LE TUE CARTE':'YOUR CARDS',style:const TextStyle(
-              fontFamily:'Georgia',fontSize:23,fontWeight:FontWeight.w800,color:Color(0xffffd892))),
-            Text('${owned.length}/27 ${_t('possedute','owned')} · ${deck.length}/9 ${_t('nel mazzo','in deck')}',
-              style:const TextStyle(color:Color(0xffaabbd2),fontSize:11)),
-          ])),
-          OutlinedButton.icon(key:const Key('collection-edit-deck'),
-            onPressed:()=>_openDeck(context),
-            icon:const Icon(Icons.style_outlined,size:16),label:Text(_t('MODIFICA MAZZO','EDIT DECK')),
-            style:OutlinedButton.styleFrom(foregroundColor:const Color(0xffffd892),
-              side:const BorderSide(color:Color(0xffbba069)),
-              textStyle:const TextStyle(fontSize:10,fontWeight:FontWeight.w900))),
-        ]),
-        const SizedBox(height:8),
-        TextField(key:const Key('collection-search'),controller:query,
-          style:const TextStyle(color:Colors.white,fontSize:14),
-          decoration:InputDecoration(isDense:true,filled:true,fillColor:const Color(0xff162741),
-            prefixIcon:const Icon(Icons.search,color:Color(0xffffd892)),
-            suffixIcon:query.text.isNotEmpty?IconButton(onPressed:query.clear,
-              icon:const Icon(Icons.close,color:Colors.white)):null,
-            hintText:_t('Cerca personaggio o abilità...','Search hero or skill...'),hintStyle:const TextStyle(color:Color(0xffb4c4d6)),
-            contentPadding:const EdgeInsets.symmetric(vertical:11),
-            border:OutlineInputBorder(borderRadius:BorderRadius.circular(10)))),
-        const SizedBox(height:6),
-        Row(children:[
-          for(final item in [
-              ('owned',_t('POSSEDUTE','OWNED')),
-              ('all',_t('TUTTE','ALL')),
-              ('missing',_t('BLOCCATE','LOCKED')),
-            ])
-            Padding(padding:const EdgeInsets.only(right:5),child:ChoiceChip(
-              label:Text(item.$2),selected:ownership==item.$1,showCheckmark:false,
-              onSelected:(_)=>setState(()=>ownership=item.$1),
-              visualDensity:VisualDensity.compact,
-              labelStyle:const TextStyle(fontSize:9,color:Colors.white,fontWeight:FontWeight.bold),
-              selectedColor:const Color(0xff795d2c),backgroundColor:const Color(0xff1b2c46))),
-          const Spacer(),
-          IconButton(key:const Key('collection-toggle-filters'),tooltip:_t('Filtri avanzati','Advanced filters'),
-            onPressed:()=>setState(()=>expandedFilters=!expandedFilters),
-            icon:Icon(expandedFilters?Icons.tune:Icons.filter_list,color:const Color(0xffffd892))),
-        ]),
-        if(expandedFilters)...[
-          Row(children:[
-            Expanded(child:_dropdown(stageFilter,[
-              ('all',_t('TUTTI GLI STAGE','ALL STAGES')),('1','STAGE 1'),('2','STAGE 2'),('3','STAGE 3')],
-              (v)=>setState(()=>stageFilter=v))),
-            const SizedBox(width:6),
-            Expanded(child:_dropdown(rarity,[
-              ('all',_t('TUTTE LE RARITÀ','ALL RARITIES')),
-              ('common',_t('COMUNE','COMMON')),
-              ('uncommon',_t('NON COMUNE','UNCOMMON')),
-              ('rare',_t('RARA','RARE')),
-              ('epic',_t('EPICA','EPIC')),
-              ('legendary',_t('LEGGENDARIA','LEGENDARY')),
-              ('ultra','ULTRA')],
-              (v)=>setState((){rarity=v;skillFilter='all';}))),
-          ]),
-          const SizedBox(height:5),
-          _dropdown(skillFilter,[
-            ('all',_t('TUTTE LE ABILITÀ','ALL SKILLS')),
-            for(final skill in SkillCatalog.skills)
-              if(rarity=='all'||skill.rarity==rarity)(skill.id,skill.name.toUpperCase()),
-          ],(v)=>setState(()=>skillFilter=v)),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 5),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title == 'CARTE' ? 'LE TUE CARTE' : 'YOUR CARDS',
+                      style: const TextStyle(
+                        fontFamily: 'Georgia',
+                        fontSize: 23,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xffffd892),
+                      ),
+                    ),
+                    Text(
+                      '${owned.length}/27 ${_t('possedute', 'owned')} · ${deck.length}/9 ${_t('nel mazzo', 'in deck')}',
+                      style: const TextStyle(
+                        color: Color(0xffaabbd2),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              OutlinedButton.icon(
+                key: const Key('collection-edit-deck'),
+                onPressed: () => _openDeck(context),
+                icon: const Icon(Icons.style_outlined, size: 16),
+                label: Text(_t('MODIFICA MAZZO', 'EDIT DECK')),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xffffd892),
+                  side: const BorderSide(color: Color(0xffbba069)),
+                  textStyle: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            key: const Key('collection-search'),
+            controller: query,
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+            decoration: InputDecoration(
+              isDense: true,
+              filled: true,
+              fillColor: const Color(0xff162741),
+              prefixIcon: const Icon(Icons.search, color: Color(0xffffd892)),
+              suffixIcon: query.text.isNotEmpty
+                  ? IconButton(
+                      onPressed: query.clear,
+                      icon: const Icon(Icons.close, color: Colors.white),
+                    )
+                  : null,
+              hintText: _t(
+                'Cerca personaggio o abilità...',
+                'Search hero or skill...',
+              ),
+              hintStyle: const TextStyle(color: Color(0xffb4c4d6)),
+              contentPadding: const EdgeInsets.symmetric(vertical: 11),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              for (final item in [
+                ('owned', _t('POSSEDUTE', 'OWNED')),
+                ('all', _t('TUTTE', 'ALL')),
+                ('missing', _t('BLOCCATE', 'LOCKED')),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(right: 5),
+                  child: ChoiceChip(
+                    label: Text(item.$2),
+                    selected: ownership == item.$1,
+                    showCheckmark: false,
+                    onSelected: (_) => setState(() => ownership = item.$1),
+                    visualDensity: VisualDensity.compact,
+                    labelStyle: const TextStyle(
+                      fontSize: 9,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    selectedColor: const Color(0xff795d2c),
+                    backgroundColor: const Color(0xff1b2c46),
+                  ),
+                ),
+              const Spacer(),
+              IconButton(
+                key: const Key('collection-toggle-filters'),
+                tooltip: _t('Filtri avanzati', 'Advanced filters'),
+                onPressed: () =>
+                    setState(() => expandedFilters = !expandedFilters),
+                icon: Icon(
+                  expandedFilters ? Icons.tune : Icons.filter_list,
+                  color: const Color(0xffffd892),
+                ),
+              ),
+            ],
+          ),
+          if (expandedFilters) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: _dropdown(stageFilter, [
+                    ('all', _t('TUTTI GLI STAGE', 'ALL STAGES')),
+                    ('1', 'STAGE 1'),
+                    ('2', 'STAGE 2'),
+                    ('3', 'STAGE 3'),
+                  ], (v) => setState(() => stageFilter = v)),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: _dropdown(
+                    rarity,
+                    [
+                      ('all', _t('TUTTE LE RARITÀ', 'ALL RARITIES')),
+                      ('common', _t('COMUNE', 'COMMON')),
+                      ('uncommon', _t('NON COMUNE', 'UNCOMMON')),
+                      ('rare', _t('RARA', 'RARE')),
+                      ('epic', _t('EPICA', 'EPIC')),
+                      ('legendary', _t('LEGGENDARIA', 'LEGENDARY')),
+                      ('ultra', 'ULTRA'),
+                    ],
+                    (v) => setState(() {
+                      rarity = v;
+                      skillFilter = 'all';
+                    }),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
+            _dropdown(skillFilter, [
+              ('all', _t('TUTTE LE ABILITÀ', 'ALL SKILLS')),
+              for (final skill in SkillCatalog.skills)
+                if (rarity == 'all' || skill.rarity == rarity)
+                  (skill.id, skill.name.toUpperCase()),
+            ], (v) => setState(() => skillFilter = v)),
+          ],
+          Row(
+            children: [
+              Expanded(
+                child: _dropdown(sort, [
+                  ('atk', _t('ATK ALTO → BASSO', 'ATK HIGH → LOW')),
+                  ('crit', _t('CRIT ALTO → BASSO', 'CRIT HIGH → LOW')),
+                  ('rarity', _t('RARITÀ ABILITÀ', 'SKILL RARITY')),
+                  ('stage', _t('STAGE ALTO → BASSO', 'STAGE HIGH → LOW')),
+                  ('name', _t('NOME A–Z', 'NAME A–Z')),
+                ], (v) => setState(() => sort = v)),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${found.length} ${_t('RISULTATI', 'RESULTS')}',
+                style: const TextStyle(fontSize: 10, color: Color(0xffb9cadf)),
+              ),
+              IconButton(
+                onPressed: reset,
+                tooltip: _t('Azzera filtri', 'Reset filters'),
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(
+                  Icons.restart_alt,
+                  color: Color(0xffffd892),
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Expanded(
+            child: found.isEmpty
+                ? Center(
+                    child: TextButton(
+                      onPressed: reset,
+                      child: Text(
+                        _t(
+                          'Nessuna carta trovata · AZZERA FILTRI',
+                          'No cards found · RESET FILTERS',
+                        ),
+                      ),
+                    ),
+                  )
+                : GridView.builder(
+                    key: const Key('collection-scroll-grid'),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: const EdgeInsets.only(bottom: 14),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: .68,
+                          mainAxisSpacing: 9,
+                          crossAxisSpacing: 9,
+                        ),
+                    itemCount: found.length,
+                    itemBuilder: (context, index) {
+                      final card = found[index];
+                      return _card(context, card.key, card.value);
+                    },
+                  ),
+          ),
         ],
-        Row(children:[
-          Expanded(child:_dropdown(sort,[
-            ('atk',_t('ATK ALTO → BASSO','ATK HIGH → LOW')),
-            ('crit',_t('CRIT ALTO → BASSO','CRIT HIGH → LOW')),
-            ('rarity',_t('RARITÀ ABILITÀ','SKILL RARITY')),
-            ('stage',_t('STAGE ALTO → BASSO','STAGE HIGH → LOW')),
-            ('name',_t('NOME A–Z','NAME A–Z'))],
-            (v)=>setState(()=>sort=v))),
-          const SizedBox(width:6),
-          Text('${found.length} ${_t('RISULTATI','RESULTS')}',style:const TextStyle(fontSize:10,color:Color(0xffb9cadf))),
-          IconButton(onPressed:reset,tooltip:_t('Azzera filtri','Reset filters'),visualDensity:VisualDensity.compact,
-            icon:const Icon(Icons.restart_alt,color:Color(0xffffd892),size:20)),
-        ]),
-        const SizedBox(height:4),
-        Expanded(child:found.isEmpty?Center(child:TextButton(
-          onPressed:reset,child:Text(_t('Nessuna carta trovata · AZZERA FILTRI','No cards found · RESET FILTERS'))))
-          :GridView.builder(
-            key:const Key('collection-scroll-grid'),
-            keyboardDismissBehavior:ScrollViewKeyboardDismissBehavior.onDrag,
-            padding:const EdgeInsets.only(bottom:14),
-            gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount:2,childAspectRatio:.68,mainAxisSpacing:9,crossAxisSpacing:9),
-            itemCount:found.length,
-            itemBuilder:(context,index){
-              final card=found[index];
-              return _card(context,card.key,card.value);
-            })),
-      ]));
+      ),
+    );
   }
 
-  Widget _dropdown(String value,List<(String,String)> options,ValueChanged<String> change)=>
-    Container(padding:const EdgeInsets.symmetric(horizontal:8),
-      decoration:BoxDecoration(color:const Color(0xff172a45),
-        border:Border.all(color:const Color(0xff586880)),
-        borderRadius:BorderRadius.circular(7)),
-      child:DropdownButtonHideUnderline(child:DropdownButton<String>(
-        value:value,isExpanded:true,isDense:true,dropdownColor:const Color(0xff182940),
-        style:const TextStyle(color:Colors.white,fontSize:10,fontWeight:FontWeight.w800),
-        items:[for(final item in options)DropdownMenuItem<String>(
-          value:item.$1,child:Text(item.$2,maxLines:1,overflow:TextOverflow.ellipsis))],
-        onChanged:(v){if(v!=null)change(v);},
-      )));
+  Widget _dropdown(
+    String value,
+    List<(String, String)> options,
+    ValueChanged<String> change,
+  ) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    decoration: BoxDecoration(
+      color: const Color(0xff172a45),
+      border: Border.all(color: const Color(0xff586880)),
+      borderRadius: BorderRadius.circular(7),
+    ),
+    child: DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: value,
+        isExpanded: true,
+        isDense: true,
+        dropdownColor: const Color(0xff182940),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+        ),
+        items: [
+          for (final item in options)
+            DropdownMenuItem<String>(
+              value: item.$1,
+              child: Text(
+                item.$2,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+        ],
+        onChanged: (v) {
+          if (v != null) change(v);
+        },
+      ),
+    ),
+  );
 
   void _openDeck(BuildContext context) => showDialog<void>(
     context: context,
@@ -1273,47 +1633,62 @@ class _CardsState extends State<_Cards> {
     builder: (dialogContext) => Dialog.fullscreen(
       backgroundColor: const Color(0xff0c1528),
       child: SafeArea(
-        child: Column(children: [
-          Container(
-            decoration: const BoxDecoration(
-              color: Color(0xff101e37),
-              border: Border(bottom: BorderSide(color: Color(0xffb89a61))),
-            ),
-            child: Row(children: [
-              const SizedBox(width: 12),
-              Expanded(child: Text(
-                _t('MODIFICA IL MAZZO', 'EDIT MY DECK'),
-                style: const TextStyle(
-                  fontFamily: 'Georgia', fontSize: 21,
-                  color: Color(0xfff5d28b), fontWeight: FontWeight.w800),
-              )),
-              IconButton(
-                key: const Key('close-deck-editor'),
-                tooltip: _t('Chiudi', 'Close'),
-                onPressed: () => Navigator.maybePop(dialogContext),
-                icon: const Icon(Icons.close, color: Colors.white, size: 28),
+        child: Column(
+          children: [
+            Container(
+              decoration: const BoxDecoration(
+                color: Color(0xff101e37),
+                border: Border(bottom: BorderSide(color: Color(0xffb89a61))),
               ),
-              const SizedBox(width: 8),
-            ]),
-          ),
-          Expanded(child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 850),
-              child: DeckBuilder(
-                italian: title == 'CARTE',
-                owned: owned,
-                initial: deck,
-                attacks: attacks,
-                crits: crits,
-                skills: skills,
-                onSave: (value) {
-                  onDeck(value);
-                  Navigator.pop(dialogContext);
-                },
+              child: Row(
+                children: [
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _t('MODIFICA IL MAZZO', 'EDIT MY DECK'),
+                      style: const TextStyle(
+                        fontFamily: 'Georgia',
+                        fontSize: 21,
+                        color: Color(0xfff5d28b),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    key: const Key('close-deck-editor'),
+                    tooltip: _t('Chiudi', 'Close'),
+                    onPressed: () => Navigator.maybePop(dialogContext),
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
               ),
             ),
-          )),
-        ]),
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 850),
+                  child: DeckBuilder(
+                    italian: title == 'CARTE',
+                    owned: owned,
+                    initial: deck,
+                    attacks: attacks,
+                    crits: crits,
+                    skills: skills,
+                    onSave: (value) {
+                      onDeck(value);
+                      Navigator.pop(dialogContext);
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     ),
   );
@@ -1395,65 +1770,87 @@ class _CardsState extends State<_Cards> {
           borderRadius: BorderRadius.circular(16),
         ),
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: 470,
-            maxHeight: MediaQuery.sizeOf(dialogContext).height * .94),
+          constraints: BoxConstraints(
+            maxWidth: 470,
+            maxHeight: MediaQuery.sizeOf(dialogContext).height * .94,
+          ),
           child: Padding(
             padding: const EdgeInsets.all(10),
-            child: SingleChildScrollView(child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '${hero.name.toString().toUpperCase()} · STAGE $stage',
-                  style: const TextStyle(
-                    fontFamily: 'Georgia',
-                    fontSize: 20,
-                    color: Color(0xfff5d28b),
-                    fontWeight: FontWeight.w700,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${hero.name.toString().toUpperCase()} · STAGE $stage',
+                    style: const TextStyle(
+                      fontFamily: 'Georgia',
+                      fontSize: 20,
+                      color: Color(0xfff5d28b),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 220,
-                  child: CharacterCardArt(
-                    key: ValueKey('card-detail-frame-$id'),
-                    asset: hero.cardAsset(hero.stages[stage - 1]),
-                    hp: CombatRules.hpForStage(stage),
-                    attack: isOwned ? attacks[id] : null,
-                    crit: isOwned ? crits[id] : null,
-                    skillId: isOwned ? skills[id] : null,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                if (isOwned) if (SkillCatalog.byId(skills[id]) case final skill?) ...[
-                  Center(child: SkillRarityBadge(skill: skill)),
-                  const SizedBox(height: 4),
-                  Text(skill.description, textAlign: TextAlign.center,
-                    style: const TextStyle(color: Color(0xffd2dced), fontSize: 11)),
-                  Text('${skill.trigger} · ${skill.limit}', textAlign: TextAlign.center,
-                    style: const TextStyle(color: Color(0xffa9bdd4), fontSize: 10)),
-                  Text('Stage $stage: ${(SkillCatalog.weights[stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% per pull',
-                    style: const TextStyle(color: Color(0xffa9bdd4), fontSize: 10)),
-                  SkillPreviewButton(skill: skill),
                   const SizedBox(height: 8),
-                ],
-                Text(
-                  isOwned ? 'ACTIVE CHAMPION' : 'NOT COLLECTED',
-                  style: TextStyle(
-                    color: isOwned
-                        ? const Color(0xff7fd7c3)
-                        : const Color(0xffa0b0c8),
-                    fontSize: 10,
-                    letterSpacing: 1.1,
-                    fontWeight: FontWeight.w800,
+                  SizedBox(
+                    height: 220,
+                    child: CharacterCardArt(
+                      key: ValueKey('card-detail-frame-$id'),
+                      asset: hero.cardAsset(hero.stages[stage - 1]),
+                      hp: CombatRules.hpForStage(stage),
+                      attack: isOwned ? attacks[id] : null,
+                      crit: isOwned ? crits[id] : null,
+                      skillId: isOwned ? skills[id] : null,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                _RuneButton(
-                  label: 'CLOSE',
-                  onTap: () => Navigator.pop(dialogContext),
-                ),
-              ],
-            )),
+                  const SizedBox(height: 12),
+                  if (isOwned)
+                    if (SkillCatalog.byId(skills[id]) case final skill?) ...[
+                      Center(child: SkillRarityBadge(skill: skill)),
+                      const SizedBox(height: 4),
+                      Text(
+                        skill.description,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xffd2dced),
+                          fontSize: 11,
+                        ),
+                      ),
+                      Text(
+                        '${skill.trigger} · ${skill.limit}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xffa9bdd4),
+                          fontSize: 10,
+                        ),
+                      ),
+                      Text(
+                        'Stage $stage: ${(SkillCatalog.weights[stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% per pull',
+                        style: const TextStyle(
+                          color: Color(0xffa9bdd4),
+                          fontSize: 10,
+                        ),
+                      ),
+                      SkillPreviewButton(skill: skill),
+                      const SizedBox(height: 8),
+                    ],
+                  Text(
+                    isOwned ? 'ACTIVE CHAMPION' : 'NOT COLLECTED',
+                    style: TextStyle(
+                      color: isOwned
+                          ? const Color(0xff7fd7c3)
+                          : const Color(0xffa0b0c8),
+                      fontSize: 10,
+                      letterSpacing: 1.1,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _RuneButton(
+                    label: 'CLOSE',
+                    onTap: () => Navigator.pop(dialogContext),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

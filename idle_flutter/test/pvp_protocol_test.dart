@@ -107,4 +107,14 @@ void main() {
       'wss://pvp.example/connect?ticket=abc',
     );
   });
+  test('finished event carries player-specific server reward', () {
+    final event = PvpEvent.decode({
+      'type': 'finished',
+      'reason': 'completed',
+      'winner': 'you',
+      'score': [2, 1],
+      'reward': 100,
+    }) as FinishedEvent;
+    expect(event.reward, 100);
+  });
 }

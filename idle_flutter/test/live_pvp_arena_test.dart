@@ -236,7 +236,7 @@ void main() {
         matchId: 'best-of-three',
       ),
     );
-    c.finish('you', [2, 0], rewarded: true);
+    c.finish('you', [2, 0], reward: 100);
     await tester.pump();
     expect(find.byKey(const Key('pvp-final-result')), findsOneWidget);
     expect(find.text('FINAL SCORE  2 - 0'), findsOneWidget);

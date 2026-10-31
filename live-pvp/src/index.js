@@ -165,6 +165,7 @@ export class PvpLobby {
    p.match=null;p.chosen=null;
    if(this.sockets.get(p.uid)!==p)return;
    send(p.ws,{type:'finished',reason,winner:winning===null?'draw':winning===p.uid?'you':'opponent',
+    reward:reason==='completed'&&winning===p.uid?100:0,
     score:i===0?match.scores:[...match.scores].reverse()});
   });
   const [a,b]=match.players;

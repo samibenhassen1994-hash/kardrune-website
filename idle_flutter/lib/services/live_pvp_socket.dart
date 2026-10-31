@@ -74,6 +74,7 @@ sealed class PvpEvent {
           j['reason'] as String,
           j['winner'] as String,
           List<int>.from(j['score'] as List),
+          reward: (j['reward'] as num?)?.toInt() ?? 0,
         );
       case 'error':
         return ErrorEvent(j['message'] as String);
@@ -142,9 +143,10 @@ class RoundResultEvent extends PvpEvent {
 }
 
 class FinishedEvent extends PvpEvent {
-  const FinishedEvent(this.reason, this.winner, this.score);
+  const FinishedEvent(this.reason, this.winner, this.score, {this.reward = 0});
   final String reason, winner;
   final List<int> score;
+  final int reward;
 }
 
 class ErrorEvent extends PvpEvent {

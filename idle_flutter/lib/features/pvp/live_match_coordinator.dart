@@ -30,7 +30,7 @@ class LiveMatchCoordinator extends ChangeNotifier {
   LiveMatchState state = LiveMatchState.idle;
   String message = 'Ready for a live match.';
   bool _closing = false;
-  void Function(String matchId, String reason)? onMatchFinished;
+  void Function(String matchId, String reason, int reward)? onMatchFinished;
 
   Future<List<String>> loadDeck() => repository.loadDeck();
   Future<void> saveDeck(List<String> cards) => repository.saveDeck(cards);
@@ -88,13 +88,9 @@ class LiveMatchCoordinator extends ChangeNotifier {
       case RoundResultEvent():
         arena.replay(event.json);
       case FinishedEvent():
-        arena.finish(
-          event.winner,
-          event.score,
-          rewarded: event.reason == 'completed',
-        );
+        arena.finish(event.winner, event.score, reward: event.reward);
         final id = _protocol?.matchId;
-        if (id != null) onMatchFinished?.call(id, event.reason);
+        if (id != null) onMatchFinished?.call(id, event.reason, event.reward);
       case ErrorEvent():
         message = event.message;
         state = LiveMatchState.error;

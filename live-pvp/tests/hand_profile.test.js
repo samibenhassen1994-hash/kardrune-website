@@ -28,3 +28,20 @@ test('each hand identifies both players with their own profile avatars and score
   clearInterval(lobby.heartbeat);
  }
 });
+test('finished payload advertises reward only to the winner',()=>{
+ const messagesA=[],messagesB=[];
+ const ws=messages=>({readyState:1,send:value=>messages.push(JSON.parse(value))});
+ const a={uid:'a',ws:ws(messagesA),match:null,chosen:null};
+ const b={uid:'b',ws:ws(messagesB),match:null,chosen:null};
+ const env={DB:{prepare:()=>({bind:()=>({run:()=>Promise.resolve()})})}};
+ const lobby=new PvpLobby({waitUntil:()=>{}},env);
+ const match={id:'m',players:[a,b],round:2,scores:[2,0],selectTimer:null,
+  readyTimer:null,awaiting:null};
+ a.match=match;b.match=match;lobby.matches.set(match.id,match);
+ lobby.sockets.set('a',a);lobby.sockets.set('b',b);
+ try{
+  lobby.finish(match,'completed');
+  assert.equal(messagesA[0].reward,100);
+  assert.equal(messagesB[0].reward,0);
+ }finally{clearInterval(lobby.heartbeat)}
+});

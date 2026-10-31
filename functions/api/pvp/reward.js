@@ -1,5 +1,6 @@
 import {userFromRequest,failure,json} from '../_lib/auth.js';
 import {ensureLegacySkills,mergeGrantedSave,currentAccount} from '../_lib/skill_store.js';
+import {rewardForHistory} from '../_lib/pvp_reward_policy.js';
 
 export async function onRequestPost({request,env}){
  try{
@@ -8,6 +9,11 @@ export async function onRequestPost({request,env}){
   const body=await request.json();
   if(typeof body.matchId!=='string'||! /^[0-9a-f-]{36}$/i.test(body.matchId)||
    !Number.isSafeInteger(body.revision)||body.revision<1)return json({error:'Invalid reward request'},400);
+  const history=await env.DB.prepare('SELECT player_a,player_b,winner_uid,reason FROM pvp_live_history WHERE id=?')
+   .bind(body.matchId).first();
+  if(!history)return json({error:'Match result pending'},404);
+  if(rewardForHistory(history,user.uid)!==100)
+   return json({error:'Match reward unavailable'},403);
   const previous=await env.DB.prepare('SELECT response_json FROM pvp_reward_claims WHERE uid=? AND match_id=?')
    .bind(user.uid,body.matchId).first();
   if(previous){
@@ -15,11 +21,6 @@ export async function onRequestPost({request,env}){
    if(!snapshot)return json({error:'Verified progress unavailable'},503);
    return json({...JSON.parse(previous.response_json),...snapshot});
   }
-  const history=await env.DB.prepare('SELECT player_a,player_b,reason FROM pvp_live_history WHERE id=?')
-   .bind(body.matchId).first();
-  if(!history)return json({error:'Match result pending'},404);
-  if(history.reason!=='completed'||![history.player_a,history.player_b].includes(user.uid))
-   return json({error:'Match reward unavailable'},403);
   const row=await env.DB.prepare('SELECT save_json,revision FROM demo_saves WHERE uid=?').bind(user.uid).first();
   if(!row||row.revision!==body.revision)return json({error:'Save conflict',revision:row?.revision||0},409);
   const wallet=await env.DB.prepare('SELECT shards FROM skill_wallets WHERE uid=?').bind(user.uid).first();

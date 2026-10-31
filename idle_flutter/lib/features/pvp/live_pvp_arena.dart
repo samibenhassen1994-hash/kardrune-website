@@ -311,14 +311,16 @@ class ArenaViewController extends ChangeNotifier {
     });
   }
 
-  void finish(String winner, List<int> value, {bool rewarded = false}) {
+  void finish(String winner, List<int> value, {int reward = 0}) {
     matchFinished = true;
     matchWinner = winner;
     score = [...value];
     roundsPlayed = hand?.round ?? roundsPlayed;
     _clock?.cancel();
     attackWindup = false;
-    actionText = rewarded ? 'MATCH COMPLETE  ·  +100 SHARDS' : 'MATCH ENDED';
+    actionText = reward > 0
+        ? 'MATCH COMPLETE  ·  +$reward SHARDS'
+        : 'MATCH ENDED';
     popup = winner == 'you'
         ? 'VICTORY'
         : winner == 'opponent'
