@@ -55,13 +55,14 @@ void main() {
     expect(c.select('sam:1'), isFalse);
 
     // Each WebP atlas is cropped to a cell instead of shrunk as a whole.
-    final spin = tester.widget<Image>(
+    // Frame sprites render through CustomPaint, not a giant Image widget.
+    expect(
       find.descendant(
         of: find.byKey(const Key('pvp-player-die')),
-        matching: find.byType(Image),
+        matching: find.byType(CustomPaint),
       ),
+      findsWidgets,
     );
-    expect(spin.width, greaterThan(500));
 
     await tester.pump(const Duration(milliseconds: 1300));
     expect(find.byKey(const Key('pvp-dice-intro')), findsOneWidget);
