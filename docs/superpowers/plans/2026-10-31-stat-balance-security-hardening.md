@@ -54,9 +54,9 @@
 
 **Files:** Centralize account-status guard and apply to Summon, duplicate decision, practice, reward, deck/ticket economic paths; tests.
 
-- [ ] Write failing banned-account tests for every mutating endpoint.
-- [ ] Implement shared guard and verify no mutation occurs.
-- [ ] Commit.
+- [x] Write failing banned-account tests for every mutating endpoint.
+- [x] Implement shared guard and verify no mutation occurs.
+- [x] Commit.
 
 ### Task 5: Full verification and branch push
 

@@ -1,12 +1,12 @@
 import {userFromRequest,json,failure} from './auth.js';
 import {effectiveCardStats} from '../../../shared/card_stat_limits.js';
+import {requireActiveAccount} from './account_status.js';
 const HP=[0,240,340,430];
 const HEROES=new Set(['sam','lira','rhea','dren','tor','aria','kael','neris','nyra']);
 export async function context(request,env){
  const user=await userFromRequest(request,env);
  if(!env.DB)throw new Response('Database unavailable',{status:503});
- const player=await env.DB.prepare('SELECT is_banned FROM players WHERE uid=?').bind(user.uid).first();
- if(!player||player.is_banned)throw new Response('Account unavailable',{status:403});
+ await requireActiveAccount(env,user.uid);
  return user;
 }
 export function choice(save){

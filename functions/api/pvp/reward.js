@@ -1,11 +1,13 @@
 import {userFromRequest,failure,json} from '../_lib/auth.js';
 import {ensureLegacySkills,mergeGrantedSave,currentAccount} from '../_lib/skill_store.js';
 import {rewardForHistory,rewardAccess} from '../_lib/pvp_reward_policy.js';
+import {requireActiveAccount} from '../_lib/account_status.js';
 
 export async function onRequestPost({request,env}){
  try{
   const user=await userFromRequest(request,env);
   if(!env.DB)return json({error:'D1 not configured'},503);
+  await requireActiveAccount(env,user.uid);
   const body=await request.json();
   if(typeof body.matchId!=='string'||! /^[0-9a-f-]{36}$/i.test(body.matchId)||
    !Number.isSafeInteger(body.revision)||body.revision<1)return json({error:'Invalid reward request'},400);

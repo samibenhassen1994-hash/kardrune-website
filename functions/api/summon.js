@@ -1,6 +1,7 @@
 import {userFromRequest,failure,json} from './_lib/auth.js';
 import {ensureLegacySkills,mergeGrantedSave,rollCard,currentAccount} from './_lib/skill_store.js';
 import {SKILL_VERSION} from '../../shared/skill_catalog.js';
+import {requireActiveAccount} from './_lib/account_status.js';
 
 const rollPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const freeWindowMs=12*60*60*1000;
@@ -17,6 +18,7 @@ export async function onRequestGet({request,env}){
  try{
   const user=await userFromRequest(request,env);
   if(!env.DB)return json({error:'D1 not configured'},503);
+  await requireActiveAccount(env,user.uid);
   return json(await freeStatus(env,user.uid));
  }catch(error){return failure(error)}
 }
@@ -25,6 +27,7 @@ export async function onRequestPost({request,env}){
  try{
   const user=await userFromRequest(request,env);
   if(!env.DB)return json({error:'D1 not configured'},503);
+  await requireActiveAccount(env,user.uid);
   const body=await request.json();
   if(typeof body.featured!=='boolean'||(body.free!==undefined&&typeof body.free!=='boolean')||
     (body.free===true&&body.featured)||!Number.isSafeInteger(body.revision)||body.revision<1||

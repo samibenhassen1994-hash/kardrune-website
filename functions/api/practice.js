@@ -1,6 +1,7 @@
 import {userFromRequest,failure,json} from './_lib/auth.js';
 import {secureInt,ensureLegacySkills,mergeGrantedSave,currentAccount} from './_lib/skill_store.js';
 import {effectiveCardStats} from '../../shared/card_stat_limits.js';
+import {requireActiveAccount} from './_lib/account_status.js';
 
 const rollPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const today=()=>new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Rome'});
@@ -9,6 +10,7 @@ export async function onRequestPost({request,env}){
  try{
   const user=await userFromRequest(request,env);
   if(!env.DB)return json({error:'D1 not configured'},503);
+  await requireActiveAccount(env,user.uid);
   const body=await request.json();
   if(typeof body.rollId!=='string'||!rollPattern.test(body.rollId)||
    !Number.isSafeInteger(body.revision)||body.revision<1)return json({error:'Invalid practice request'},400);

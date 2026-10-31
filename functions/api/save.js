@@ -2,6 +2,7 @@ import {userFromRequest,failure,json} from './_lib/auth.js';
 import {ensureLegacySkills,mergeGrantedSave,rollSkill} from './_lib/skill_store.js';
 import {SKILL_VERSION} from '../../shared/skill_catalog.js';
 import {isolateCompetitiveSave,selectVerifiedActive} from './_lib/save_policy.js';
+import {requireActiveAccount} from './_lib/account_status.js';
 const allowed=new Set(['sam','lira','rhea','dren','tor','aria','kael','neris','nyra']);
 function validSave(v){
  if(!v||typeof v!=='object'||Array.isArray(v))return false;
@@ -16,6 +17,7 @@ async function handle({request,env},write){
  try{
   const user=await userFromRequest(request,env);
   if(!env.DB)return json({error:'D1 not configured'},503);
+  if(write)await requireActiveAccount(env,user.uid,{allowMissing:true});
   if(!write){
    const row=await env.DB.prepare('SELECT save_json,revision,updated_at FROM demo_saves WHERE uid=?').bind(user.uid).first();
    if(!row)return json({save:null,revision:0});
