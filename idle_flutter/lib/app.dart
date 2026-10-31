@@ -256,42 +256,37 @@ class _IdleShellState extends State<IdleShell> {
       _pvp!.dispose();
       _pvp = null;
     }
+    if (_cloud?.identity != null && _cloud?.state == CloudAccountState.synced) {
+      unawaited(_recoverPvpRewards(_cloud!));
+    }
     if (mounted) setState(() {});
   }
 
   void _pvpFinished(String matchId, String reason, int reward) {
     if (reason == 'completed' && reward == 100 && _cloud?.identity != null) {
-      _claimPvpReward(matchId);
+      unawaited(_claimPvpReward(matchId));
     }
   }
 
   Future<void> _claimPvpReward(String matchId) async {
     final cloud = _cloud;
     if (cloud == null) return;
-    final accountUid = cloud.identity?.uid;
-    for (var attempt = 0; attempt < 6; attempt++) {
-      try {
-        if (cloud.state != CloudAccountState.synced) await cloud.loadCloud();
-        final response = await cloud.api.post('/api/pvp/reward', {
-          'matchId': matchId,
-          'revision': cloud.revision,
-        });
-        if (!mounted || cloud.identity?.uid != accountUid) return;
-        cloud.applyServerSave(response);
-        return;
-      } catch (error) {
-        if (attempt == 5) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('PvP reward pending. Cloud result: $error'),
-              ),
-            );
-          }
-          return;
-        }
-        await Future<void>.delayed(Duration(milliseconds: 300 * (attempt + 1)));
-      }
+    final claimed = await cloud.claimPvpReward(matchId);
+    if (!claimed && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('PvP reward pending. It will retry automatically.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _recoverPvpRewards(CloudAccountController cloud) async {
+    final recovered = await cloud.recoverPvpRewards();
+    if (recovered > 0 && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Recovered $recovered pending PvP reward.')),
+      );
     }
   }
 

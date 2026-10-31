@@ -163,16 +163,30 @@ export class PvpLobby {
   this.clearTimers(match);this.matches.delete(match.id);
   const winner=leaverUid?match.players.find(p=>p.uid!==leaverUid)?.uid:null;
   const winning=winner||(reason==='completed'&&pickWinner(match.scores)!=='draw'?match.players[pickWinner(match.scores)].uid:null);
-  match.players.forEach((p,i)=>{
-   p.match=null;p.chosen=null;
-   if(this.sockets.get(p.uid)!==p)return;
-   send(p.ws,{type:'finished',reason,winner:winning===null?'draw':winning===p.uid?'you':'opponent',
-    reward:reason==='completed'&&winning===p.uid?100:0,
-    score:i===0?match.scores:[...match.scores].reverse()});
-  });
   const [a,b]=match.players;
-  const job=this.env.DB.prepare('INSERT INTO pvp_live_history(id,player_a,player_b,score_a,score_b,winner_uid,completed_at,reason) VALUES(?,?,?,?,?,?,?,?)')
-   .bind(match.id,a.uid,b.uid,match.scores[0],match.scores[1],winning,Date.now(),reason).run().catch(()=>{});
+  const job=this.persistResult(match,a,b,winning,reason).then(persisted=>{
+   match.players.forEach((p,i)=>{
+    p.match=null;p.chosen=null;
+    if(this.sockets.get(p.uid)!==p)return;
+    send(p.ws,{type:'finished',reason,winner:winning===null?'draw':winning===p.uid?'you':'opponent',
+     reward:persisted&&reason==='completed'&&winning===p.uid?100:0,
+     score:i===0?match.scores:[...match.scores].reverse()});
+   });
+  });
   if(typeof this.state.waitUntil==='function')this.state.waitUntil(job);
+  return job;
+ }
+ async persistResult(match,a,b,winning,reason){
+  for(let attempt=0;attempt<4;attempt++){
+   try{
+    await this.env.DB.prepare('INSERT INTO pvp_live_history(id,player_a,player_b,score_a,score_b,winner_uid,completed_at,reason) VALUES(?,?,?,?,?,?,?,?)')
+     .bind(match.id,a.uid,b.uid,match.scores[0],match.scores[1],winning,Date.now(),reason).run();
+    return true;
+   }catch(error){
+    if(attempt===3){console.error('Unable to persist PvP result',match.id,error);return false}
+    await new Promise(resolve=>setTimeout(resolve,100*(attempt+1)));
+   }
+  }
+  return false;
  }
 }

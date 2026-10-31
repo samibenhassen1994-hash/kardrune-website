@@ -1,7 +1,21 @@
 import {userFromRequest,failure,json} from '../_lib/auth.js';
 import {ensureLegacySkills,mergeGrantedSave,currentAccount} from '../_lib/skill_store.js';
-import {rewardForHistory,rewardAccess} from '../_lib/pvp_reward_policy.js';
+import {rewardForHistory,rewardAccess,pendingRewardMatchIds} from '../_lib/pvp_reward_policy.js';
 import {requireActiveAccount} from '../_lib/account_status.js';
+
+export async function onRequestGet({request,env}){
+ try{
+  const user=await userFromRequest(request,env);
+  if(!env.DB)return json({error:'D1 not configured'},503);
+  await requireActiveAccount(env,user.uid);
+  const rows=await env.DB.prepare(`SELECT h.id
+   FROM pvp_live_history h
+   LEFT JOIN pvp_reward_claims c ON c.uid=? AND c.match_id=h.id
+   WHERE h.winner_uid=? AND h.reason='completed' AND c.match_id IS NULL
+   ORDER BY h.completed_at DESC LIMIT 10`).bind(user.uid,user.uid).all();
+  return json({matchIds:pendingRewardMatchIds(rows.results)});
+ }catch(error){return failure(error)}
+}
 
 export async function onRequestPost({request,env}){
  try{

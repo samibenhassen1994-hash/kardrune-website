@@ -14,3 +14,7 @@ export function rewardAccess(history,uid,claims={total:0,againstOpponent:0}){
   return {allowed:false,reason:'opponent_limit'};
  return {allowed:true,opponent:history.player_a===uid?history.player_b:history.player_a};
 }
+
+export function pendingRewardMatchIds(rows){
+ return [...new Set((rows||[]).map(row=>row?.id).filter(id=>typeof id==='string'&&id.length>0))];
+}

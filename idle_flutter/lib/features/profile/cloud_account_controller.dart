@@ -46,6 +46,8 @@ class CloudAccountController extends ChangeNotifier {
   StreamSubscription<CloudIdentity?>? _subscription;
   Future<void> _settle = Future.value();
   Timer? _syncTimer;
+  bool _rewardRecoveryRunning = false;
+  final Map<String, Future<bool>> _rewardClaims = {};
   String? _observedUid;
   bool _hasObservedAccount = false;
   CloudIdentity? identity;
@@ -60,8 +62,9 @@ class CloudAccountController extends ChangeNotifier {
     final uid = identity?.uid ?? local.storage.read(lastUserKey);
     return uid == null ? null : '$guestBackupPrefix$uid';
   }
-  bool get hasGuestBackup => _guestBackupKey != null &&
-      local.storage.read(_guestBackupKey!) != null;
+
+  bool get hasGuestBackup =>
+      _guestBackupKey != null && local.storage.read(_guestBackupKey!) != null;
 
   void start() {
     _subscription ??= auth.accountChanges.listen((account) {
@@ -189,7 +192,9 @@ class CloudAccountController extends ChangeNotifier {
           ? response['revision'] as int
           : revision + 1;
       final canonical = response['save'] is Map
-          ? PlayerSave.fromJson(Map<String, Object?>.from(response['save'] as Map))
+          ? PlayerSave.fromJson(
+              Map<String, Object?>.from(response['save'] as Map),
+            )
           : save;
       if (response['save'] is Map) {
         local.save(canonical);
@@ -254,6 +259,70 @@ class CloudAccountController extends ChangeNotifier {
     state = CloudAccountState.synced;
     message = 'Cloud progress saved · revision $revision';
     notifyListeners();
+  }
+
+  Future<bool> claimPvpReward(
+    String matchId, {
+    Duration retryDelay = const Duration(milliseconds: 500),
+  }) => _rewardClaims.putIfAbsent(matchId, () async {
+    try {
+      return await _claimPvpReward(matchId, retryDelay);
+    } finally {
+      _rewardClaims.remove(matchId);
+    }
+  });
+
+  Future<bool> _claimPvpReward(String matchId, Duration retryDelay) async {
+    final accountUid = identity?.uid;
+    if (accountUid == null) return false;
+    for (var attempt = 0; attempt < 8; attempt++) {
+      if (identity?.uid != accountUid) return false;
+      try {
+        final response = await api.post('/api/pvp/reward', {
+          'matchId': matchId,
+          'revision': revision,
+        });
+        if (identity?.uid != accountUid) return false;
+        applyServerSave(response);
+        return response['reward'] == 100;
+      } on SaveConflict {
+        await loadCloud();
+        if (state != CloudAccountState.synced) return false;
+      } on ApiFailure catch (error) {
+        if (error.statusCode == 403 || error.statusCode == 429) return false;
+      } catch (_) {}
+      if (attempt < 7 && retryDelay > Duration.zero) {
+        await Future<void>.delayed(
+          Duration(milliseconds: retryDelay.inMilliseconds * (attempt + 1)),
+        );
+      }
+    }
+    return false;
+  }
+
+  Future<int> recoverPvpRewards({
+    Duration retryDelay = const Duration(milliseconds: 500),
+  }) async {
+    if (_rewardRecoveryRunning ||
+        identity == null ||
+        state != CloudAccountState.synced) {
+      return 0;
+    }
+    _rewardRecoveryRunning = true;
+    var claimed = 0;
+    try {
+      final response = await api.get('/api/pvp/reward');
+      final ids = response['matchIds'];
+      if (ids is! List) return 0;
+      for (final id in ids.whereType<String>()) {
+        if (await claimPvpReward(id, retryDelay: retryDelay)) claimed++;
+      }
+      return claimed;
+    } catch (_) {
+      return claimed;
+    } finally {
+      _rewardRecoveryRunning = false;
+    }
   }
 
   Future<void> loadCloud() async {

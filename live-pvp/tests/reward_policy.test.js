@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {rewardForHistory,rewardAccess} from '../../functions/api/_lib/pvp_reward_policy.js';
+import {rewardForHistory,rewardAccess,pendingRewardMatchIds} from '../../functions/api/_lib/pvp_reward_policy.js';
 
 const completed={player_a:'a',player_b:'b',winner_uid:'a',reason:'completed'};
 test('only the completed match winner earns 100 shards',()=>{
@@ -8,6 +8,12 @@ test('only the completed match winner earns 100 shards',()=>{
  assert.equal(rewardForHistory(completed,'b'),0);
  assert.equal(rewardForHistory({...completed,winner_uid:null},'a'),0);
  assert.equal(rewardForHistory({...completed,reason:'replay_timeout'},'a'),0);
+});
+
+test('pending reward discovery returns distinct valid match ids only',()=>{
+ assert.deepEqual(pendingRewardMatchIds([
+  {id:'m1'},{id:'m1'},{id:'m2'},{id:null},{id:3},
+ ]),['m1','m2']);
 });
 
 test('reward farming limits repeated opponents and daily claims',()=>{

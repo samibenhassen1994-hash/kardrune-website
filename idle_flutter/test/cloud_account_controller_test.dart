@@ -324,4 +324,108 @@ void main() {
     await tester.pump();
     expect(auth.resetEmails, ['hero@kardrune.com']);
   });
+
+  test(
+    'PvP reward reloads revision after 409 and credits exactly once',
+    () async {
+      final auth = _Auth()..identity = const CloudIdentity(uid: 'winner');
+      final transport = _SequenceTransport([
+        const ApiResponse(409, '{"revision":2}'),
+        const ApiResponse(200, '{"revision":2,"save":{"shards":100}}'),
+        const ApiResponse(
+          200,
+          '{"revision":3,"reward":100,"save":{"shards":200}}',
+        ),
+      ]);
+      final local = LocalSaveService(_Storage());
+      final cloud =
+          CloudAccountController(
+              auth: auth,
+              api: ApiClient(auth, transport),
+              local: local,
+            )
+            ..identity = auth.identity
+            ..state = CloudAccountState.synced
+            ..revision = 1;
+
+      expect(
+        await cloud.claimPvpReward(
+          '00000000-0000-0000-0000-000000000001',
+          retryDelay: Duration.zero,
+        ),
+        isTrue,
+      );
+      expect(transport.requests.map((r) => '${r.method} ${r.path}'), [
+        'POST /api/pvp/reward',
+        'GET /api/save',
+        'POST /api/pvp/reward',
+      ]);
+      expect(cloud.revision, 3);
+      expect(local.load().shards, 200);
+      cloud.dispose();
+    },
+  );
+
+  test('PvP reward retries while Worker history is still pending', () async {
+    final auth = _Auth()..identity = const CloudIdentity(uid: 'winner');
+    final transport = _SequenceTransport([
+      const ApiResponse(404, '{"error":"Match result pending"}'),
+      const ApiResponse(
+        200,
+        '{"revision":2,"reward":100,"save":{"shards":1600}}',
+      ),
+    ]);
+    final cloud =
+        CloudAccountController(
+            auth: auth,
+            api: ApiClient(auth, transport),
+            local: LocalSaveService(_Storage()),
+          )
+          ..identity = auth.identity
+          ..state = CloudAccountState.synced
+          ..revision = 1;
+
+    expect(
+      await cloud.claimPvpReward(
+        '00000000-0000-0000-0000-000000000002',
+        retryDelay: Duration.zero,
+      ),
+      isTrue,
+    );
+    expect(
+      transport.requests.where((r) => r.path == '/api/pvp/reward'),
+      hasLength(2),
+    );
+    cloud.dispose();
+  });
+
+  test('reconnect discovers and claims an eligible missed win', () async {
+    final auth = _Auth()..identity = const CloudIdentity(uid: 'winner');
+    final transport = _SequenceTransport([
+      const ApiResponse(
+        200,
+        '{"matchIds":["00000000-0000-0000-0000-000000000003"]}',
+      ),
+      const ApiResponse(
+        200,
+        '{"revision":2,"reward":100,"save":{"shards":1600}}',
+      ),
+      const ApiResponse(200, '{"matchIds":[]}'),
+    ]);
+    final local = LocalSaveService(_Storage());
+    final cloud =
+        CloudAccountController(
+            auth: auth,
+            api: ApiClient(auth, transport),
+            local: local,
+          )
+          ..identity = auth.identity
+          ..state = CloudAccountState.synced
+          ..revision = 1;
+
+    expect(await cloud.recoverPvpRewards(retryDelay: Duration.zero), 1);
+    expect(await cloud.recoverPvpRewards(retryDelay: Duration.zero), 0);
+    expect(local.load().shards, 1600);
+    cloud.dispose();
+  });
 }

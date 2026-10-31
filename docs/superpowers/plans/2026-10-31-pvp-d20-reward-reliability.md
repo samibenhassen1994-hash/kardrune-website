@@ -40,10 +40,10 @@
 
 **Files:** Modify `functions/api/pvp/reward.js`, Flutter reward claim/recovery service and app wiring; add Node/Dart tests.
 
-- [ ] Write failing tests for pending-win discovery, 404 retry, 409 reload and restart recovery.
-- [ ] Verify RED.
-- [ ] Add authenticated pending reward discovery and idempotent client recovery using existing claim PK/rate limits.
-- [ ] Run focused tests and commit.
+- [x] Write failing tests for pending-win discovery, 404 retry, 409 reload and restart recovery.
+- [x] Verify RED.
+- [x] Add authenticated pending reward discovery and idempotent client recovery using existing claim PK/rate limits.
+- [x] Run focused tests and commit.
 
 ### Task 3: Validation and release
 
