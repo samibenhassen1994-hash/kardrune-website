@@ -34,4 +34,3 @@ Add requested interaction polish without redesigning the game, make live PvP ini
 - No economy, HP, skill, Summon probability or cost changes beyond the explicitly requested winner reward and stat ranges.
 - Firebase/D1 compatibility stays intact.
 - First delivery is pushed to `main`; balance/security work is pushed to a new branch without merge or deployment.
-

@@ -63,4 +63,3 @@
 - [ ] Run Flutter analyze/tests/build, Functions tests, Worker tests and migration checks.
 - [ ] Perform whole-branch security review and fix Critical/Important findings through RED→GREEN.
 - [ ] Push the new branch only; do not merge or deploy.
-

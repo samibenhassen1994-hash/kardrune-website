@@ -32,10 +32,10 @@
 
 **Interfaces:** Produces panel entrance animation and `DeckRules.auto(...)` selecting the strongest nine distinct owned cards.
 
-- [ ] Write failing widget/rule tests for slide entrance and deterministic strongest-card selection.
-- [ ] Run focused tests and verify RED.
-- [ ] Implement isolated entrance controller and Auto Deck action.
-- [ ] Run focused tests and commit.
+- [x] Write failing widget/rule tests for slide entrance and deterministic strongest-card selection.
+- [x] Run focused tests and verify RED.
+- [x] Implement isolated entrance controller and Auto Deck action.
+- [x] Run focused tests and commit.
 
 ### Task 2: Skill-specific battle effects
 
@@ -43,10 +43,10 @@
 
 **Interfaces:** Consumes skill IDs/events and produces a distinct immutable visual profile per skill without changing combat data.
 
-- [ ] Write failing tests proving all 30 skills resolve to distinct profiles and unknown skills fall back safely.
-- [ ] Run focused tests and verify RED.
-- [ ] Implement skill-specific palettes, glyph/motion/effect parameters using existing VFX families.
-- [ ] Run focused tests and commit.
+- [x] Write failing tests proving all 30 skills resolve to distinct profiles and unknown skills fall back safely.
+- [x] Run focused tests and verify RED.
+- [x] Implement skill-specific palettes, glyph/motion/effect parameters using existing VFX families.
+- [x] Run focused tests and commit.
 
 ### Task 3: Server-authoritative dice and alternating initiative
 
@@ -54,11 +54,11 @@
 
 **Interfaces:** Produces `dice` WebSocket event and `resolveSkillDuel(cards, random, starter)`; `hand`/`round_result` identify authoritative starter.
 
-- [ ] Write failing Worker tests for server rolls, tie resolution, starter alternation and attack order.
-- [ ] Write failing Dart protocol/UI tests for dice intro and relative starter mapping.
-- [ ] Run focused suites and verify RED.
-- [ ] Import the approved sprite, implement server state/protocol, typed client event and intro animation.
-- [ ] Run focused suites and commit.
+- [x] Write failing Worker tests for server rolls, tie resolution, starter alternation and attack order.
+- [x] Write failing Dart protocol/UI tests for dice intro and relative starter mapping.
+- [x] Run focused suites and verify RED.
+- [x] Import the approved sprite, implement server state/protocol, typed client event and intro animation.
+- [x] Run focused suites and commit.
 
 ### Task 4: Winner-only idempotent live reward
 
@@ -66,17 +66,16 @@
 
 **Interfaces:** Server grants exactly 100 Shards once to `winner_uid` for a legitimately completed match; finished event exposes `reward` for the current player.
 
-- [ ] Write failing tests: winner +100, loser/draw +0, duplicate finish +0.
-- [ ] Run tests and verify RED.
-- [ ] Implement atomic server grant and player-specific finished payload.
-- [ ] Update Flutter to display reward only when payload is 100.
-- [ ] Run tests and commit.
+- [x] Write failing tests: winner +100, loser/draw +0, duplicate finish +0.
+- [x] Run tests and verify RED.
+- [x] Implement atomic server grant and player-specific finished payload.
+- [x] Update Flutter to display reward only when payload is 100.
+- [x] Run tests and commit.
 
 ### Task 5: Main validation and release
 
 **Files:** Update golden only for intentional UI changes; no unrelated files.
 
-- [ ] Run `flutter analyze`, `flutter test`, Web release build and `npm test` for live PvP/functions.
-- [ ] Review the complete diff for protocol/security regressions.
+- [x] Run `flutter analyze`, `flutter test`, Web release build and `npm test` for live PvP/functions.
+- [x] Review the complete diff for protocol/security regressions.
 - [ ] Push commits to `main`, wait for build workflow and verify success.
-
