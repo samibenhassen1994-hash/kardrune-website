@@ -38,9 +38,9 @@
 
 **Files:** Modify `/api/save` validation/normalization and tests.
 
-- [ ] Write failing tests proving forged wallet/grants/PvP fields cannot alter authoritative state.
-- [ ] Implement server-owned field preservation and verify tests.
-- [ ] Commit.
+- [x] Write failing tests proving forged wallet/grants/PvP fields cannot alter authoritative state.
+- [x] Implement server-owned field preservation and verify tests.
+- [x] Commit.
 
 ### Task 3: Reward anti-farming and idempotency
 

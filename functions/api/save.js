@@ -1,6 +1,7 @@
 import {userFromRequest,failure,json} from './_lib/auth.js';
 import {ensureLegacySkills,mergeGrantedSave,rollSkill} from './_lib/skill_store.js';
 import {SKILL_VERSION} from '../../shared/skill_catalog.js';
+import {isolateCompetitiveSave,selectVerifiedActive} from './_lib/save_policy.js';
 const allowed=new Set(['sam','lira','rhea','dren','tor','aria','kael','neris','nyra']);
 function validSave(v){
  if(!v||typeof v!=='object'||Array.isArray(v))return false;
@@ -42,9 +43,10 @@ async function handle({request,env},write){
     rarity:skill.rarity,skill_version:SKILL_VERSION,source:'initial'});
   }
   const previous=existing?JSON.parse(existing.save_json):null;
-  const pending=previous?.pendingDuplicate?.rollId?previous.pendingDuplicate:
-   input.save.pendingDuplicate?.rollId?null:input.save.pendingDuplicate??null;
-  const normalized=mergeGrantedSave(input.save,grants,pending);
+  const pending=previous?.pendingDuplicate??null;
+  const isolated=isolateCompetitiveSave(input.save,previous);
+  const normalized=mergeGrantedSave(isolated,grants,pending);
+  normalized.active=selectVerifiedActive(input.save.active,previous?.active,normalized.owned);
   const wallet=existing?await env.DB.prepare('SELECT shards FROM skill_wallets WHERE uid=?').bind(user.uid).first():null;
   const daily=existing?await env.DB.prepare('SELECT day,count FROM practice_daily WHERE uid=?').bind(user.uid).first():null;
   if(existing&&(!wallet||!daily))return json({error:'Verified progress unavailable'},503);
