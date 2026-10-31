@@ -54,15 +54,13 @@ void main() {
     expect(find.byKey(const Key('pvp-dice-intro')), findsOneWidget);
     expect(c.select('sam:1'), isFalse);
 
-    // Each WebP atlas is cropped to a cell instead of shrunk as a whole.
-    // Never shrink or lay out a giant atlas inside the die.
-    // A placeholder is allowed while the sprite is decoding.
+    // The renderer swaps lightweight frame files, never a giant atlas.
     expect(
       find.descendant(
         of: find.byKey(const Key('pvp-player-die')),
         matching: find.byType(Image),
       ),
-      findsNothing,
+      findsOneWidget,
     );
 
     await tester.pump(const Duration(milliseconds: 1300));
