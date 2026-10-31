@@ -47,13 +47,13 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="KardRune">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/Apple-180.png?v=kr-icon-1">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" sizes="48x48" href="favicon.png?v=kr-icon-1"/>
 
   <title>Idle KardRune</title>
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.json?v=kr-icon-1">
 </head>
 <body>
   <div id="idle-side-art" aria-hidden="true"></div>
@@ -110,7 +110,7 @@
     (() => {
       const releaseUrl = new URL('release-id.json', document.baseURI);
       // CI replaces this marker before Flutter builds its service-worker manifest.
-      const bundledRelease = '4564ce0';
+      const bundledRelease = '48f021d';
       let checking = false, needsUpdate = false, pendingRelease = null;
       let registration = null, requested = false;
       function announce() {
