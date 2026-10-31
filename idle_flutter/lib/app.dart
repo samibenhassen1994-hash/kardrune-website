@@ -704,8 +704,8 @@ class _IdleShellState extends State<IdleShell> {
     final hero = KardRuneCatalog.heroes[index];
     final id = '${hero.id}:$stage';
     final duplicate = owned.contains(id);
-    final attack = CombatRules.rollAttack(widget.random);
-    final crit = CombatRules.rollCrit(widget.random);
+    final attack = CombatRules.rollAttack(stage, widget.random);
+    final crit = CombatRules.rollCrit(stage, widget.random);
     final skill = SkillCatalog.roll(stage, widget.random(), widget.random());
     setState(() {
       if (!free) {

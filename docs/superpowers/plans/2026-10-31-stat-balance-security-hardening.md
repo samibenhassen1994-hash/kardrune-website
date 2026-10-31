@@ -30,9 +30,9 @@
 
 **Files:** Create shared JS bounds module and Dart bounds class; modify Summon generation, save parsing, deck/PvP card construction and tests.
 
-- [ ] Write failing literal tests for all stage boundaries and generated values.
-- [ ] Verify RED, implement centralized clamping/generation, verify GREEN.
-- [ ] Commit.
+- [x] Write failing literal tests for all stage boundaries and generated values.
+- [x] Verify RED, implement centralized clamping/generation, verify GREEN.
+- [x] Commit.
 
 ### Task 2: Competitive save isolation
 

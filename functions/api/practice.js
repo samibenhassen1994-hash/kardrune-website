@@ -1,5 +1,6 @@
 import {userFromRequest,failure,json} from './_lib/auth.js';
 import {secureInt,ensureLegacySkills,mergeGrantedSave,currentAccount} from './_lib/skill_store.js';
+import {effectiveCardStats} from '../../shared/card_stat_limits.js';
 
 const rollPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const today=()=>new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Rome'});
@@ -28,7 +29,8 @@ export async function onRequestPost({request,env}){
   const active=save.active,grant=grants.find(g=>g.card_id===active);
   if(!grant)return json({error:'Select a verified card to practice online'},409);
   const stage=Number(active.split(':')[1]);
-  const chance=Math.max(.05,Math.min(.90,.43+(grant.attack+(stage-1)*18)/200));
+  const effective=effectiveCardStats(stage,grant.attack,grant.crit);
+  const chance=Math.max(.05,Math.min(.90,.43+(effective.attack+(stage-1)*18)/200));
   const win=secureInt(1000000000)/1000000000<chance;
   const day=today(),count=daily.day===day?daily.count:0,reward=count<10?(win?100:35):0;
   save.shards=wallet.shards+reward;

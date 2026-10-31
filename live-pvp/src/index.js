@@ -1,5 +1,6 @@
 import {buildHand,resolveDuelFromStarter,pickWinner,rollInitiative,starterForRound} from './rules.js';
 import {validSkillForStage,SKILL_BY_ID,SKILL_VERSION} from '../../shared/skill_catalog.js';
+import {effectiveCardStats} from '../../shared/card_stat_limits.js';
 const CHOOSE_MS=30000;
 const MAX_ROUNDS=3;
 const WINS_TO_WIN=2;
@@ -31,7 +32,8 @@ export default {
    if(!save.owned?.includes(id)||!['sam','lira','rhea','dren','tor','aria','kael','neris','nyra'].includes(hero)||![1,2,3].includes(stage)||!Number.isInteger(attack)||attack<1||attack>100||!Number.isInteger(crit)||crit<0||crit>25)
     return new Response('Invalid card',{status:400});
    if(grant.skill_version!==SKILL_VERSION||!validSkillForStage(skillId,stage))return new Response('Skill grant unavailable',{status:409});
-   deck.push({id,hero,stage,attack,crit,skillId,skillRarity:SKILL_BY_ID[skillId].rarity,skillVersion:SKILL_VERSION});
+   const effective=effectiveCardStats(stage,attack,crit);
+   deck.push({id,hero,stage,...effective,skillId,skillRarity:SKILL_BY_ID[skillId].rarity,skillVersion:SKILL_VERSION});
   }
   const id=env.LOBBY.idFromName('friendly-global-v1');
   const avatar=['player','guard','vassal','king'].includes(save.avatar)?save.avatar:'player';

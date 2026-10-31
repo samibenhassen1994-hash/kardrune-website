@@ -1,3 +1,5 @@
+import 'card_stat_limits.dart';
+
 typedef RandomSource = double Function();
 
 enum BattleStatus { running, finished }
@@ -67,9 +69,10 @@ abstract final class CombatRules {
     return (value.isFinite ? value : 0.0).clamp(0.0, .999999999).toDouble();
   }
 
-  static int rollAttack(RandomSource random) =>
-      1 + (_random(random) * 100).floor();
-  static int rollCrit(RandomSource random) => (_random(random) * 26).floor();
+  static int rollAttack(int stage, RandomSource random) =>
+      CardStatLimits.rollAttack(stage, _random(random));
+  static int rollCrit(int stage, RandomSource random) =>
+      CardStatLimits.rollCrit(stage, _random(random));
   static int _hash(String id) {
     var h = 2166136261;
     for (final c in id.codeUnits) {
@@ -87,12 +90,13 @@ abstract final class CombatRules {
   ) {
     Combatant ready(Combatant c) {
       final hp = hpForStage(c.stage);
+      final effective = CardStatLimits.effective(c.stage, c.attack, c.crit);
       return Combatant(
         id: c.id,
         name: c.name,
         stage: c.stage,
-        attack: c.attack >= 1 && c.attack <= 100 ? c.attack : 50,
-        crit: c.crit >= 0 && c.crit <= 25 ? c.crit : 0,
+        attack: effective.attack,
+        crit: effective.crit,
         hp: hp,
         maxHp: hp,
       );

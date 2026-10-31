@@ -1,4 +1,5 @@
 import {userFromRequest,json,failure} from './auth.js';
+import {effectiveCardStats} from '../../../shared/card_stat_limits.js';
 const HP=[0,240,340,430];
 const HEROES=new Set(['sam','lira','rhea','dren','tor','aria','kael','neris','nyra']);
 export async function context(request,env){
@@ -15,7 +16,8 @@ export function choice(save){
  const [hero,stageText]=id.split(':'),stage=Number(stageText);
  const attack=save.attacks?.[id],crit=save.crits?.[id];
  if(!HEROES.has(hero)||!Number.isInteger(stage)||stage<1||stage>3||!Number.isInteger(attack)||attack<1||attack>100||!Number.isInteger(crit)||crit<0||crit>25)return null;
- return {id,hero,stage,attack,crit,maxHp:HP[stage]};
+ const effective=effectiveCardStats(stage,attack,crit);
+ return {id,hero,stage,...effective,maxHp:HP[stage]};
 }
 export async function cardFromCloud(env,uid){
  const row=await env.DB.prepare('SELECT save_json FROM demo_saves WHERE uid=?').bind(uid).first();
