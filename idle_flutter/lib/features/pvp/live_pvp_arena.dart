@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_interpolation_to_compose_strings
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
@@ -1249,6 +1250,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
               size: size,
               columns: 6,
               rows: settled ? 4 : 5,
+              frameCount: settled ? 22 : 30,
               duration: settled
                   ? const Duration(milliseconds: 920)
                   : const Duration(milliseconds: 1000),
@@ -1676,8 +1678,9 @@ class _BattleCard extends StatelessWidget {
 }
 
 
-/// Renders one cell from the original kr_v2 WebP atlas, not the entire sheet.
-/// spin.webp is 6x5 (30 frames); each settle_XX.webp is 6x4 (24 frames).
+/// Paint only the active 256x256 atlas cell; never layout the full 6x4/6x5
+/// sheet as an oversized Image widget. Settle sheets have 22 painted frames:
+/// their last two cells are transparent and must never be displayed.
 class _KrV2Die extends StatefulWidget {
   const _KrV2Die({
     super.key,
@@ -1685,13 +1688,14 @@ class _KrV2Die extends StatefulWidget {
     required this.size,
     required this.columns,
     required this.rows,
+    required this.frameCount,
     required this.duration,
     required this.repeat,
   });
 
   final String asset;
   final double size;
-  final int columns, rows;
+  final int columns, rows, frameCount;
   final Duration duration;
   final bool repeat;
 
@@ -1702,18 +1706,18 @@ class _KrV2Die extends StatefulWidget {
 class _KrV2DieState extends State<_KrV2Die>
     with SingleTickerProviderStateMixin {
   late final AnimationController _animation;
+  ImageStream? _imageStream;
+  ImageStreamListener? _imageListener;
+  ImageInfo? _imageInfo;
 
   @override
   void initState() {
     super.initState();
-    _animation = AnimationController(vsync: this, duration: widget.duration)
-      ..addListener(() {
-        if (mounted) setState(() {});
-      });
-    _start();
+    _animation = AnimationController(vsync: this, duration: widget.duration);
+    _startAnimation();
   }
 
-  void _start() {
+  void _startAnimation() {
     _animation.stop();
     _animation.duration = widget.duration;
     if (widget.repeat) {
@@ -1723,51 +1727,137 @@ class _KrV2DieState extends State<_KrV2Die>
     }
   }
 
+  void _resolveSprite() {
+    if (_imageStream != null && _imageListener != null) {
+      _imageStream!.removeListener(_imageListener!);
+    }
+    _imageInfo?.dispose();
+    _imageInfo = null;
+
+    final stream = AssetImage(widget.asset).resolve(
+      createLocalImageConfiguration(context),
+    );
+    final listener = ImageStreamListener(
+      (info, synchronousCall) {
+        if (!mounted) {
+          info.dispose();
+          return;
+        }
+        if (synchronousCall) {
+          _imageInfo?.dispose();
+          _imageInfo = info;
+        } else {
+          setState(() {
+            _imageInfo?.dispose();
+            _imageInfo = info;
+          });
+        }
+      },
+      onError: (error, stackTrace) {
+        // Keep a visible D20 placeholder if an asset is missing, rather
+        // than making the entire initiative sequence disappear.
+        if (mounted) setState(() => _imageInfo = null);
+      },
+    );
+    _imageStream = stream;
+    _imageListener = listener;
+    stream.addListener(listener);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _resolveSprite();
+  }
+
   @override
   void didUpdateWidget(covariant _KrV2Die oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.asset != widget.asset) _resolveSprite();
     if (oldWidget.asset != widget.asset ||
         oldWidget.duration != widget.duration ||
         oldWidget.repeat != widget.repeat) {
-      _start();
+      _startAnimation();
     }
   }
 
   @override
   void dispose() {
+    if (_imageStream != null && _imageListener != null) {
+      _imageStream!.removeListener(_imageListener!);
+    }
+    _imageInfo?.dispose();
     _animation.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final count = widget.columns * widget.rows;
-    final frame = (_animation.value * count).floor().clamp(0, count - 1);
-    final x = frame % widget.columns;
-    final y = frame ~/ widget.columns;
+    final sprite = _imageInfo?.image;
     return SizedBox(
       width: widget.size,
       height: widget.size,
-      child: ClipRect(
-        child: OverflowBox(
-          alignment: Alignment.topLeft,
-          minWidth: widget.size * widget.columns,
-          maxWidth: widget.size * widget.columns,
-          minHeight: widget.size * widget.rows,
-          maxHeight: widget.size * widget.rows,
-          child: Transform.translate(
-            offset: Offset(-x * widget.size, -y * widget.size),
-            child: Image.asset(
-              widget.asset,
-              width: widget.size * widget.columns,
-              height: widget.size * widget.rows,
-              fit: BoxFit.fill,
-              filterQuality: FilterQuality.medium,
-              gaplessPlayback: true,
-            ),
-          ),
-        ),
+      child: RepaintBoundary(
+        child: sprite == null
+            ? Icon(
+                Icons.casino_outlined,
+                color: const Color(0xffffd993),
+                size: widget.size * 0.7,
+              )
+            : AnimatedBuilder(
+                animation: _animation,
+                builder: (context, _) {
+                  final frame = (_animation.value * widget.frameCount)
+                      .floor()
+                      .clamp(0, widget.frameCount - 1);
+                  return CustomPaint(
+                    painter: _KrV2FramePainter(
+                      image: sprite,
+                      frame: frame,
+                      columns: widget.columns,
+                      rows: widget.rows,
+                    ),
+                  );
+                },
+              ),
       ),
     );
   }
+}
+
+class _KrV2FramePainter extends CustomPainter {
+  const _KrV2FramePainter({
+    required this.image,
+    required this.frame,
+    required this.columns,
+    required this.rows,
+  });
+
+  final ui.Image image;
+  final int frame, columns, rows;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cellWidth = image.width / columns;
+    final cellHeight = image.height / rows;
+    final source = Rect.fromLTWH(
+      (frame % columns) * cellWidth,
+      (frame ~/ columns) * cellHeight,
+      cellWidth,
+      cellHeight,
+    );
+    canvas.drawImageRect(
+      image,
+      source,
+      Offset.zero & size,
+      Paint()..filterQuality = FilterQuality.medium,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _KrV2FramePainter old) =>
+      old.image != image ||
+      old.frame != frame ||
+      old.columns != columns ||
+      old.rows != rows;
 }
