@@ -32,7 +32,47 @@ void main() {
     expect(find.byKey(const Key('pvp-dice-intro')), findsOneWidget);
     expect(find.byKey(const Key('pvp-player-die')), findsOneWidget);
     expect(find.byKey(const Key('pvp-rival-die')), findsOneWidget);
+    expect(find.text('ROLLING D20…'), findsOneWidget);
+    expect(find.text('RIVAL STARTS'), findsNothing);
+
+    // The server can send the hand immediately after the dice event.
+    // The intro must remain visible, and card selection must be blocked.
+    c.startHand(
+      const HandEvent(
+        round: 1,
+        opponent: 'Rival',
+        score: [0, 0],
+        hand: cards,
+        deckSize: 9,
+        usedCount: 0,
+        durationMs: 30000,
+        deadline: 30000,
+        matchId: 'dice',
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(const Key('pvp-dice-intro')), findsOneWidget);
+    expect(c.select('sam:1'), isFalse);
+
+    // Each WebP atlas is cropped to a cell instead of shrunk as a whole.
+    final spin = tester.widget<Image>(
+      find.descendant(
+        of: find.byKey(const Key('pvp-player-die')),
+        matching: find.byType(Image),
+      ),
+    );
+    expect(spin.width, greaterThan(500));
+
+    await tester.pump(const Duration(milliseconds: 1300));
+    expect(find.byKey(const Key('pvp-dice-intro')), findsOneWidget);
+    expect(find.text('ROLLING D20…'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 1100));
     expect(find.text('RIVAL STARTS'), findsOneWidget);
+    expect(find.text('18'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 2400));
+    expect(find.byKey(const Key('pvp-dice-intro')), findsNothing);
+    expect(c.select('sam:1'), isTrue);
+
     await tester.pumpWidget(const SizedBox.shrink());
     c.dispose();
   });
