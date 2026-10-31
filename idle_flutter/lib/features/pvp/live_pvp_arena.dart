@@ -1737,8 +1737,7 @@ class _KrV2DieState extends State<_KrV2Die>
   void _warmFrames() {
     unawaited(
       Future.wait<void>([
-        for (final asset in DiceFrameAssets.spinFrames)
-          precacheImage(AssetImage(asset), context),
+        precacheImage(AssetImage(DiceFrameAssets.spinFrames.first), context),
         precacheImage(
           AssetImage(DiceFrameAssets.result(widget.value)),
           context,
@@ -1773,12 +1772,12 @@ class _KrV2DieState extends State<_KrV2Die>
         child: AnimatedBuilder(
           animation: _animation,
           builder: (context, _) {
-            final frame = (_animation.value * DiceFrameAssets.spinFrames.length)
+            final frame = (_animation.value * 12)
                 .floor()
-                .clamp(0, DiceFrameAssets.spinFrames.length - 1);
+                .clamp(0, 11);
             final asset = widget.settled
                 ? DiceFrameAssets.result(widget.value)
-                : DiceFrameAssets.spinFrames[frame];
+                : DiceFrameAssets.spinFrames[frame * 2];
             return Image.asset(
               asset,
               width: widget.size,

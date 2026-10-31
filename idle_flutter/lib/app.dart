@@ -263,7 +263,7 @@ class _IdleShellState extends State<IdleShell> {
   }
 
   void _pvpFinished(String matchId, String reason, int reward) {
-    if (reason == 'completed' && reward == 100 && _cloud?.identity != null) {
+    if (reward == 100 && _cloud?.identity != null) {
       unawaited(_claimPvpReward(matchId));
     }
   }

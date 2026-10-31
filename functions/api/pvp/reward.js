@@ -11,7 +11,7 @@ export async function onRequestGet({request,env}){
   const rows=await env.DB.prepare(`SELECT h.id
    FROM pvp_live_history h
    LEFT JOIN pvp_reward_claims c ON c.uid=? AND c.match_id=h.id
-   WHERE h.winner_uid=? AND h.reason='completed' AND c.match_id IS NULL
+   WHERE h.winner_uid=? AND h.reason IN ('completed','opponent_disconnected','replay_timeout') AND c.match_id IS NULL
    ORDER BY h.completed_at DESC LIMIT 10`).bind(user.uid,user.uid).all();
   return json({matchIds:pendingRewardMatchIds(rows.results)});
  }catch(error){return failure(error)}
