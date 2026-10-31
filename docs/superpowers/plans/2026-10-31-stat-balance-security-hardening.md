@@ -46,9 +46,9 @@
 
 **Files:** Modify reward/history transaction flow, add migration only if an idempotency constraint is absent, and tests.
 
-- [ ] Write failing concurrent/double-claim/farming tests.
-- [ ] Implement atomic unique grant and abuse limits without ranked rewards.
-- [ ] Commit.
+- [x] Write failing concurrent/double-claim/farming tests.
+- [x] Implement atomic unique grant and abuse limits without ranked rewards.
+- [x] Commit.
 
 ### Task 4: Ban enforcement on economic endpoints
 
