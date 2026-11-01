@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {rewardForHistory,rewardAccess,pendingRewardMatchIds} from '../../functions/api/_lib/pvp_reward_policy.js';
+import {rewardForHistory,rewardAccess,rewardQuota,pendingRewardMatchIds} from '../../functions/api/_lib/pvp_reward_policy.js';
 
 const completed={player_a:'a',player_b:'b',winner_uid:'a',reason:'completed'};
 test('eligible winner earns 100 shards including opponent departure',()=>{
@@ -28,4 +28,12 @@ test('reward farming limits repeated opponents and daily claims',()=>{
   {allowed:false,reason:'opponent_limit'});
  assert.deepEqual(rewardAccess(history,'b',{total:0,againstOpponent:0}),
   {allowed:false,reason:'ineligible'});
+});
+
+
+test('quota counts claims in rolling 24 hours',()=>{
+ const now=200000000,oldest=now-60000;
+ assert.deepEqual(rewardQuota(3,oldest,now),{remaining:7,limit:10,nextRefreshAt:oldest+86400000});
+ assert.deepEqual(rewardQuota(0,null,now),{remaining:10,limit:10,nextRefreshAt:null});
+ assert.equal(rewardQuota(12,oldest,now).remaining,0);
 });
