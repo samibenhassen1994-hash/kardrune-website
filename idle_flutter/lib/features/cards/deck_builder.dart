@@ -5,6 +5,7 @@ import '../../game/deck_rules.dart';
 import '../../game/combat_rules.dart';
 import '../../game/skill_catalog.dart';
 import '../../theme/kardrune_theme.dart';
+import '../../localization/kr_localizations.dart';
 import 'card_stat_badges.dart';
 import 'skill_preview.dart';
 
@@ -41,7 +42,7 @@ class _DeckBuilderState extends State<DeckBuilder> {
       _sortCards = 'default';
   bool _onlyDeckCards = false;
 
-  String _t(String it, String en) => widget.italian ? it : en;
+  String _t(String it, String en) => widget.italian ? it : context.tr(en);
   bool get _hasUnsavedChanges => List.generate(
     DeckRules.size,
     (i) => slots[i] != _initialSlots[i],

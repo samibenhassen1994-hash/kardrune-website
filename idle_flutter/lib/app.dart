@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:convert';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'game/catalog.dart';
 import 'game/combat_rules.dart';
@@ -29,6 +31,7 @@ import 'services/app_update_controller.dart';
 import 'services/update_factory.dart';
 import 'services/storage_factory.dart';
 import 'theme/kardrune_theme.dart';
+import 'localization/kr_localizations.dart';
 
 typedef RandomRoll = double Function();
 
@@ -57,6 +60,12 @@ class KardRuneApp extends StatelessWidget {
     debugShowCheckedModeBanner: false,
     title: 'Idle KardRune',
     theme: KardRuneTheme.data,
+    localizationsDelegates: const [
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: KrLanguage.values.map((value) => value.locale).toList(),
     home: IdleShell(
       random: random ?? math.Random().nextDouble,
       saveService: saveService,
@@ -95,9 +104,10 @@ class _IdleShellState extends State<IdleShell> {
   static const _freeSummonKey = 'idle-free-standard-v1';
   static const _freeSummonWindowMs = 12 * 60 * 60 * 1000;
   static const _motionKey = 'idle-motion-preference-v1';
+  static const _languageKey = 'idle-language-v1';
   int tab = 0, shards = 1500, page = 0;
   String name = 'Runebearer', avatar = 'player';
-  bool italian = false;
+  KrLanguage language = KrLanguage.english;
   final owned = <String>{};
   final attacks = <String, int>{}, crits = <String, int>{};
   final skills = <String, String>{};
@@ -171,6 +181,10 @@ class _IdleShellState extends State<IdleShell> {
     motion = MotionPreference.values.firstWhere(
       (value) => value.name == _saveService?.storage.read(_motionKey),
       orElse: () => MotionPreference.automatic,
+    );
+    language = KrLanguage.fromCode(
+      _saveService?.storage.read(_languageKey) ??
+          ui.PlatformDispatcher.instance.locale.languageCode,
     );
     final daily = GameRules.dailyRewardState(
       DailyRewardState(day: practiceDay, count: practiceCount),
@@ -472,13 +486,15 @@ class _IdleShellState extends State<IdleShell> {
                                 transparent: true,
                               ),
                               hint: _cloud?.identity == null
-                                  ? (italian
-                                        ? 'ACCEDI DAL PROFILO PER GIOCARE'
-                                        : 'SIGN IN FROM PROFILE TO PLAY LIVE')
+                                  ? KrTranslations.translate(
+                                      language,
+                                      'SIGN IN FROM PROFILE TO PLAY LIVE',
+                                    )
                                   : deck.length < 3
-                                  ? (italian
-                                        ? 'AGGIUNGI TRE CARTE AL MAZZO'
-                                        : 'ADD THREE CARDS TO YOUR DECK')
+                                  ? KrTranslations.translate(
+                                      language,
+                                      'ADD THREE CARDS TO YOUR DECK',
+                                    )
                                   : _pvp?.state == LiveMatchState.idle
                                   ? ''
                                   : _pvp?.message ?? '',
@@ -496,7 +512,11 @@ class _IdleShellState extends State<IdleShell> {
                             ),
                             _Cards(
                               page: page,
-                              title: italian ? 'CARTE' : 'CARDS',
+                              language: language,
+                              title: KrTranslations.translate(
+                                language,
+                                'CARDS',
+                              ),
                               owned: owned.toList(),
                               deck: deck,
                               active: active,
@@ -558,8 +578,8 @@ class _IdleShellState extends State<IdleShell> {
                                 setState(() => avatar = v);
                                 _persist();
                               },
-                              onLanguage: () =>
-                                  setState(() => italian = !italian),
+                              language: language,
+                              onLanguage: () => _showLanguagePicker(context),
                               motion: motion,
                               onMotion: (value) {
                                 setState(() => motion = value);
@@ -583,7 +603,7 @@ class _IdleShellState extends State<IdleShell> {
           ),
           bottomNavigationBar: _RuneNavigation(
             current: tab,
-            italian: italian,
+            language: language,
             arenaOverlay: tab == 0 || tab == 2,
             onTap: (value) => setState(() => tab = value),
           ),
@@ -601,8 +621,45 @@ class _IdleShellState extends State<IdleShell> {
     };
     return MediaQuery(
       data: media.copyWith(disableAnimations: reduce),
-      child: child,
+      child: Localizations.override(
+        context: context,
+        locale: language.locale,
+        child: KrLocaleScope(language: language, child: child),
+      ),
     );
+  }
+
+  Future<void> _showLanguagePicker(BuildContext context) async {
+    final selected = await showDialog<KrLanguage>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(KrTranslations.translate(language, 'SELECT LANGUAGE')),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final option in KrLanguage.values)
+                ListTile(
+                  dense: true,
+                  leading: Text(
+                    option.flag,
+                    style: const TextStyle(fontSize: 24),
+                  ),
+                  title: Text(option.label),
+                  trailing: option == language
+                      ? const Icon(Icons.check, color: Color(0xffffcf69))
+                      : null,
+                  onTap: () => Navigator.pop(dialogContext, option),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (selected == null || selected == language || !mounted) return;
+    setState(() => language = selected);
+    _saveService?.storage.write(_languageKey, selected.code);
   }
 
   Widget _withUpdate(Widget child) => Stack(
@@ -1104,21 +1161,24 @@ class _Header extends StatelessWidget {
 class _RuneNavigation extends StatelessWidget {
   const _RuneNavigation({
     required this.current,
-    required this.italian,
+    required this.language,
     required this.arenaOverlay,
     required this.onTap,
   });
   final int current;
-  final bool italian;
+  final KrLanguage language;
   final bool arenaOverlay;
   final ValueChanged<int> onTap;
   @override
   Widget build(BuildContext context) {
     final items = <(IconData, String)>[
-      (Icons.shield_outlined, 'ARENA'),
-      (Icons.style_outlined, italian ? 'CARTE' : 'CARDS'),
-      (Icons.auto_awesome_outlined, italian ? 'EVOCA' : 'SUMMON'),
-      (Icons.person_outline, italian ? 'PROFILO' : 'PROFILE'),
+      (Icons.shield_outlined, KrTranslations.translate(language, 'ARENA')),
+      (Icons.style_outlined, KrTranslations.translate(language, 'CARDS')),
+      (
+        Icons.auto_awesome_outlined,
+        KrTranslations.translate(language, 'SUMMON'),
+      ),
+      (Icons.person_outline, KrTranslations.translate(language, 'PROFILE')),
     ];
     return Container(
       height: 68,
@@ -1256,6 +1316,7 @@ class _RuneButton extends StatelessWidget {
 class _Cards extends StatefulWidget {
   const _Cards({
     required this.page,
+    required this.language,
     required this.title,
     required this.owned,
     required this.deck,
@@ -1268,6 +1329,7 @@ class _Cards extends StatefulWidget {
     required this.onSelect,
   });
   final int page;
+  final KrLanguage language;
   final String title;
   final List<String> owned;
   final List<String> deck;
@@ -1327,7 +1389,9 @@ class _CardsState extends State<_Cards> {
     });
   }
 
-  String _t(String it, String en) => title == 'CARTE' ? it : en;
+  String _t(String it, String en) => widget.language == KrLanguage.italian
+      ? it
+      : KrTranslations.translate(widget.language, en);
   @override
   Widget build(BuildContext context) {
     final all = [
@@ -1675,7 +1739,7 @@ class _CardsState extends State<_Cards> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 850),
                   child: DeckBuilder(
-                    italian: title == 'CARTE',
+                    italian: context.krLanguage == KrLanguage.italian,
                     owned: owned,
                     initial: deck,
                     attacks: attacks,
@@ -1866,6 +1930,7 @@ class _Profile extends StatelessWidget {
     required this.avatar,
     required this.onName,
     required this.onAvatar,
+    required this.language,
     required this.onLanguage,
     required this.motion,
     required this.onMotion,
@@ -1875,6 +1940,7 @@ class _Profile extends StatelessWidget {
   });
   final String name, avatar;
   final ValueChanged<String> onName, onAvatar;
+  final KrLanguage language;
   final VoidCallback onLanguage;
   final MotionPreference motion;
   final ValueChanged<MotionPreference> onMotion;
@@ -1893,9 +1959,9 @@ class _Profile extends StatelessWidget {
               const _Eyebrow(compact: true),
               const SizedBox(height: 3),
             ],
-            const Text.rich(
+            Text.rich(
               TextSpan(
-                text: 'PLAYER ',
+                text: '${context.tr('PLAYER')} ',
                 children: [
                   TextSpan(
                     text: 'PROFILE',
@@ -2136,11 +2202,11 @@ class _Profile extends StatelessWidget {
                 ],
               ),
             ),
-            const Align(
+            Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'GRAPHICS SETTINGS · ANIMATIONS',
-                style: TextStyle(
+                context.tr('GRAPHICS SETTINGS · ANIMATIONS'),
+                style: const TextStyle(
                   color: Color(0xffeac981),
                   fontSize: 8,
                   letterSpacing: 1.1,
@@ -2173,11 +2239,11 @@ class _Profile extends StatelessWidget {
                           borderRadius: BorderRadius.circular(7),
                         ),
                         child: Text(
-                          switch (value) {
+                          context.tr(switch (value) {
                             MotionPreference.automatic => 'AUTOMATIC',
                             MotionPreference.full => 'FULL',
                             MotionPreference.reduced => 'REDUCED',
-                          },
+                          }),
                           style: TextStyle(
                             color: motion == value
                                 ? const Color(0xffffe3a4)
@@ -2197,9 +2263,9 @@ class _Profile extends StatelessWidget {
             TextButton(
               style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
               onPressed: onLanguage,
-              child: const Text(
-                'LANGUAGE · ITALIANO',
-                style: TextStyle(color: Color(0xffa6b9d0), fontSize: 9),
+              child: Text(
+                '${context.tr('LANGUAGE')} · ${language.flag} ${language.label}',
+                style: const TextStyle(color: Color(0xffa6b9d0), fontSize: 9),
               ),
             ),
           ],

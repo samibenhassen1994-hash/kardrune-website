@@ -3,6 +3,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../../localization/kr_localizations.dart';
+
 import '../../game/skill_catalog.dart';
 import 'free_pull_notifications.dart';
 
@@ -206,11 +208,11 @@ class _SummonScreenState extends State<SummonScreen>
                     const SizedBox(height: 7),
                     Row(
                       children: [
-                        _tab(0, 'STANDARD'),
+                        _tab(0, context.tr('STANDARD')),
                         const SizedBox(width: 5),
-                        _tab(1, 'FEATURED'),
+                        _tab(1, context.tr('FEATURED')),
                         const SizedBox(width: 5),
-                        _tab(2, 'EVENT'),
+                        _tab(2, context.tr('EVENT')),
                       ],
                     ),
                     const SizedBox(height: 7),
@@ -402,7 +404,7 @@ class _SummonScreenState extends State<SummonScreen>
   Widget _standard() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      _title('STANDARD SUMMON'),
+      _title(context.tr('STANDARD SUMMON')),
       _info('Nine heroes · 300 Shards or a free charge'),
       const SizedBox(height: 5),
       _info('FREE PULLS  $available / 2', gold: true),
@@ -418,7 +420,7 @@ class _SummonScreenState extends State<SummonScreen>
       ],
       const SizedBox(height: 6),
       _button(
-        'FREE SUMMON',
+        context.tr('FREE SUMMON'),
         available > 0 && !busy,
         () => _pull(featured: false, free: true),
       ),
@@ -435,7 +437,7 @@ class _SummonScreenState extends State<SummonScreen>
   Widget _featured() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      _title('FEATURED SUMMON · DREN'),
+      _title('${context.tr('FEATURED SUMMON')} · DREN'),
       _info('Dren rate-up · 600 Shards'),
       const SizedBox(height: 9),
       _button(
@@ -449,7 +451,7 @@ class _SummonScreenState extends State<SummonScreen>
   Widget _event() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      _title('EVENT SUMMON'),
+      _title(context.tr('EVENT SUMMON')),
       _info(
         'No event banner is active. Rates and featured heroes will appear here when an event is configured.',
       ),
@@ -505,7 +507,7 @@ class _SummonScreenState extends State<SummonScreen>
       TextButton.icon(
         onPressed: _showInfo,
         icon: const Icon(Icons.info_outline, size: 17),
-        label: const Text('INFO'),
+        label: Text(context.tr('INFO')),
         style: TextButton.styleFrom(foregroundColor: const Color(0xffffd986)),
       ),
     ],
@@ -577,7 +579,7 @@ class _SummonScreenState extends State<SummonScreen>
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () => Navigator.pop(dialogContext),
-                    child: const Text('CLOSE'),
+                    child: Text(context.tr('CLOSE')),
                   ),
                 ),
               ],

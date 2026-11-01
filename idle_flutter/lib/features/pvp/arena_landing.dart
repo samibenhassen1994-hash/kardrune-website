@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../localization/kr_localizations.dart';
+
 /// Illustrated entrance to the existing live matchmaking flow.
 /// The artwork includes the frame; the button hit area and title are Flutter.
 class ArenaLanding extends StatelessWidget {
@@ -91,7 +93,9 @@ class ArenaLanding extends StatelessWidget {
                   height: imageHeight * .073,
                   child: Semantics(
                     button: true,
-                    label: searching ? 'Searching for opponent' : 'Start match',
+                    label: searching
+                        ? context.tr('SEARCHING FOR OPPONENT')
+                        : context.tr('START MATCH'),
                     child: InkWell(
                       key: const Key('find-live-match'),
                       onTap: searching ? null : onStart,
@@ -100,7 +104,7 @@ class ArenaLanding extends StatelessWidget {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            'START MATCH',
+                            context.tr('START MATCH'),
                             style: TextStyle(
                               color: const Color(0xfffff1c4),
                               fontFamily: 'Georgia',
@@ -136,7 +140,7 @@ class ArenaLanding extends StatelessWidget {
                   child: searching && onCancel != null
                       ? Center(
                           child: _SecondaryAction(
-                            label: 'CANCEL',
+                            label: context.tr('CANCEL'),
                             onTap: onCancel!,
                           ),
                         )

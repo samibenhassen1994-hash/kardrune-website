@@ -234,14 +234,27 @@ void main() {
     expect(find.text('DUPLICATE CARD'), findsNothing);
   });
 
-  testWidgets('profile language toggle exposes Italian navigation', (
+  testWidgets('profile language selector exposes all languages', (
     tester,
   ) async {
     await tester.pumpWidget(const KardRuneApp());
     await tester.tap(find.text('PROFILE').last);
     await tester.pump();
-    await tester.tap(find.textContaining('ITALIANO'));
-    await tester.pump();
+    await tester.tap(find.textContaining('English'));
+    await tester.pumpAndSettle();
+    for (final label in [
+      'English',
+      'Italiano',
+      'Español',
+      '日本語',
+      '한국어',
+      '简体中文',
+      'Deutsch',
+    ]) {
+      expect(find.text(label), findsOneWidget);
+    }
+    await tester.tap(find.text('Italiano'));
+    await tester.pumpAndSettle();
     expect(find.text('CARTE'), findsOneWidget);
   });
   testWidgets('Cards opens the integrated nine-slot deck builder', (
@@ -468,5 +481,29 @@ void main() {
     await tester.tap(find.text('PROFILE').last);
     await tester.pump();
     expect(find.byKey(const Key('motion-reduced-selected')), findsOneWidget);
+  });
+
+  testWidgets('selected language persists outside the game save', (
+    tester,
+  ) async {
+    final storage = _MemoryStorage(), service = LocalSaveService(storage);
+    await tester.pumpWidget(
+      KardRuneApp(saveService: service, enableCloudBootstrap: false),
+    );
+    await tester.tap(find.text('PROFILE').last);
+    await tester.pump();
+    await tester.tap(find.textContaining('English'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Deutsch'));
+    await tester.pumpAndSettle();
+    expect(storage.values['idle-language-v1'], 'de');
+    expect(find.text('KARTEN'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(
+      KardRuneApp(saveService: service, enableCloudBootstrap: false),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('KARTEN'), findsOneWidget);
   });
 }

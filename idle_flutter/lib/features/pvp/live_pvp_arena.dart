@@ -7,6 +7,7 @@ import 'package:flame/game.dart';
 import '../../game/catalog.dart';
 import '../../game/combat_rules.dart';
 import '../../game/skill_catalog.dart';
+import '../../localization/kr_localizations.dart';
 import '../../services/live_pvp_socket.dart';
 import '../cards/card_stat_badges.dart';
 import '../cards/skill_preview.dart';
@@ -562,7 +563,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(dialogContext),
-                        child: const Text('CLOSE'),
+                        child: Text(context.tr('CLOSE')),
                       ),
                       if (widget.controller.lockedCard == null)
                         TextButton(
@@ -570,7 +571,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                             Navigator.pop(dialogContext);
                             _play(card.id);
                           },
-                          child: const Text('PLAY CARD'),
+                          child: Text(context.tr('PLAY CARD')),
                         ),
                     ],
                   ),
@@ -628,7 +629,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                         children: [
                           Expanded(
                             child: _profileIdentity(
-                              label: 'TU',
+                              label: context.tr('YOU'),
                               name: c.hand?.playerName ?? widget.playerName,
                               avatar:
                                   c.hand?.playerAvatar ?? widget.playerAvatar,
@@ -690,7 +691,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                           ),
                           Expanded(
                             child: _profileIdentity(
-                              label: 'RIVALE',
+                              label: context.tr('RIVAL'),
                               name: c.hand?.opponent ?? 'SEARCHING',
                               avatar: c.hand?.opponentAvatar ?? 'player',
                               imageKey: const Key('opponent-avatar'),
@@ -733,12 +734,12 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 choosing
-                                    ? 'CHOOSE YOUR CARD'
+                                    ? context.tr('CHOOSE YOUR CARD')
                                     : battle
-                                    ? 'BATTLE IN PROGRESS'
+                                    ? context.tr('BATTLE IN PROGRESS')
                                     : c.lockedCard != null
-                                    ? 'WAITING FOR RIVAL'
-                                    : 'READY',
+                                    ? context.tr('WAITING FOR RIVAL')
+                                    : context.tr('READY'),
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
@@ -765,9 +766,9 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                   ),
                                   borderRadius: BorderRadius.circular(7),
                                 ),
-                                child: const Text(
-                                  'ARRENDITI',
-                                  style: TextStyle(
+                                child: Text(
+                                  context.tr('SURRENDER'),
+                                  style: const TextStyle(
                                     color: Color(0xffffc7c7),
                                     fontSize: 10,
                                     fontWeight: FontWeight.w900,
@@ -810,7 +811,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                     MainAxisAlignment.spaceEvenly,
                                 children: [
                                   _slot(
-                                    'RIVAL CARD',
+                                    context.tr('RIVAL CARD'),
                                     'Opponent selects secretly',
                                     const Color(0xff9c718c),
                                     const Key('opponent-play-zone'),
@@ -853,8 +854,8 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                         );
                                       }
                                       return _slot(
-                                        'YOUR CARD SLOT',
-                                        'DRAG A CARD HERE',
+                                        context.tr('YOUR CARD SLOT'),
+                                        context.tr('DRAG A CARD HERE'),
                                         candidate.isNotEmpty
                                             ? Colors.greenAccent
                                             : const Color(0xffd5ae61),
@@ -890,7 +891,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                   if (c.replaying)
                                     TextButton(
                                       onPressed: c.skipReplay,
-                                      child: const Text('SKIP REPLAY'),
+                                      child: Text(context.tr('SKIP REPLAY')),
                                     ),
                                   const SizedBox(height: 5),
                                   SizedBox(
@@ -1037,9 +1038,9 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                           children: [
                             Row(
                               children: [
-                                const Text(
-                                  'HAND',
-                                  style: TextStyle(
+                                Text(
+                                  context.tr('HAND'),
+                                  style: const TextStyle(
                                     color: Color(0xffffd993),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w900,
@@ -1313,9 +1314,9 @@ class _LivePvpArenaState extends State<LivePvpArena> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'INITIATIVE ROLL',
-                style: TextStyle(
+              Text(
+                context.tr('INITIATIVE ROLL'),
+                style: const TextStyle(
                   color: Color(0xffffd993),
                   fontSize: 21,
                   fontWeight: FontWeight.w900,
@@ -1325,7 +1326,11 @@ class _LivePvpArenaState extends State<LivePvpArena> {
               const SizedBox(height: 18),
               Row(
                 children: [
-                  die(event.rolls[0], const Key('pvp-player-die'), 'YOU'),
+                  die(
+                    event.rolls[0],
+                    const Key('pvp-player-die'),
+                    context.tr('YOU'),
+                  ),
                   const Text(
                     'VS',
                     style: TextStyle(
@@ -1334,7 +1339,11 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  die(event.rolls[1], const Key('pvp-rival-die'), 'RIVAL'),
+                  die(
+                    event.rolls[1],
+                    const Key('pvp-rival-die'),
+                    context.tr('RIVAL'),
+                  ),
                 ],
               ),
               const SizedBox(height: 18),
@@ -1772,9 +1781,7 @@ class _KrV2DieState extends State<_KrV2Die>
         child: AnimatedBuilder(
           animation: _animation,
           builder: (context, _) {
-            final frame = (_animation.value * 12)
-                .floor()
-                .clamp(0, 11);
+            final frame = (_animation.value * 12).floor().clamp(0, 11);
             final asset = widget.settled
                 ? DiceFrameAssets.result(widget.value)
                 : DiceFrameAssets.spinFrames[frame * 2];
