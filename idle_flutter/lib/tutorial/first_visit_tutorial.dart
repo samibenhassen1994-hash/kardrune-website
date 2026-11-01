@@ -14,7 +14,7 @@ class IdleTutorialProgress {
       'idle-tutorial-${section.name}-v1';
 
   bool unseen(IdleTutorialSection section) =>
-      storage?.read(keyFor(section)) != 'seen';
+      storage != null && storage!.read(keyFor(section)) != 'seen';
 
   void complete(IdleTutorialSection section) =>
       storage?.write(keyFor(section), 'seen');
