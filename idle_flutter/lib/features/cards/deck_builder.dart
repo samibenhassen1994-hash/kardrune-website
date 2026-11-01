@@ -6,6 +6,7 @@ import '../../game/combat_rules.dart';
 import '../../game/skill_catalog.dart';
 import '../../theme/kardrune_theme.dart';
 import '../../localization/kr_localizations.dart';
+import '../../localization/skill_localizations.dart';
 import 'card_stat_badges.dart';
 import 'skill_preview.dart';
 
@@ -60,7 +61,7 @@ class _DeckBuilderState extends State<DeckBuilder> {
     final search = _searchText.trim().toLowerCase();
     final filtered = widget.owned.where((id) {
       final parts = id.split(':');
-      final skill = SkillCatalog.byId(widget.skills[id]);
+      final skill = SkillCatalog.byId(widget.skills[id])?.localized(context);
       if (_filterStage != 'all' && parts.last != _filterStage) return false;
       if (_filterRarity != 'all' && skill?.rarity != _filterRarity) {
         return false;
@@ -244,7 +245,7 @@ class _DeckBuilderState extends State<DeckBuilder> {
                     ('all', _t('TUTTE', 'ALL')),
                     for (final skill in SkillCatalog.skills)
                       if (rarity == 'all' || skill.rarity == rarity)
-                        (skill.id, skill.name.toUpperCase()),
+                        (skill.id, skill.localized(context).name.toUpperCase()),
                   ], (value) => sheetSetState(() => skillId = value)),
                   _filterSelect(_t('ORDINA', 'SORT'), order, [
                     ('default', _t('PREDEFINITO', 'DEFAULT')),
@@ -822,7 +823,7 @@ class _DeckBuilderState extends State<DeckBuilder> {
   }
 
   void _inspect(String id) {
-    final skill = SkillCatalog.byId(widget.skills[id]);
+    final skill = SkillCatalog.byId(widget.skills[id])?.localized(context);
     final stage = int.parse(id.split(':').last);
     showDialog<void>(
       context: context,
@@ -863,7 +864,7 @@ class _DeckBuilderState extends State<DeckBuilder> {
                 ],
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('CLOSE'),
+                  child: Text(context.tr('CLOSE')),
                 ),
               ],
             ),

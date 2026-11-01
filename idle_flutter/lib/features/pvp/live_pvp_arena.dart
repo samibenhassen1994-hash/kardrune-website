@@ -8,6 +8,7 @@ import '../../game/catalog.dart';
 import '../../game/combat_rules.dart';
 import '../../game/skill_catalog.dart';
 import '../../localization/kr_localizations.dart';
+import '../../localization/skill_localizations.dart';
 import '../../services/live_pvp_socket.dart';
 import '../cards/card_stat_badges.dart';
 import '../cards/skill_preview.dart';
@@ -476,7 +477,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
     final hero = KardRuneCatalog.heroes.firstWhere(
       (item) => item.id == card.hero,
     );
-    final skill = SkillCatalog.byId(card.skillId);
+    final skill = SkillCatalog.byId(card.skillId)?.localized(context);
     showDialog<void>(
       context: context,
       builder: (dialogContext) => Dialog(
@@ -1179,9 +1180,11 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                       ),
                                     ),
                                   if (handCards.isEmpty)
-                                    const Expanded(
+                                    Expanded(
                                       child: Center(
-                                        child: Text('CARD LOCKED / DISCARDED'),
+                                        child: Text(
+                                          context.tr('CARD LOCKED / DISCARDED'),
+                                        ),
                                       ),
                                     ),
                                   SizedBox(
@@ -1534,7 +1537,12 @@ class _LiveFlameBattleStageState extends State<LiveFlameBattleStage> {
     if (c.skillSerial != seenSkill) {
       seenSkill = c.skillSerial;
       if (c.lastSkillId != null && c.skillActor >= 0) {
-        game.skill(c.skillActor, c.skillTarget, c.lastSkillId!);
+        game.skill(
+          c.skillActor,
+          c.skillTarget,
+          c.lastSkillId!,
+          SkillCatalog.byId(c.lastSkillId)?.localized(context).name,
+        );
       }
     }
     if (c.hitSerial != seenStrike && c.attackWindup) {

@@ -54,9 +54,9 @@ class LiveFlameBattleGame extends FlameGame {
     pauseEngine();
   }
 
-  void skill(int actor, int target, String skillId) {
+  void skill(int actor, int target, String skillId, [String? displayName]) {
     if (!isLoaded) return;
-    _effects.skill(actor, target, skillId);
+    _effects.skill(actor, target, skillId, displayName);
     resumeEngine();
   }
 }
@@ -90,14 +90,16 @@ class _LiveStrikeEffects extends Component {
   double skillAge = 99;
   int skillActor = -1, skillTarget = -1;
   String? skillId;
+  String? skillName;
   SkillDefinition? activeSkill;
   SkillEffectProfile? activeProfile;
   TextPaint? skillPaint;
 
-  void skill(int actor, int target, String id) {
+  void skill(int actor, int target, String id, [String? displayName]) {
     skillActor = actor;
     skillTarget = target;
     skillId = id;
+    skillName = displayName;
     activeSkill = SkillCatalog.byId(id);
     activeProfile = skillEffectProfileFor(id);
     final skill = activeSkill;
@@ -275,7 +277,7 @@ class _LiveStrikeEffects extends Component {
       );
       skillPaint?.render(
         canvas,
-        skill.name.toUpperCase(),
+        (skillName ?? skill.name).toUpperCase(),
         Vector2(x, h * .17 - skillAge * 10),
         anchor: Anchor.center,
       );

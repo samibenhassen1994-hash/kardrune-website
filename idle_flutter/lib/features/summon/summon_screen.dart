@@ -338,7 +338,7 @@ class _SummonScreenState extends State<SummonScreen>
                     borderRadius: BorderRadius.circular(9),
                   ),
                   child: Text(
-                    title,
+                    context.tr(title),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
@@ -407,7 +407,7 @@ class _SummonScreenState extends State<SummonScreen>
       _title(context.tr('STANDARD SUMMON')),
       _info('Nine heroes · 300 Shards or a free charge'),
       const SizedBox(height: 5),
-      _info('FREE PULLS  $available / 2', gold: true),
+      _info('${context.tr('FREE PULLS')}  $available / 2', gold: true),
       if (nextAt != null) ...[
         const SizedBox(height: 4),
         LinearProgressIndicator(
@@ -416,7 +416,7 @@ class _SummonScreenState extends State<SummonScreen>
           color: const Color(0xffffd677),
           backgroundColor: const Color(0xff34465f),
         ),
-        _info('Next charge in ${_remaining()}', gold: true),
+        _info('${context.tr('NEXT CHARGE IN')} ${_remaining()}', gold: true),
       ],
       const SizedBox(height: 6),
       _button(
@@ -426,7 +426,7 @@ class _SummonScreenState extends State<SummonScreen>
       ),
       const SizedBox(height: 6),
       _button(
-        'SUMMON 1  ◆ 300',
+        context.tr('SUMMON 1  ◆ 300'),
         widget.shards >= 300 && !busy,
         () => _pull(featured: false),
         key: const Key('summon-paid-button'),
@@ -441,7 +441,7 @@ class _SummonScreenState extends State<SummonScreen>
       _info('Dren rate-up · 600 Shards'),
       const SizedBox(height: 9),
       _button(
-        'FEATURED PULL  ◆ 600',
+        context.tr('FEATURED PULL  ◆ 600'),
         widget.shards >= 600 && !busy,
         () => _pull(featured: true),
       ),
@@ -531,11 +531,13 @@ class _SummonScreenState extends State<SummonScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  section == 0
-                      ? 'STANDARD SUMMON'
-                      : section == 1
-                      ? 'FEATURED SUMMON'
-                      : 'EVENT SUMMON',
+                  context.tr(
+                    section == 0
+                        ? 'STANDARD SUMMON'
+                        : section == 1
+                        ? 'FEATURED SUMMON'
+                        : 'EVENT SUMMON',
+                  ),
                   style: const TextStyle(
                     color: Color(0xffffdf9d),
                     fontFamily: 'Georgia',
@@ -593,7 +595,7 @@ class _SummonScreenState extends State<SummonScreen>
   Widget _info(String text, {bool gold = false}) => Padding(
     padding: const EdgeInsets.only(bottom: 4),
     child: Text(
-      text,
+      context.tr(text),
       style: TextStyle(
         color: gold ? const Color(0xffffd986) : const Color(0xffe4e9f3),
         fontSize: 10,

@@ -32,6 +32,7 @@ import 'services/update_factory.dart';
 import 'services/storage_factory.dart';
 import 'theme/kardrune_theme.dart';
 import 'localization/kr_localizations.dart';
+import 'localization/skill_localizations.dart';
 
 typedef RandomRoll = double Function();
 
@@ -288,8 +289,10 @@ class _IdleShellState extends State<IdleShell> {
     final claimed = await cloud.claimPvpReward(matchId);
     if (!claimed && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('PvP reward pending. It will retry automatically.'),
+        SnackBar(
+          content: Text(
+            context.tr('PvP reward pending. It will retry automatically.'),
+          ),
         ),
       );
     }
@@ -679,11 +682,13 @@ class _IdleShellState extends State<IdleShell> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Row(
                   children: [
-                    const Expanded(child: Text('A new version is ready.')),
+                    Expanded(
+                      child: Text(context.tr('A new version is ready.')),
+                    ),
                     TextButton(
                       key: const Key('apply-update'),
                       onPressed: _updates!.apply,
-                      child: const Text('UPDATE'),
+                      child: Text(context.tr('UPDATE')),
                     ),
                   ],
                 ),
@@ -738,8 +743,10 @@ class _IdleShellState extends State<IdleShell> {
     if (_cloud?.identity != null) {
       if (_cloud!.state != CloudAccountState.synced) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Review or sync your cloud save before summoning.'),
+          SnackBar(
+            content: Text(
+              context.tr('Review or sync your cloud save before summoning.'),
+            ),
           ),
         );
         return;
@@ -866,8 +873,10 @@ class _IdleShellState extends State<IdleShell> {
       if (rollId is String) {
         if (_cloud?.identity == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Sign in to resolve this saved online summon.'),
+            SnackBar(
+              content: Text(
+                context.tr('Sign in to resolve this saved online summon.'),
+              ),
             ),
           );
         } else {
@@ -1401,7 +1410,7 @@ class _CardsState extends State<_Cards> {
     final found = all.where((card) {
       final id = '${card.key.id}:${card.value}';
       final isOwned = owned.contains(id);
-      final skill = SkillCatalog.byId(skills[id]);
+      final skill = SkillCatalog.byId(skills[id])?.localized(context);
       if (ownership == 'owned' && !isOwned ||
           ownership == 'missing' && isOwned) {
         return false;
@@ -1584,7 +1593,7 @@ class _CardsState extends State<_Cards> {
               ('all', _t('TUTTE LE ABILITÀ', 'ALL SKILLS')),
               for (final skill in SkillCatalog.skills)
                 if (rarity == 'all' || skill.rarity == rarity)
-                  (skill.id, skill.name.toUpperCase()),
+                  (skill.id, skill.localized(context).name.toUpperCase()),
             ], (v) => setState(() => skillFilter = v)),
           ],
           Row(
@@ -1826,6 +1835,7 @@ class _CardsState extends State<_Cards> {
 
   void _openCard(BuildContext context, dynamic hero, int stage, bool isOwned) {
     final id = '${hero.id}:$stage';
+    final skill = SkillCatalog.byId(skills[id])?.localized(context);
     showDialog<void>(
       context: context,
       builder: (dialogContext) => Dialog(
@@ -1868,36 +1878,35 @@ class _CardsState extends State<_Cards> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  if (isOwned)
-                    if (SkillCatalog.byId(skills[id]) case final skill?) ...[
-                      Center(child: SkillRarityBadge(skill: skill)),
-                      const SizedBox(height: 4),
-                      Text(
-                        skill.description,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xffd2dced),
-                          fontSize: 11,
-                        ),
+                  if (isOwned && skill != null) ...[
+                    Center(child: SkillRarityBadge(skill: skill)),
+                    const SizedBox(height: 4),
+                    Text(
+                      skill.description,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xffd2dced),
+                        fontSize: 11,
                       ),
-                      Text(
-                        '${skill.trigger} · ${skill.limit}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xffa9bdd4),
-                          fontSize: 10,
-                        ),
+                    ),
+                    Text(
+                      '${skill.trigger} · ${skill.limit}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xffa9bdd4),
+                        fontSize: 10,
                       ),
-                      Text(
-                        'Stage $stage: ${(SkillCatalog.weights[stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% per pull',
-                        style: const TextStyle(
-                          color: Color(0xffa9bdd4),
-                          fontSize: 10,
-                        ),
+                    ),
+                    Text(
+                      'Stage $stage: ${(SkillCatalog.weights[stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% per pull',
+                      style: const TextStyle(
+                        color: Color(0xffa9bdd4),
+                        fontSize: 10,
                       ),
-                      SkillPreviewButton(skill: skill),
-                      const SizedBox(height: 8),
-                    ],
+                    ),
+                    SkillPreviewButton(skill: skill),
+                    const SizedBox(height: 8),
+                  ],
                   Text(
                     isOwned ? 'ACTIVE CHAMPION' : 'NOT COLLECTED',
                     style: TextStyle(
@@ -1964,7 +1973,7 @@ class _Profile extends StatelessWidget {
                 text: '${context.tr('PLAYER')} ',
                 children: [
                   TextSpan(
-                    text: 'PROFILE',
+                    text: context.tr('PROFILE'),
                     style: TextStyle(color: Color(0xfff5d28b)),
                   ),
                 ],
@@ -1997,9 +2006,9 @@ class _Profile extends StatelessWidget {
                       ),
                     ),
                     if (!compact) ...[
-                      const Text(
-                        'RUNE ADVENTURER',
-                        style: TextStyle(
+                      Text(
+                        context.tr('RUNE ADVENTURER'),
+                        style: const TextStyle(
                           color: Color(0xffe8c77d),
                           fontSize: 8,
                           letterSpacing: 1.3,
@@ -2013,9 +2022,12 @@ class _Profile extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const Text(
-                        'LOCAL ACCOUNT · LEVEL 1',
-                        style: TextStyle(color: Color(0xffa6daff), fontSize: 8),
+                      Text(
+                        context.tr('LOCAL ACCOUNT · LEVEL 1'),
+                        style: const TextStyle(
+                          color: Color(0xffa6daff),
+                          fontSize: 8,
+                        ),
                       ),
                     ],
                   ],
@@ -2024,11 +2036,11 @@ class _Profile extends StatelessWidget {
             ),
             if (!compact) ...[
               const SizedBox(height: 5),
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'CHOOSE YOUR AVATAR',
-                  style: TextStyle(
+                  context.tr('CHOOSE YOUR AVATAR'),
+                  style: const TextStyle(
                     fontFamily: 'Georgia',
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -2058,7 +2070,7 @@ class _Profile extends StatelessWidget {
               maxLength: 20,
               style: const TextStyle(fontSize: 12),
               decoration: InputDecoration(
-                labelText: 'DISPLAY NAME',
+                labelText: context.tr('DISPLAY NAME'),
                 counterText: '',
                 isDense: true,
                 filled: true,
@@ -2087,11 +2099,11 @@ class _Profile extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'ACCOUNT',
-                      style: TextStyle(
+                      context.tr('ACCOUNT'),
+                      style: const TextStyle(
                         color: Color(0xffeac981),
                         fontSize: 8,
                         letterSpacing: 1.1,
@@ -2101,7 +2113,7 @@ class _Profile extends StatelessWidget {
                   ),
                   if (cloud == null) ...[
                     Text(
-                      cloudMessage,
+                      context.tr(cloudMessage),
                       maxLines: 2,
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontSize: 9),
@@ -2112,7 +2124,7 @@ class _Profile extends StatelessWidget {
                       style: TextButton.styleFrom(
                         visualDensity: VisualDensity.compact,
                       ),
-                      child: const Text('RETRY'),
+                      child: Text(context.tr('RETRY')),
                     ),
                   ] else ...[
                     Text(
@@ -2124,7 +2136,7 @@ class _Profile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      cloud!.message,
+                      context.tr(cloud!.message),
                       key: const Key('cloud-status'),
                       maxLines: 2,
                       textAlign: TextAlign.center,
@@ -2141,7 +2153,7 @@ class _Profile extends StatelessWidget {
                               style: TextButton.styleFrom(
                                 visualDensity: VisualDensity.compact,
                               ),
-                              child: const Text('GOOGLE'),
+                              child: Text(context.tr('GOOGLE')),
                             ),
                           ),
                           Expanded(
@@ -2151,7 +2163,7 @@ class _Profile extends StatelessWidget {
                               style: TextButton.styleFrom(
                                 visualDensity: VisualDensity.compact,
                               ),
-                              child: const Text('EMAIL'),
+                              child: Text(context.tr('EMAIL')),
                             ),
                           ),
                         ],
@@ -2173,13 +2185,13 @@ class _Profile extends StatelessWidget {
                                 Expanded(
                                   child: TextButton(
                                     onPressed: cloud!.uploadLocal,
-                                    child: const Text('UPLOAD LOCAL'),
+                                    child: Text(context.tr('UPLOAD LOCAL')),
                                   ),
                                 ),
                                 Expanded(
                                   child: TextButton(
                                     onPressed: cloud!.loadCloud,
-                                    child: const Text('LOAD CLOUD'),
+                                    child: Text(context.tr('LOAD CLOUD')),
                                   ),
                                 ),
                               ],
@@ -2189,12 +2201,12 @@ class _Profile extends StatelessWidget {
                             key: const Key('cloud-logout'),
                             onPressed: cloud!.signOut,
                             icon: const Icon(Icons.logout, size: 14),
-                            label: const Text('LOGOUT'),
+                            label: Text(context.tr('LOGOUT')),
                           ),
                           if (cloud!.hasGuestBackup)
                             TextButton(
                               onPressed: cloud!.restoreGuestBackup,
-                              child: const Text('RESTORE OFFLINE SAVE'),
+                              child: Text(context.tr('RESTORE OFFLINE SAVE')),
                             ),
                         ],
                       ),
@@ -2281,7 +2293,7 @@ class _Profile extends StatelessWidget {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('KARDRUNE ACCOUNT'),
+          title: Text(context.tr('KARDRUNE ACCOUNT')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -2289,20 +2301,20 @@ class _Profile extends StatelessWidget {
                 key: const Key('cloud-email-field'),
                 controller: email,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'EMAIL'),
+                decoration: InputDecoration(labelText: context.tr('EMAIL')),
               ),
               TextField(
                 key: const Key('cloud-password-field'),
                 controller: password,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'PASSWORD'),
+                decoration: InputDecoration(labelText: context.tr('PASSWORD')),
               ),
               CheckboxListTile(
                 key: const Key('cloud-register-mode'),
                 value: register,
                 onChanged: (value) =>
                     setDialogState(() => register = value ?? false),
-                title: const Text('CREATE ACCOUNT'),
+                title: Text(context.tr('CREATE ACCOUNT')),
               ),
             ],
           ),
@@ -2314,11 +2326,11 @@ class _Profile extends StatelessWidget {
                 if (!value.contains('@')) return;
                 await cloud!.sendPasswordReset(value);
               },
-              child: const Text('FORGOT PASSWORD'),
+              child: Text(context.tr('FORGOT PASSWORD')),
             ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('CANCEL'),
+              child: Text(context.tr('CANCEL')),
             ),
             FilledButton(
               key: const Key('cloud-email-submit'),
@@ -2335,7 +2347,7 @@ class _Profile extends StatelessWidget {
                   Navigator.pop(dialogContext);
                 }
               },
-              child: const Text('CONTINUE'),
+              child: Text(context.tr('CONTINUE')),
             ),
           ],
         ),

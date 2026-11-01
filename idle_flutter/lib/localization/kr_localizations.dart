@@ -45,8 +45,25 @@ extension KrTranslationContext on BuildContext {
 }
 
 abstract final class KrTranslations {
-  static String translate(KrLanguage language, String english) =>
-      _catalog[english]?[language] ?? english;
+  static String translate(KrLanguage language, String english) {
+    final exact = _catalog[english]?[language];
+    if (exact != null) return exact;
+    const marker = 'revision ';
+    if (english.contains(marker)) {
+      final word = _revisionWord[language];
+      if (word != null) return english.replaceFirst(marker, word);
+    }
+    return english;
+  }
+
+  static const _revisionWord = <KrLanguage, String>{
+    KrLanguage.italian: 'revisione ',
+    KrLanguage.spanish: 'revisión ',
+    KrLanguage.japanese: 'リビジョン ',
+    KrLanguage.korean: '리비전 ',
+    KrLanguage.chinese: '版本 ',
+    KrLanguage.german: 'Revision ',
+  };
 
   static const _catalog = <String, Map<KrLanguage, String>>{
     'ARENA': {
@@ -135,6 +152,7 @@ abstract final class KrTranslations {
       KrLanguage.german: 'DEINE KARTEN',
     },
     'OWNED': {
+      KrLanguage.italian: 'POSSEDUTE',
       KrLanguage.spanish: 'OBTENIDAS',
       KrLanguage.japanese: '所持済み',
       KrLanguage.korean: '보유',
@@ -142,6 +160,7 @@ abstract final class KrTranslations {
       KrLanguage.german: 'IM BESITZ',
     },
     'ALL': {
+      KrLanguage.italian: 'TUTTE',
       KrLanguage.spanish: 'TODAS',
       KrLanguage.japanese: 'すべて',
       KrLanguage.korean: '전체',
@@ -149,6 +168,7 @@ abstract final class KrTranslations {
       KrLanguage.german: 'ALLE',
     },
     'LOCKED': {
+      KrLanguage.italian: 'BLOCCATE',
       KrLanguage.spanish: 'BLOQUEADAS',
       KrLanguage.japanese: '未所持',
       KrLanguage.korean: '잠김',
@@ -156,6 +176,7 @@ abstract final class KrTranslations {
       KrLanguage.german: 'GESPERRT',
     },
     'ALL STAGES': {
+      KrLanguage.italian: 'TUTTI GL STAGE',
       KrLanguage.spanish: 'TODAS LAS ETAPAS',
       KrLanguage.japanese: '全ステージ',
       KrLanguage.korean: '모든 스테이지',
@@ -163,6 +184,7 @@ abstract final class KrTranslations {
       KrLanguage.german: 'ALLE STUFEN',
     },
     'ALL RARITIES': {
+      KrLanguage.italian: 'TUTTE LE RARITÀ',
       KrLanguage.spanish: 'TODAS LAS RAREZAS',
       KrLanguage.japanese: '全レア度',
       KrLanguage.korean: '모든 희귀도',
@@ -170,6 +192,7 @@ abstract final class KrTranslations {
       KrLanguage.german: 'ALLE SELTENHEITEN',
     },
     'ALL SKILLS': {
+      KrLanguage.italian: 'TUTTE LE SKILL',
       KrLanguage.spanish: 'TODAS LAS HABILIDADES',
       KrLanguage.japanese: '全スキル',
       KrLanguage.korean: '모든 스킬',
@@ -177,6 +200,7 @@ abstract final class KrTranslations {
       KrLanguage.german: 'ALLE FÄHIGKEITEN',
     },
     'COMMON': {
+      KrLanguage.italian: 'COMUNE',
       KrLanguage.spanish: 'COMÚN',
       KrLanguage.japanese: 'コモン',
       KrLanguage.korean: '일반',
@@ -184,6 +208,7 @@ abstract final class KrTranslations {
       KrLanguage.german: 'GEWÖHNLICH',
     },
     'UNCOMMON': {
+      KrLanguage.italian: 'NON COMUNE',
       KrLanguage.spanish: 'POCO COMÚN',
       KrLanguage.japanese: 'アンコモン',
       KrLanguage.korean: '고급',
@@ -191,6 +216,7 @@ abstract final class KrTranslations {
       KrLanguage.german: 'UNGEWÖHNLICH',
     },
     'RARE': {
+      KrLanguage.italian: 'RARA',
       KrLanguage.spanish: 'RARO',
       KrLanguage.japanese: 'レア',
       KrLanguage.korean: '희귀',
@@ -198,6 +224,7 @@ abstract final class KrTranslations {
       KrLanguage.german: 'SELTEN',
     },
     'EPIC': {
+      KrLanguage.italian: 'EPICA',
       KrLanguage.spanish: 'ÉPICO',
       KrLanguage.japanese: 'エピック',
       KrLanguage.korean: '영웅',
@@ -205,6 +232,7 @@ abstract final class KrTranslations {
       KrLanguage.german: 'EPISCH',
     },
     'LEGENDARY': {
+      KrLanguage.italian: 'LEGGENDARIA',
       KrLanguage.spanish: 'LEGENDARIO',
       KrLanguage.japanese: 'レジェンド',
       KrLanguage.korean: '전설',
@@ -606,6 +634,416 @@ abstract final class KrTranslations {
       KrLanguage.korean: '무료 소환',
       KrLanguage.chinese: '免费召唤',
       KrLanguage.german: 'KOSTENLOS BESCHWÖREN',
+    },
+    'VIEW EFFECT': {
+      KrLanguage.italian: 'VEDI EFFETTO',
+      KrLanguage.spanish: 'VER EFECTO',
+      KrLanguage.japanese: '効果を見る',
+      KrLanguage.korean: '효과 보기',
+      KrLanguage.chinese: '查看效果',
+      KrLanguage.german: 'EFFEKT ANZEIGEN',
+    },
+    'RUNE ADVENTURER': {
+      KrLanguage.italian: 'AVVENTURIERO DELLE RUNE',
+      KrLanguage.spanish: 'AVENTURERO RÚNICO',
+      KrLanguage.japanese: 'ルーン冒険者',
+      KrLanguage.korean: '룬 모험가',
+      KrLanguage.chinese: '符文冒险者',
+      KrLanguage.german: 'RUNENABENTEURER',
+    },
+    'LOCAL ACCOUNT · LEVEL 1': {
+      KrLanguage.italian: 'ACCOUNT LOCALE · LIVELLO 1',
+      KrLanguage.spanish: 'CUENTA LOCAL · NIVEL 1',
+      KrLanguage.japanese: 'ローカルアカウント · レベル1',
+      KrLanguage.korean: '로컬 계정 · 레벨 1',
+      KrLanguage.chinese: '本地账户 · 等级 1',
+      KrLanguage.german: 'LOKALES KONTO · LEVEL 1',
+    },
+    'RETRY': {
+      KrLanguage.italian: 'RIPROVA',
+      KrLanguage.spanish: 'REINTENTAR',
+      KrLanguage.japanese: '再試行',
+      KrLanguage.korean: '다시 시도',
+      KrLanguage.chinese: '重试',
+      KrLanguage.german: 'ERNEUT VERSUCHEN',
+    },
+    'UPLOAD LOCAL': {
+      KrLanguage.italian: 'CARICA LOCALE',
+      KrLanguage.spanish: 'SUBIR LOCAL',
+      KrLanguage.japanese: 'ローカルをアップロード',
+      KrLanguage.korean: '로컬 저장 업로드',
+      KrLanguage.chinese: '上传本地存档',
+      KrLanguage.german: 'LOKALEN STAND HOCHLADEN',
+    },
+    'LOAD CLOUD': {
+      KrLanguage.italian: 'CARICA CLOUD',
+      KrLanguage.spanish: 'CARGAR NUBE',
+      KrLanguage.japanese: 'クラウドを読み込む',
+      KrLanguage.korean: '클라우드 불러오기',
+      KrLanguage.chinese: '加载云端存档',
+      KrLanguage.german: 'CLOUD LADEN',
+    },
+    'RESTORE OFFLINE SAVE': {
+      KrLanguage.italian: 'RIPRISTINA SALVATAGGIO OFFLINE',
+      KrLanguage.spanish: 'RESTAURAR PARTIDA SIN CONEXIÓN',
+      KrLanguage.japanese: 'オフラインセーブを復元',
+      KrLanguage.korean: '오프라인 저장 복원',
+      KrLanguage.chinese: '恢复离线存档',
+      KrLanguage.german: 'OFFLINE-SPIELSTAND WIEDERHERSTELLEN',
+    },
+    'KARDRUNE ACCOUNT': {
+      KrLanguage.italian: 'ACCOUNT KARDRUNE',
+      KrLanguage.spanish: 'CUENTA KARDRUNE',
+      KrLanguage.japanese: 'KARDRUNEアカウント',
+      KrLanguage.korean: 'KARDRUNE 계정',
+      KrLanguage.chinese: 'KARDRUNE 账户',
+      KrLanguage.german: 'KARDRUNE-KONTO',
+    },
+    'FREE PULLS': {
+      KrLanguage.italian: 'EVOCAZIONI GRATIS',
+      KrLanguage.spanish: 'TIRADAS GRATIS',
+      KrLanguage.japanese: '無料召喚',
+      KrLanguage.korean: '무료 소환',
+      KrLanguage.chinese: '免费召唤',
+      KrLanguage.german: 'GRATISZIEHUNGEN',
+    },
+    'NEXT CHARGE IN': {
+      KrLanguage.italian: 'PROSSIMA CARICA TRA',
+      KrLanguage.spanish: 'PRÓXIMA CARGA EN',
+      KrLanguage.japanese: '次のチャージまで',
+      KrLanguage.korean: '다음 충전까지',
+      KrLanguage.chinese: '下次充能',
+      KrLanguage.german: 'NÄCHSTE LADUNG IN',
+    },
+    'SKILL RARITY BY STAGE': {
+      KrLanguage.italian: 'RARITÀ SKILL PER STAGE',
+      KrLanguage.spanish: 'RAREZA DE HABILIDAD POR ETAPA',
+      KrLanguage.japanese: 'ステージ別スキルレア度',
+      KrLanguage.korean: '스테이지별 스킬 희귀도',
+      KrLanguage.chinese: '各阶段技能稀有度',
+      KrLanguage.german: 'FÄHIGKEITSSELTENHEIT JE STUFE',
+    },
+    'Nine heroes · 300 Shards or a free charge': {
+      KrLanguage.italian: 'Nove eroi · 300 Shard o una carica gratis',
+      KrLanguage.spanish: 'Nueve héroes · 300 Shards o una carga gratis',
+      KrLanguage.japanese: '9人の英雄 · 300シャードまたは無料チャージ',
+      KrLanguage.korean: '영웅 9명 · 샤드 300개 또는 무료 충전',
+      KrLanguage.chinese: '九位英雄 · 300碎片或一次免费充能',
+      KrLanguage.german: 'Neun Helden · 300 Shards oder eine Gratisladung',
+    },
+    'Dren rate-up · 600 Shards': {
+      KrLanguage.italian: 'Probabilità Dren aumentata · 600 Shard',
+      KrLanguage.spanish: 'Probabilidad de Dren aumentada · 600 Shards',
+      KrLanguage.japanese: 'ドレン出現率アップ · 600シャード',
+      KrLanguage.korean: '드렌 확률 증가 · 샤드 600개',
+      KrLanguage.chinese: '德伦概率提升 · 600碎片',
+      KrLanguage.german: 'Erhöhte Dren-Chance · 600 Shards',
+    },
+    'No event banner is active. Rates and featured heroes will appear here when an event is configured.':
+        {
+          KrLanguage.italian: 'Nessun banner evento attivo. Probabilità ed eroi in evidenza appariranno qui quando sarà configurato un evento.',
+          KrLanguage.spanish: 'No hay ningún banner de evento activo. Las probabilidades y héroes destacados aparecerán aquí cuando se configure un evento.',
+          KrLanguage.japanese: '開催中のイベント召喚はありません。イベント設定時に確率と注目英雄が表示されます。',
+          KrLanguage.korean: '진행 중인 이벤트 배너가 없습니다. 이벤트가 설정되면 확률과 추천 영웅이 표시됩니다.',
+          KrLanguage.chinese: '当前没有活动卡池。配置活动后，概率和精选英雄会显示在这里。',
+          KrLanguage.german: 'Kein Event-Banner aktiv. Raten und vorgestellte Helden erscheinen hier, sobald ein Event eingerichtet ist.',
+        },
+    'Cost: 300 Shards, or one free charge.': {
+      KrLanguage.italian: 'Costo: 300 Shard o una carica gratis.',
+      KrLanguage.spanish: 'Coste: 300 Shards o una carga gratis.',
+      KrLanguage.japanese: 'コスト：300シャードまたは無料チャージ1回。',
+      KrLanguage.korean: '비용: 샤드 300개 또는 무료 충전 1회.',
+      KrLanguage.chinese: '花费：300碎片或一次免费充能。',
+      KrLanguage.german: 'Kosten: 300 Shards oder eine Gratisladung.',
+    },
+    '2 free charges; each recharges 12 hours after use.': {
+      KrLanguage.italian:
+          '2 cariche gratis; ciascuna si ricarica 12 ore dopo l’uso.',
+      KrLanguage.spanish:
+          '2 cargas gratis; cada una se recarga 12 horas después de usarla.',
+      KrLanguage.japanese: '無料チャージは2回分。使用後12時間で各1回復します。',
+      KrLanguage.korean: '무료 충전 2회; 사용 후 각각 12시간 뒤 충전됩니다.',
+      KrLanguage.chinese: '2次免费充能；每次使用后12小时恢复。',
+      KrLanguage.german:
+          '2 Gratisladungen; jede lädt sich 12 Stunden nach Nutzung auf.',
+    },
+    'All 9 heroes: 11.11% each.': {
+      KrLanguage.italian: 'Tutti i 9 eroi: 11,11% ciascuno.',
+      KrLanguage.spanish: 'Los 9 héroes: 11,11% cada uno.',
+      KrLanguage.japanese: '9人の英雄：各11.11%。',
+      KrLanguage.korean: '영웅 9명: 각각 11.11%.',
+      KrLanguage.chinese: '九位英雄：每位11.11%。',
+      KrLanguage.german: 'Alle 9 Helden: je 11,11 %.',
+    },
+    'Cost: 600 Shards. Dren is rate-up.': {
+      KrLanguage.italian: 'Costo: 600 Shard. Dren ha probabilità aumentata.',
+      KrLanguage.spanish:
+          'Coste: 600 Shards. Dren tiene probabilidad aumentada.',
+      KrLanguage.japanese: 'コスト：600シャード。ドレン出現率アップ。',
+      KrLanguage.korean: '비용: 샤드 600개. 드렌 확률 증가.',
+      KrLanguage.chinese: '花费：600碎片。德伦概率提升。',
+      KrLanguage.german: 'Kosten: 600 Shards. Erhöhte Dren-Chance.',
+    },
+    'No event is active. No event odds or cost are defined.': {
+      KrLanguage.italian:
+          'Nessun evento attivo. Probabilità e costo non sono ancora definiti.',
+      KrLanguage.spanish: 'No hay ningún evento activo. Aún no hay probabilidades ni coste definidos.',
+      KrLanguage.japanese: '開催中のイベントはありません。確率とコストは未設定です。',
+      KrLanguage.korean: '진행 중인 이벤트가 없습니다. 확률과 비용이 정해지지 않았습니다.',
+      KrLanguage.chinese: '当前没有活动。活动概率和花费尚未设定。',
+      KrLanguage.german:
+          'Kein Event aktiv. Raten und Kosten sind noch nicht festgelegt.',
+    },
+    'ATK: 1–100 · CRIT: 0–25% · 1 skill per card.': {
+      KrLanguage.italian: 'ATK: 1–100 · CRIT: 0–25% · 1 skill per carta.',
+      KrLanguage.spanish: 'ATK: 1–100 · CRIT: 0–25% · 1 habilidad por carta.',
+      KrLanguage.japanese: 'ATK：1～100 · CRIT：0～25% · カードごとにスキル1個。',
+      KrLanguage.korean: 'ATK: 1–100 · CRIT: 0–25% · 카드당 스킬 1개.',
+      KrLanguage.chinese: 'ATK：1–100 · CRIT：0–25% · 每张卡1个技能。',
+      KrLanguage.german: 'ATK: 1–100 · CRIT: 0–25 % · 1 Fähigkeit pro Karte.',
+    },
+    'Duplicate: keep new stats or take 100 Shards.': {
+      KrLanguage.italian:
+          'Duplicato: mantieni le nuove statistiche o prendi 100 Shard.',
+      KrLanguage.spanish:
+          'Duplicado: conserva las nuevas estadísticas o recibe 100 Shards.',
+      KrLanguage.japanese: '重複：新しい能力値を保持するか100シャードを獲得。',
+      KrLanguage.korean: '중복: 새 능력치를 유지하거나 샤드 100개를 받으세요.',
+      KrLanguage.chinese: '重复卡：保留新属性或获得100碎片。',
+      KrLanguage.german:
+          'Duplikat: Neue Werte behalten oder 100 Shards nehmen.',
+    },
+    'Local save': {
+      KrLanguage.italian: 'Salvataggio locale',
+      KrLanguage.spanish: 'Partida local',
+      KrLanguage.japanese: 'ローカルセーブ',
+      KrLanguage.korean: '로컬 저장',
+      KrLanguage.chinese: '本地存档',
+      KrLanguage.german: 'Lokaler Spielstand',
+    },
+    'Local save · sign in to enable cloud backup': {
+      KrLanguage.italian:
+          'Salvataggio locale · accedi per attivare il backup cloud',
+      KrLanguage.spanish:
+          'Partida local · inicia sesión para activar la copia en la nube',
+      KrLanguage.japanese: 'ローカルセーブ · ログインしてクラウドバックアップを有効化',
+      KrLanguage.korean: '로컬 저장 · 로그인하여 클라우드 백업 활성화',
+      KrLanguage.chinese: '本地存档 · 登录以启用云端备份',
+      KrLanguage.german: 'Lokaler Spielstand · anmelden für Cloud-Backup',
+    },
+    'Checking cloud save…': {
+      KrLanguage.italian: 'Controllo salvataggio cloud…',
+      KrLanguage.spanish: 'Comprobando partida en la nube…',
+      KrLanguage.japanese: 'クラウドセーブを確認中…',
+      KrLanguage.korean: '클라우드 저장 확인 중…',
+      KrLanguage.chinese: '正在检查云端存档…',
+      KrLanguage.german: 'Cloud-Spielstand wird geprüft…',
+    },
+    'Contacting Firebase…': {
+      KrLanguage.italian: 'Connessione a Firebase…',
+      KrLanguage.spanish: 'Contactando con Firebase…',
+      KrLanguage.japanese: 'Firebaseに接続中…',
+      KrLanguage.korean: 'Firebase 연결 중…',
+      KrLanguage.chinese: '正在连接 Firebase…',
+      KrLanguage.german: 'Firebase wird kontaktiert…',
+    },
+    'Authentication complete. Loading account…': {
+      KrLanguage.italian: 'Autenticazione completata. Caricamento account…',
+      KrLanguage.spanish: 'Autenticación completada. Cargando cuenta…',
+      KrLanguage.japanese: '認証完了。アカウントを読み込み中…',
+      KrLanguage.korean: '인증 완료. 계정 불러오는 중…',
+      KrLanguage.chinese: '身份验证完成。正在加载账户…',
+      KrLanguage.german: 'Authentifizierung abgeschlossen. Konto wird geladen…',
+    },
+    'Authentication failed. Check your details and try again.': {
+      KrLanguage.italian: 'Autenticazione fallita. Controlla i dati e riprova.',
+      KrLanguage.spanish:
+          'Error de autenticación. Comprueba tus datos e inténtalo de nuevo.',
+      KrLanguage.japanese: '認証に失敗しました。入力内容を確認して再試行してください。',
+      KrLanguage.korean: '인증에 실패했습니다. 정보를 확인하고 다시 시도하세요.',
+      KrLanguage.chinese: '身份验证失败。请检查信息并重试。',
+      KrLanguage.german: 'Authentifizierung fehlgeschlagen. Angaben prüfen und erneut versuchen.',
+    },
+    'Password reset email sent.': {
+      KrLanguage.italian: 'Email per il reset della password inviata.',
+      KrLanguage.spanish: 'Correo para restablecer la contraseña enviado.',
+      KrLanguage.japanese: 'パスワード再設定メールを送信しました。',
+      KrLanguage.korean: '비밀번호 재설정 이메일을 보냈습니다.',
+      KrLanguage.chinese: '密码重置邮件已发送。',
+      KrLanguage.german: 'E-Mail zum Zurücksetzen des Passworts gesendet.',
+    },
+    'Cloud unavailable. Local progress is safe.': {
+      KrLanguage.italian:
+          'Cloud non disponibile. I progressi locali sono al sicuro.',
+      KrLanguage.spanish: 'Nube no disponible. El progreso local está seguro.',
+      KrLanguage.japanese: 'クラウドを利用できません。ローカルの進行状況は安全です。',
+      KrLanguage.korean: '클라우드를 사용할 수 없습니다. 로컬 진행 상황은 안전합니다.',
+      KrLanguage.chinese: '云端不可用。本地进度安全无损。',
+      KrLanguage.german:
+          'Cloud nicht verfügbar. Lokaler Fortschritt ist sicher.',
+    },
+    'No cloud backup is available.': {
+      KrLanguage.italian: 'Nessun backup cloud disponibile.',
+      KrLanguage.spanish: 'No hay copia en la nube disponible.',
+      KrLanguage.japanese: '利用可能なクラウドバックアップがありません。',
+      KrLanguage.korean: '사용 가능한 클라우드 백업이 없습니다.',
+      KrLanguage.chinese: '没有可用的云端备份。',
+      KrLanguage.german: 'Kein Cloud-Backup verfügbar.',
+    },
+    'Different account on this device. Choose local or cloud progress.': {
+      KrLanguage.italian: 'Account diverso su questo dispositivo. Scegli i progressi locali o cloud.',
+      KrLanguage.spanish: 'Hay otra cuenta en este dispositivo. Elige el progreso local o en la nube.',
+      KrLanguage.japanese: 'この端末では別のアカウントが使われています。保持する進行状況を選択してください。',
+      KrLanguage.korean: '이 기기에 다른 계정이 있습니다. 유지할 진행 상황을 선택하세요.',
+      KrLanguage.chinese: '此设备上有其他账户。请选择要保留的进度。',
+      KrLanguage.german: 'Anderes Konto auf diesem Gerät. Lokalen oder Cloud-Fortschritt wählen.',
+    },
+    'No cloud save for this account. Review before importing this device.': {
+      KrLanguage.italian: 'Nessun salvataggio cloud per questo account. Controlla prima di importare il dispositivo.',
+      KrLanguage.spanish: 'No hay partida en la nube para esta cuenta. Revísala antes de importar este dispositivo.',
+      KrLanguage.japanese: 'このアカウントにクラウドセーブがありません。端末を取り込む前に確認してください。',
+      KrLanguage.korean: '이 계정에 클라우드 저장이 없습니다. 기기를 가져오기 전에 확인하세요.',
+      KrLanguage.chinese: '此账户没有云端存档。导入此设备前请检查。',
+      KrLanguage.german:
+          'Kein Cloud-Spielstand für dieses Konto. Vor dem Import prüfen.',
+    },
+    'Newer cloud progress found. Review before replacing this device.': {
+      KrLanguage.italian: 'Trovati progressi cloud più recenti. Controlla prima di sostituire quelli del dispositivo.',
+      KrLanguage.spanish: 'Se encontró progreso más reciente en la nube. Revísalo antes de reemplazar el del dispositivo.',
+      KrLanguage.japanese: 'より新しいクラウド進行状況が見つかりました。置き換える前に確認してください。',
+      KrLanguage.korean: '더 최신 클라우드 진행 상황을 찾았습니다. 교체하기 전에 확인하세요.',
+      KrLanguage.chinese: '发现更新的云端进度。替换前请检查。',
+      KrLanguage.german:
+          'Neuerer Cloud-Fortschritt gefunden. Vor dem Ersetzen prüfen.',
+    },
+    'Local and cloud progress differ. Choose which progress to keep.': {
+      KrLanguage.italian:
+          'I progressi locali e cloud sono diversi. Scegli quali mantenere.',
+      KrLanguage.spanish:
+          'El progreso local y el de la nube difieren. Elige cuál conservar.',
+      KrLanguage.japanese: 'ローカルとクラウドの進行状況が異なります。保持するデータを選択してください。',
+      KrLanguage.korean: '로컬과 클라우드 진행 상황이 다릅니다. 유지할 데이터를 선택하세요.',
+      KrLanguage.chinese: '本地与云端进度不同。请选择要保留的数据。',
+      KrLanguage.german: 'Lokaler und Cloud-Fortschritt unterscheiden sich. Zu behaltenden Stand wählen.',
+    },
+    'Cloud progress changed on another device. Review saves before continuing.':
+        {
+          KrLanguage.italian: 'I progressi cloud sono cambiati su un altro dispositivo. Controlla i salvataggi prima di continuare.',
+          KrLanguage.spanish: 'El progreso en la nube cambió en otro dispositivo. Revisa las partidas antes de continuar.',
+          KrLanguage.japanese: '別の端末でクラウド進行状況が変更されました。続行前に確認してください。',
+          KrLanguage.korean: '다른 기기에서 클라우드 진행 상황이 변경되었습니다. 계속하기 전에 확인하세요.',
+          KrLanguage.chinese: '云端进度已在其他设备更改。继续前请检查存档。',
+          KrLanguage.german: 'Cloud-Fortschritt wurde auf einem anderen Gerät geändert. Spielstände prüfen.',
+        },
+    'Offline snapshot restored. Cloud account signed out.': {
+      KrLanguage.italian:
+          'Snapshot offline ripristinato. Account cloud disconnesso.',
+      KrLanguage.spanish:
+          'Copia sin conexión restaurada. Cuenta de la nube desconectada.',
+      KrLanguage.japanese: 'オフラインスナップショットを復元し、クラウドアカウントからログアウトしました。',
+      KrLanguage.korean: '오프라인 스냅샷을 복원하고 클라우드 계정에서 로그아웃했습니다.',
+      KrLanguage.chinese: '已恢复离线快照并退出云端账户。',
+      KrLanguage.german:
+          'Offline-Snapshot wiederhergestellt. Cloud-Konto abgemeldet.',
+    },
+    'CARD LOCKED / DISCARDED': {
+      KrLanguage.italian: 'CARTA BLOCCATA / SCARTATA',
+      KrLanguage.spanish: 'CARTA BLOQUEADA / DESCARTADA',
+      KrLanguage.japanese: 'カード使用済み / 破棄',
+      KrLanguage.korean: '카드 잠김 / 버림',
+      KrLanguage.chinese: '卡牌已锁定 / 丢弃',
+      KrLanguage.german: 'KARTE GESPERRT / ABGEWORFEN',
+    },
+    'LATER': {
+      KrLanguage.italian: 'PIÙ TARDI',
+      KrLanguage.spanish: 'MÁS TARDE',
+      KrLanguage.japanese: '後で',
+      KrLanguage.korean: '나중에',
+      KrLanguage.chinese: '稍后',
+      KrLanguage.german: 'SPÄTER',
+    },
+    'UPDATE': {
+      KrLanguage.italian: 'AGGIORNA',
+      KrLanguage.spanish: 'ACTUALIZAR',
+      KrLanguage.japanese: '更新',
+      KrLanguage.korean: '업데이트',
+      KrLanguage.chinese: '更新',
+      KrLanguage.german: 'AKTUALISIEREN',
+    },
+    'A new version is ready.': {
+      KrLanguage.italian: 'È pronta una nuova versione.',
+      KrLanguage.spanish: 'Hay una nueva versión disponible.',
+      KrLanguage.japanese: '新しいバージョンがあります。',
+      KrLanguage.korean: '새 버전이 준비되었습니다.',
+      KrLanguage.chinese: '新版本已准备就绪。',
+      KrLanguage.german: 'Eine neue Version ist verfügbar.',
+    },
+    'Review or sync your cloud save before summoning.': {
+      KrLanguage.italian:
+          'Controlla o sincronizza il salvataggio cloud prima di evocare.',
+      KrLanguage.spanish:
+          'Revisa o sincroniza tu partida en la nube antes de invocar.',
+      KrLanguage.japanese: '召喚前にクラウドセーブを確認または同期してください。',
+      KrLanguage.korean: '소환 전에 클라우드 저장을 확인하거나 동기화하세요.',
+      KrLanguage.chinese: '召唤前请检查或同步云端存档。',
+      KrLanguage.german:
+          'Cloud-Spielstand vor der Beschwörung prüfen oder synchronisieren.',
+    },
+    'Sign in to resolve this saved online summon.': {
+      KrLanguage.italian:
+          'Accedi per completare questa evocazione online salvata.',
+      KrLanguage.spanish:
+          'Inicia sesión para resolver esta invocación en línea guardada.',
+      KrLanguage.japanese: '保存されたオンライン召喚を処理するにはログインしてください。',
+      KrLanguage.korean: '저장된 온라인 소환을 처리하려면 로그인하세요.',
+      KrLanguage.chinese: '请登录以处理已保存的在线召唤。',
+      KrLanguage.german:
+          'Anmelden, um diese gespeicherte Online-Beschwörung abzuschließen.',
+    },
+    'PvP reward pending. It will retry automatically.': {
+      KrLanguage.italian:
+          'Ricompensa PvP in attesa. Nuovo tentativo automatico.',
+      KrLanguage.spanish:
+          'Recompensa PvP pendiente. Se reintentará automáticamente.',
+      KrLanguage.japanese: 'PvP報酬を保留中です。自動的に再試行します。',
+      KrLanguage.korean: 'PvP 보상 대기 중. 자동으로 다시 시도합니다.',
+      KrLanguage.chinese: 'PvP奖励待处理。将自动重试。',
+      KrLanguage.german: 'PvP-Belohnung ausstehend. Automatischer Neuversuch.',
+    },
+    'STANDARD PORTAL': {
+      KrLanguage.italian: 'PORTALE STANDARD', KrLanguage.spanish: 'PORTAL ESTÁNDAR',
+      KrLanguage.japanese: '通常ポータル', KrLanguage.korean: '일반 포털',
+      KrLanguage.chinese: '标准传送门', KrLanguage.german: 'STANDARDPORTAL',
+    },
+    'DREN · FEATURED SUMMON': {
+      KrLanguage.italian: 'DREN · EVOCAZIONE IN EVIDENZA', KrLanguage.spanish: 'DREN · INVOCACIÓN DESTACADA',
+      KrLanguage.japanese: 'ドレン · 注目召喚', KrLanguage.korean: '드렌 · 추천 소환',
+      KrLanguage.chinese: '德伦 · 精选召唤', KrLanguage.german: 'DREN · HIGHLIGHT-BESCHWÖRUNG',
+    },
+    'SUMMON 1  ◆ 300': {
+      KrLanguage.italian: 'EVOCA 1  ◆ 300', KrLanguage.spanish: 'INVOCAR 1  ◆ 300',
+      KrLanguage.japanese: '1回召喚  ◆ 300', KrLanguage.korean: '1회 소환  ◆ 300',
+      KrLanguage.chinese: '召唤1次  ◆ 300', KrLanguage.german: '1× BESCHWÖREN  ◆ 300',
+    },
+    'FEATURED PULL  ◆ 600': {
+      KrLanguage.italian: 'EVOCAZIONE IN EVIDENZA  ◆ 600', KrLanguage.spanish: 'TIRADA DESTACADA  ◆ 600',
+      KrLanguage.japanese: '注目召喚  ◆ 600', KrLanguage.korean: '추천 소환  ◆ 600',
+      KrLanguage.chinese: '精选召唤  ◆ 600', KrLanguage.german: 'HIGHLIGHT-ZIEHUNG  ◆ 600',
+    },
+    'Stage 1: 78% · Stage 2: 19% · Stage 3: 3%': {
+      KrLanguage.italian: 'Stage 1: 78% · Stage 2: 19% · Stage 3: 3%', KrLanguage.spanish: 'Etapa 1: 78% · Etapa 2: 19% · Etapa 3: 3%',
+      KrLanguage.japanese: 'ステージ1：78% · ステージ2：19% · ステージ3：3%', KrLanguage.korean: '스테이지 1: 78% · 스테이지 2: 19% · 스테이지 3: 3%',
+      KrLanguage.chinese: '阶段1：78% · 阶段2：19% · 阶段3：3%', KrLanguage.german: 'Stufe 1: 78 % · Stufe 2: 19 % · Stufe 3: 3 %',
+    },
+    'Stage 1: 60% · Stage 2: 30% · Stage 3: 10%': {
+      KrLanguage.italian: 'Stage 1: 60% · Stage 2: 30% · Stage 3: 10%', KrLanguage.spanish: 'Etapa 1: 60% · Etapa 2: 30% · Etapa 3: 10%',
+      KrLanguage.japanese: 'ステージ1：60% · ステージ2：30% · ステージ3：10%', KrLanguage.korean: '스테이지 1: 60% · 스테이지 2: 30% · 스테이지 3: 10%',
+      KrLanguage.chinese: '阶段1：60% · 阶段2：30% · 阶段3：10%', KrLanguage.german: 'Stufe 1: 60 % · Stufe 2: 30 % · Stufe 3: 10 %',
+    },
+    'Dren: 42.22%; each other hero: 7.22%.': {
+      KrLanguage.italian: 'Dren: 42,22%; ogni altro eroe: 7,22%.', KrLanguage.spanish: 'Dren: 42,22%; cada otro héroe: 7,22%.',
+      KrLanguage.japanese: 'ドレン：42.22%、他の各英雄：7.22%。', KrLanguage.korean: '드렌: 42.22%, 다른 영웅 각각: 7.22%.',
+      KrLanguage.chinese: '德伦：42.22%；其他英雄各7.22%。', KrLanguage.german: 'Dren: 42,22 %; jeder andere Held: 7,22 %.',
     },
   };
 }
