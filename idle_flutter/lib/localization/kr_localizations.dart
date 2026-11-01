@@ -366,6 +366,14 @@ abstract final class KrTranslations {
       KrLanguage.chinese: '开始比赛',
       KrLanguage.german: 'MATCH STARTEN',
     },
+    'PvP rewards left (24h)': {
+      KrLanguage.italian: 'Ricompense PvP rimaste (24 ore)',
+      KrLanguage.spanish: 'Recompensas PvP restantes (24 h)',
+      KrLanguage.japanese: '過去24時間のPvP報酬残り',
+      KrLanguage.korean: '최근 24시간 PvP 보상 잔여',
+      KrLanguage.chinese: '近24小时剩余PvP奖励',
+      KrLanguage.german: 'Verbleibende PvP-Belohnungen (24 Std.)',
+    },
     'SEARCHING FOR OPPONENT': {
       KrLanguage.italian: 'RICERCA AVVERSARIO',
       KrLanguage.spanish: 'BUSCANDO OPONENTE',
