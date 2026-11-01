@@ -33,6 +33,7 @@ import 'services/storage_factory.dart';
 import 'theme/kardrune_theme.dart';
 import 'localization/kr_localizations.dart';
 import 'localization/skill_localizations.dart';
+import 'tutorial/first_visit_tutorial.dart';
 
 typedef RandomRoll = double Function();
 
@@ -106,6 +107,32 @@ class _IdleShellState extends State<IdleShell> {
   static const _freeSummonWindowMs = 12 * 60 * 60 * 1000;
   static const _motionKey = 'idle-motion-preference-v1';
   static const _languageKey = 'idle-language-v1';
+  IdleTutorialSection? _tutorialSection;
+  late final IdleTutorialProgress _tutorialProgress;
+
+  void _openTutorial(IdleTutorialSection section) {
+    if (!_tutorialProgress.unseen(section) || _tutorialSection != null) return;
+    setState(() => _tutorialSection = section);
+  }
+
+  void _closeTutorial() {
+    final section = _tutorialSection;
+    if (section == null) return;
+    _tutorialProgress.complete(section);
+    setState(() => _tutorialSection = null);
+  }
+
+  void _chooseTab(int value) {
+    setState(() => tab = value);
+    final section = switch (value) {
+      0 => IdleTutorialSection.arena,
+      1 => IdleTutorialSection.cards,
+      2 => IdleTutorialSection.summon,
+      _ => null,
+    };
+    if (section != null) _openTutorial(section);
+    if (value == 0 && _cloud?.identity != null) unawaited(_refreshQuota());
+  }
   int tab = 0, shards = 1500, page = 0;
   String name = 'Runebearer', avatar = 'player';
   KrLanguage language = KrLanguage.english;
@@ -147,6 +174,7 @@ class _IdleShellState extends State<IdleShell> {
   void initState() {
     super.initState();
     _saveService = widget.saveService ?? createDefaultLocalSave();
+    _tutorialProgress = IdleTutorialProgress(_saveService?.storage);
     final save =
         _saveService?.load(nowMs: widget.nowMs()) ?? PlayerSave.initial();
     name = save.name;
@@ -192,6 +220,9 @@ class _IdleShellState extends State<IdleShell> {
       _saveService?.storage.read(_languageKey) ??
           ui.PlatformDispatcher.instance.locale.languageCode,
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _openTutorial(IdleTutorialSection.arena);
+    });
     final daily = GameRules.dailyRewardState(
       DailyRewardState(day: practiceDay, count: practiceCount),
       widget.nowMs(),
@@ -367,6 +398,10 @@ class _IdleShellState extends State<IdleShell> {
       });
     }
     if (_pvp?.state != LiveMatchState.arena) _showOpponentIntro = false;
+    if (_pvp?.state == LiveMatchState.arena && _tutorialSection != null) {
+      _tutorialProgress.complete(_tutorialSection!);
+      _tutorialSection = null;
+    }
     if (mounted) setState(() {});
   }
 
@@ -500,6 +535,8 @@ class _IdleShellState extends State<IdleShell> {
     }
     return _motionWrap(
       _withUpdate(
+        Stack(
+          children: [
         Scaffold(
           backgroundColor: Colors.transparent,
           extendBody: tab == 0 || tab == 2,
@@ -656,11 +693,16 @@ class _IdleShellState extends State<IdleShell> {
             current: tab,
             language: language,
             arenaOverlay: tab == 0 || tab == 2,
-            onTap: (value) {
-              setState(() => tab = value);
-              if (value == 0 && _cloud?.identity != null) unawaited(_refreshQuota());
-            },
+            onTap: _chooseTab,
           ),
+          if (_tutorialSection != null)
+            Positioned.fill(
+              child: IdleFirstVisitTutorial(
+                section: _tutorialSection!,
+                onDone: _closeTutorial,
+              ),
+            ),
+          ],
         ),
       ),
     );
