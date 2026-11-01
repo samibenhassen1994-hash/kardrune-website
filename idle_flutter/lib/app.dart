@@ -135,6 +135,11 @@ class _IdleShellState extends State<IdleShell> {
   bool _showOpponentIntro = false;
   late final FlameBattleAudio _flameAudio = createFlameBattleAudio();
   bool _ownsCloud = false;
+  String? _quotaUid;
+  int? _quotaRemaining;
+  int _quotaLimit = 10;
+  int _quotaVersion = 0;
+  Timer? _quotaTimer;
   late final AppUpdateController? _updates;
   bool _ownsUpdates = false;
 
@@ -249,6 +254,17 @@ class _IdleShellState extends State<IdleShell> {
   }
 
   void _cloudChanged() {
+    final uid = _cloud?.identity?.uid;
+    if (uid != _quotaUid) {
+      _quotaUid = uid;
+      _quotaRemaining = null;
+      _quotaTimer?.cancel();
+      _quotaVersion++;
+    }
+    if (uid != null && _quotaRemaining == null &&
+        _cloud?.state == CloudAccountState.synced) {
+      unawaited(_refreshQuota());
+    }
     unawaited(
       notificationAccountChanged(_cloud?.identity?.uid ?? 'guest')
           .then((_) async {
@@ -277,6 +293,33 @@ class _IdleShellState extends State<IdleShell> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _refreshQuota() async {
+    final cloud = _cloud;
+    final uid = cloud?.identity?.uid;
+    if (uid == null) return;
+    final version = ++_quotaVersion;
+    try {
+      final response = await cloud!.api.get('/api/pvp/reward');
+      if (!mounted || _cloud?.identity?.uid != uid || version != _quotaVersion) return;
+      final remaining = response['remaining'], limit = response['limit'];
+      if (remaining is! int || limit is! int || limit < 1) return;
+      setState(() {
+        _quotaRemaining = remaining.clamp(0, limit);
+        _quotaLimit = limit;
+      });
+      _quotaTimer?.cancel();
+      final next = response['nextRefreshAt'];
+      if (next is int && next > DateTime.now().millisecondsSinceEpoch) {
+        final delay = (next - DateTime.now().millisecondsSinceEpoch + 1000).clamp(1000,86400000);
+        _quotaTimer = Timer(Duration(milliseconds: delay.toInt()), () {
+          if (mounted && tab == 0) unawaited(_refreshQuota());
+        });
+      }
+    } catch (_) {
+      // Never substitute an unverified local quota.
+    }
+  }
+
   void _pvpFinished(String matchId, String reason, int reward) {
     if (reward == 100 && _cloud?.identity != null) {
       unawaited(_claimPvpReward(matchId));
@@ -287,6 +330,7 @@ class _IdleShellState extends State<IdleShell> {
     final cloud = _cloud;
     if (cloud == null) return;
     final claimed = await cloud.claimPvpReward(matchId);
+    unawaited(_refreshQuota());
     if (!claimed && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -300,6 +344,7 @@ class _IdleShellState extends State<IdleShell> {
 
   Future<void> _recoverPvpRewards(CloudAccountController cloud) async {
     final recovered = await cloud.recoverPvpRewards();
+    if (recovered > 0) unawaited(_refreshQuota());
     if (recovered > 0 && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Recovered $recovered pending PvP reward.')),
@@ -385,6 +430,7 @@ class _IdleShellState extends State<IdleShell> {
 
   @override
   void dispose() {
+    _quotaTimer?.cancel();
     _opponentIntroTimer?.cancel();
     _cloud?.removeListener(_cloudChanged);
     _pvp?.removeListener(_pvpChanged);
@@ -501,6 +547,8 @@ class _IdleShellState extends State<IdleShell> {
                                   : _pvp?.state == LiveMatchState.idle
                                   ? ''
                                   : _pvp?.message ?? '',
+                              rewardRemaining: _quotaRemaining,
+                              rewardLimit: _quotaLimit,
                               searching:
                                   _pvp?.state == LiveMatchState.connecting ||
                                   _pvp?.state == LiveMatchState.waiting,
@@ -608,7 +656,10 @@ class _IdleShellState extends State<IdleShell> {
             current: tab,
             language: language,
             arenaOverlay: tab == 0 || tab == 2,
-            onTap: (value) => setState(() => tab = value),
+            onTap: (value) {
+              setState(() => tab = value);
+              if (value == 0 && _cloud?.identity != null) unawaited(_refreshQuota());
+            },
           ),
         ),
       ),
