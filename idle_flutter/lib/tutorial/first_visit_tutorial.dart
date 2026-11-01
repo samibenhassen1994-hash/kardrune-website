@@ -91,7 +91,7 @@ class IdleFirstVisitTutorial extends StatelessWidget {
                             child: Image.asset(
                               imagePath,
                               fit: BoxFit.fill,
-                              errorBuilder: (_, __, ___) => DecoratedBox(
+                              errorBuilder: (context, error, stackTrace) => DecoratedBox(
                                 decoration: BoxDecoration(
                                   color: const Color(0xff10274a),
                                   border: Border.all(color: _gold, width: 3),
