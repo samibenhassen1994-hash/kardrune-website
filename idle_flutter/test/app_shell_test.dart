@@ -5,7 +5,11 @@ import 'package:idle_kardrune/models/player_save.dart';
 import 'package:idle_kardrune/services/local_save_service.dart';
 
 class _MemoryStorage implements KeyValueStorage {
-  final values = <String, String>{};
+  final values = <String, String>{
+    'idle-tutorial-arena-v1': 'seen',
+    'idle-tutorial-cards-v1': 'seen',
+    'idle-tutorial-summon-v1': 'seen',
+  };
   @override
   String? read(String key) => values[key];
   @override
