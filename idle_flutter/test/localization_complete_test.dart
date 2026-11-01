@@ -38,6 +38,7 @@ void main() {
         'LOAD CLOUD',
         'RESTORE OFFLINE SAVE',
         'FREE PULLS',
+        'PvP rewards left (24h)',
         'NEXT CHARGE IN',
         'SKILL RARITY BY STAGE',
         'Nine heroes · 300 Shards or a free charge',
