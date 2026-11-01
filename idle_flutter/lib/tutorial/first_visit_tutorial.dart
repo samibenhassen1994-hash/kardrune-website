@@ -133,8 +133,8 @@ class IdleFirstVisitTutorial extends StatelessWidget {
                             for (var index = 0; index < 3; index++)
                               _text(
                                 texts[index],
-                                left: .166, top: [.61, .717, .826][index],
-                                width: .76, height: .099, size: 30,
+                                left: .166, top: [.787, .835, .884][index],
+                                width: .76, height: .05, size: 24,
                               ),
                           ],
                         ],
