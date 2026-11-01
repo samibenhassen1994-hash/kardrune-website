@@ -216,7 +216,8 @@ class _IdleShellState extends State<IdleShell> {
       _ownsCloud = true;
       controller.addListener(_cloudChanged);
       controller.start();
-      setState(() {});
+      await completeMobileBootstrap(controller);
+      if (mounted) setState(() {});
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -1666,7 +1667,9 @@ class _Profile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 9),
                     ),
-                    if (cloud!.identity == null)
+                    if (cloud!.identity == null && cloud!.mobileHandoff)
+                      const Text('Accesso gestito dall’app KardRune')
+                    else if (cloud!.identity == null)
                       Row(
                         children: [
                           Expanded(
@@ -1702,7 +1705,8 @@ class _Profile extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(fontSize: 10),
                             ),
-                          if (cloud!.state == CloudAccountState.review) ...[
+                          if (cloud!.state == CloudAccountState.review &&
+                              !cloud!.mobileHandoff) ...[
                             Row(
                               children: [
                                 Expanded(
@@ -1720,12 +1724,13 @@ class _Profile extends StatelessWidget {
                               ],
                             ),
                           ],
-                          TextButton.icon(
-                            key: const Key('cloud-logout'),
-                            onPressed: cloud!.signOut,
-                            icon: const Icon(Icons.logout, size: 14),
-                            label: const Text('LOGOUT'),
-                          ),
+                          if (!cloud!.mobileHandoff)
+                            TextButton.icon(
+                              key: const Key('cloud-logout'),
+                              onPressed: cloud!.signOut,
+                              icon: const Icon(Icons.logout, size: 14),
+                              label: const Text('LOGOUT'),
+                            ),
                           if (cloud!.hasGuestBackup)
                             TextButton(
                               onPressed: cloud!.restoreGuestBackup,

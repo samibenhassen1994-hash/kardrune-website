@@ -35,6 +35,7 @@ class CloudAccountController extends ChangeNotifier {
     required this.api,
     required this.local,
     this.onRemoteSave,
+    this.mobileHandoff = false,
   });
   static const lastUserKey = 'idle-cloud-last-user-v1';
   static const guestBackupPrefix = 'idle-guest-before-cloud-v1:';
@@ -43,6 +44,7 @@ class CloudAccountController extends ChangeNotifier {
   final ApiClient api;
   final LocalSaveService local;
   final ValueChanged<PlayerSave>? onRemoteSave;
+  final bool mobileHandoff;
   StreamSubscription<CloudIdentity?>? _subscription;
   Future<void> _settle = Future.value();
   Timer? _syncTimer;
@@ -60,8 +62,9 @@ class CloudAccountController extends ChangeNotifier {
     final uid = identity?.uid ?? local.storage.read(lastUserKey);
     return uid == null ? null : '$guestBackupPrefix$uid';
   }
-  bool get hasGuestBackup => _guestBackupKey != null &&
-      local.storage.read(_guestBackupKey!) != null;
+
+  bool get hasGuestBackup =>
+      _guestBackupKey != null && local.storage.read(_guestBackupKey!) != null;
 
   void start() {
     _subscription ??= auth.accountChanges.listen((account) {
@@ -98,6 +101,22 @@ class CloudAccountController extends ChangeNotifier {
       remoteSave = response['save'] is Map
           ? Map<String, Object?>.from(response['save'] as Map)
           : null;
+      if (mobileHandoff) {
+        if (remoteSave != null) {
+          final canonical = PlayerSave.fromJson(remoteSave);
+          local.save(canonical);
+          onRemoteSave?.call(canonical);
+          _writeLink(revision, jsonEncode(canonical.toJson()));
+          state = CloudAccountState.synced;
+          message = 'Arena cloud progress loaded';
+        } else {
+          state = CloudAccountState.review;
+          message = 'No Arena cloud save yet. Local progress was not uploaded.';
+        }
+        local.storage.write(lastUserKey, account.uid);
+        notifyListeners();
+        return;
+      }
       final previousUid = local.storage.read(lastUserKey);
       final link = _readLink();
       final localJson = jsonEncode(local.load().toJson());
@@ -189,7 +208,9 @@ class CloudAccountController extends ChangeNotifier {
           ? response['revision'] as int
           : revision + 1;
       final canonical = response['save'] is Map
-          ? PlayerSave.fromJson(Map<String, Object?>.from(response['save'] as Map))
+          ? PlayerSave.fromJson(
+              Map<String, Object?>.from(response['save'] as Map),
+            )
           : save;
       if (response['save'] is Map) {
         local.save(canonical);

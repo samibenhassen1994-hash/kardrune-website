@@ -16,6 +16,14 @@
   -->
   <base href="$FLUTTER_BASE_HREF">
 
+  <script>
+    // Clear non-secret handshake flags before Flutter and the Android bridge run.
+    if (new URLSearchParams(location.search).get('embedded') === 'android') {
+      localStorage.removeItem('kardrune-mobile-auth-ready');
+      localStorage.removeItem('kardrune-mobile-auth-complete');
+    }
+  </script>
+
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Idle KardRune — collect, train and battle with KardRune heroes.">

@@ -77,6 +77,67 @@ class _SequenceTransport implements ApiTransport {
 
 void main() {
   test(
+    'mobile handoff loads remote Arena progress without uploading local save',
+    () async {
+      final storage = _Storage(),
+          local = LocalSaveService(storage),
+          auth = _Auth(),
+          transport = _Transport();
+      local.save(PlayerSave.initial().copyWith(shards: 25));
+      transport.responses = {
+        'GET /api/me': const ApiResponse(200, '{}'),
+        'GET /api/save': const ApiResponse(
+          200,
+          '{"save":{"name":"Online","shards":4321,"owned":["sam:1","rhea:2"]},"revision":7}',
+        ),
+      };
+      final controller = CloudAccountController(
+        auth: auth,
+        api: ApiClient(auth, transport),
+        local: local,
+        mobileHandoff: true,
+      );
+      controller.start();
+      auth.emit(const CloudIdentity(uid: 'online-uid'));
+      await Future<void>.delayed(Duration.zero);
+      await controller.settle;
+      expect(local.load().shards, 4321);
+      expect(local.load().owned, contains('rhea:2'));
+      expect(controller.state, CloudAccountState.synced);
+      expect(transport.requests.where((r) => r.method == 'PUT'), isEmpty);
+      controller.dispose();
+    },
+  );
+
+  test(
+    'mobile handoff never uploads guest progress to an empty account',
+    () async {
+      final storage = _Storage(),
+          local = LocalSaveService(storage),
+          auth = _Auth(),
+          transport = _Transport();
+      local.save(PlayerSave.initial().copyWith(shards: 7654));
+      transport.responses = {
+        'GET /api/me': const ApiResponse(200, '{}'),
+        'GET /api/save': const ApiResponse(200, '{"save":null,"revision":0}'),
+      };
+      final controller = CloudAccountController(
+        auth: auth,
+        api: ApiClient(auth, transport),
+        local: local,
+        mobileHandoff: true,
+      );
+      controller.start();
+      auth.emit(const CloudIdentity(uid: 'new-uid'));
+      await Future<void>.delayed(Duration.zero);
+      await controller.settle;
+      expect(local.load().shards, 7654);
+      expect(transport.requests.where((r) => r.method == 'PUT'), isEmpty);
+      controller.dispose();
+    },
+  );
+
+  test(
     'first account creates cloud backup without changing save schema',
     () async {
       final storage = _Storage(),
