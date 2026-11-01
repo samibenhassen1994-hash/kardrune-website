@@ -4,6 +4,7 @@ import {webcrypto} from 'node:crypto';
 
 import {onRequestPost as issue} from '../functions/api/mobile-auth/issue.js';
 import {onRequestPost as exchange} from '../functions/api/mobile-auth/exchange.js';
+import {customToken} from '../functions/api/mobile-auth/_lib.js';
 
 function b64(bytes) {
   return Buffer.from(bytes).toString('base64url');
@@ -108,5 +109,30 @@ test('mobile handoff verifies Firebase, binds UID, expires and consumes once', a
     assert.equal(expired.status, 401);
   } finally {
     globalThis.fetch = originalFetch;
+  }
+});
+
+test('custom token signer supports escaped or multiline PEM secrets', async () => {
+  const keys = await webcrypto.subtle.generateKey(
+    {name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256'},
+    true, ['sign', 'verify'],
+  );
+  const pkcs8 = await webcrypto.subtle.exportKey('pkcs8', keys.privateKey);
+  const pem = '-----BEGIN PRIVATE KEY-----\n'
+    + Buffer.from(pkcs8).toString('base64')
+    + '\n-----END PRIVATE KEY-----';
+  for (const secret of [pem, pem.replace(/\n/g, '\\n')]) {
+    const token = await customToken('same-uid', {
+      FIREBASE_PROJECT_ID: 'idle-kardrune',
+      FIREBASE_SERVICE_ACCOUNT_EMAIL: 'test@example.invalid',
+      FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY: secret,
+    });
+    const [header, payload, signature] = token.split('.');
+    assert.equal(JSON.parse(Buffer.from(payload, 'base64url')).uid, 'same-uid');
+    assert.equal(await webcrypto.subtle.verify(
+      'RSASSA-PKCS1-v1_5', keys.publicKey,
+      Buffer.from(signature, 'base64url'),
+      new TextEncoder().encode(header + '.' + payload)), true);
   }
 });

@@ -21,8 +21,10 @@ export async function customToken(uid, env) {
   if (!email || !pem || !env.FIREBASE_PROJECT_ID) {
     throw new Response('Mobile authentication not configured', {status: 503});
   }
+  // Accept literal JSON-escaped newline markers from a Cloudflare secret.
+  const normalizedPem = pem.replace(/\\r\\n|\\n|\\r/g, '\n');
   const der = Uint8Array.from(
-    atob(pem.replace(/-----[^-]+-----/g, '').replace(/\s/g, '')),
+    atob(normalizedPem.replace(/-----[^-]+-----/g, '').replace(/\s/g, '')),
     c => c.charCodeAt(0),
   );
   const key = await crypto.subtle.importKey(

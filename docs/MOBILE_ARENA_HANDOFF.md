@@ -21,7 +21,8 @@ deployed automatically.
    - `FIREBASE_SERVICE_ACCOUNT_EMAIL`: the `client_email` field from a dedicated
      Firebase service account JSON.
    - `FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY`: the matching PEM `private_key`
-     field, including its BEGIN/END lines. Preserve actual newlines.
+     field, including its BEGIN/END lines. Both multiline PEM and JSON-escaped
+   `\\n` sequences are accepted by the Cloudflare signer.
 4. Confirm that the Pages project already binds the existing `idle-kardrune`
    D1 database as `DB`. The live PvP Worker and its secrets need no changes.
 5. Never commit or print the service account JSON, private key, or secret values.
