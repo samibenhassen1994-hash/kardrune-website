@@ -15,6 +15,11 @@ export function rewardAccess(history,uid,claims={total:0,againstOpponent:0}){
  return {allowed:true,opponent:history.player_a===uid?history.player_b:history.player_a};
 }
 
+export function rewardQuota(used,oldest,now){
+ const count=Math.max(0,Number(used)||0),first=Number(oldest);
+ return {remaining:Math.max(0,PVP_REWARD_LIMITS.daily-count),limit:PVP_REWARD_LIMITS.daily,
+ nextRefreshAt:count>0&&Number.isFinite(first)&&first>now-86400000?first+86400000:null};
+}
 export function pendingRewardMatchIds(rows){
  return [...new Set((rows||[]).map(row=>row?.id).filter(id=>typeof id==='string'&&id.length>0))];
 }
