@@ -34,12 +34,21 @@ jobs:
         with:
           channel: stable
           cache: true
-      - name: Install and analyze
+      - name: Install, analyze and run deterministic tests
         working-directory: idle_flutter
+        shell: bash
         run: |
           flutter pub get
           flutter analyze
-          flutter test
+          # Golden screenshot comparisons vary on GitHub's Linux renderer.
+          # Keep them available via: flutter test test/golden_test.dart
+          # Run every other unit/widget test before packaging the web release.
+          mapfile -t test_files < <(find test -type f -name '*_test.dart' ! -name 'golden_test.dart' | sort)
+          if (( ${#test_files[@]} == 0 )); then
+            echo 'No unit or widget tests found.' >&2
+            exit 1
+          fi
+          flutter test "${test_files[@]}"
       - name: Embed running release identity before build
         shell: bash
         run: |
