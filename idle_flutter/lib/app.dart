@@ -311,7 +311,7 @@ class _IdleShellState extends State<IdleShell> {
       final next = response['nextRefreshAt'];
       if (next is int && next > DateTime.now().millisecondsSinceEpoch) {
         final delay = (next - DateTime.now().millisecondsSinceEpoch + 1000).clamp(1000,86400000);
-        _quotaTimer = Timer(Duration(milliseconds: delay), () {
+        _quotaTimer = Timer(Duration(milliseconds: delay.toInt()), () {
           if (mounted && tab == 0) unawaited(_refreshQuota());
         });
       }
