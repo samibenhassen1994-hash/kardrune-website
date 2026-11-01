@@ -12,7 +12,11 @@ import 'package:idle_kardrune/services/live_pvp_socket.dart';
 import 'package:idle_kardrune/services/local_save_service.dart';
 
 class _Storage implements KeyValueStorage {
-  final values = <String, String>{};
+  final values = <String, String>{
+    'idle-tutorial-arena-v1': 'seen',
+    'idle-tutorial-cards-v1': 'seen',
+    'idle-tutorial-summon-v1': 'seen',
+  };
   @override
   String? read(String key) => values[key];
   @override
