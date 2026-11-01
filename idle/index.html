@@ -16,6 +16,14 @@
   -->
   <base href="/idle/">
 
+  <script>
+    // Clear non-secret handshake flags before Flutter and the Android bridge run.
+    if (new URLSearchParams(location.search).get('embedded') === 'android') {
+      localStorage.removeItem('kardrune-mobile-auth-ready');
+      localStorage.removeItem('kardrune-mobile-auth-complete');
+    }
+  </script>
+
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Idle KardRune — collect, train and battle with KardRune heroes.">
@@ -114,7 +122,7 @@
     (() => {
       const releaseUrl = new URL('release-id.json', document.baseURI);
       // CI replaces this marker before Flutter builds its service-worker manifest.
-      const bundledRelease = '9a67d22';
+      const bundledRelease = 'bd53650';
       let checking = false, needsUpdate = false, pendingRelease = null;
       let registration = null, requested = false;
       function announce() {

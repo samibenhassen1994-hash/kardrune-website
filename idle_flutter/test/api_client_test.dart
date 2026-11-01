@@ -57,6 +57,18 @@ void main() {
     expect(transport.last?.headers.containsKey('authorization'), isFalse);
   });
 
+  test('mobile code exchange sends only the one-time code', () async {
+    final transport = RecordingTransport(),
+        client = ApiClient(Token(), transport);
+    await client.postPublic('/api/mobile-auth/exchange', {
+      'code': 'one-time-code',
+    });
+    expect(transport.last?.path, '/api/mobile-auth/exchange');
+    expect(transport.last?.method, 'POST');
+    expect(transport.last?.headers.containsKey('authorization'), isFalse);
+    expect(transport.last?.body, '{"code":"one-time-code"}');
+  });
+
   test('HTTP transport keeps same-origin API paths by default', () {
     final transport = HttpApiTransport();
     expect(transport.resolve('/api/config').toString(), '/api/config');

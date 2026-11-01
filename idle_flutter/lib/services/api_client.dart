@@ -118,6 +118,26 @@ class ApiClient {
     return data;
   }
 
+  Future<Map<String, dynamic>> postPublic(String path, Object body) async {
+    final response = await transport.send(
+      ApiRequest(path, 'POST', const {
+        'content-type': 'application/json',
+      }, jsonEncode(body)),
+    );
+    Map<String, dynamic> data = {};
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) data = decoded;
+    } catch (_) {}
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiFailure(
+        response.statusCode,
+        data['error']?.toString() ?? 'Mobile authentication failed',
+      );
+    }
+    return data;
+  }
+
   Future<Map<String, dynamic>> post(String path, [Object? body]) =>
       _request(path, 'POST', body);
   Future<Map<String, dynamic>> putSave(

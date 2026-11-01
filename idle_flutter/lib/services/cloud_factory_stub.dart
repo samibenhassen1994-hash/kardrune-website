@@ -6,3 +6,5 @@ Future<CloudAccountController?> createDefaultCloudController(
   LocalSaveService local,
   void Function(PlayerSave) onRemoteSave,
 ) async => null;
+
+Future<void> completeMobileBootstrap(CloudAccountController controller) async {}
