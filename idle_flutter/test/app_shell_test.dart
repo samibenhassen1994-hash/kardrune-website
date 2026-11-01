@@ -510,4 +510,41 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('KARTEN'), findsOneWidget);
   });
+
+  testWidgets('Korean translates collection sorting and card details dialogs', (
+    tester,
+  ) async {
+    final storage = _MemoryStorage()..values['idle-language-v1'] = 'ko';
+    final service = LocalSaveService(storage);
+    final initial = PlayerSave.initial();
+    service.save(initial.copyWith(skills: {...initial.skills, 'sam:1': 'R2'}));
+    await tester.pumpWidget(
+      KardRuneApp(saveService: service, enableCloudBootstrap: false),
+    );
+    await tester.tap(find.text('카드').last);
+    await tester.pump();
+
+    await tester.tap(find.text('ATK 높은 순 → 낮은 순'));
+    await tester.pumpAndSettle();
+    expect(find.text('CRIT 높은 순 → 낮은 순'), findsOneWidget);
+    expect(find.text('스킬 희귀도'), findsOneWidget);
+    expect(find.text('스테이지 높은 순 → 낮은 순'), findsOneWidget);
+    expect(find.text('이름 A–Z'), findsOneWidget);
+    await tester.tap(find.text('ATK 높은 순 → 낮은 순').last);
+    await tester.pumpAndSettle();
+
+    final cardArt = find.byKey(const Key('card-art-sam:1'));
+    await tester.ensureVisible(cardArt);
+    await tester.pump();
+    await tester.tap(cardArt);
+    await tester.pumpAndSettle();
+    expect(find.text('회피'), findsWidgets);
+    expect(find.text('효과 보기'), findsOneWidget);
+    expect(find.text('활성 챔피언'), findsOneWidget);
+    expect(find.text('닫기'), findsOneWidget);
+    expect(find.textContaining('회당'), findsOneWidget);
+    expect(find.text('DODGE'), findsNothing);
+    expect(find.text('VIEW EFFECT'), findsNothing);
+    expect(find.text('ACTIVE CHAMPION'), findsNothing);
+  });
 }

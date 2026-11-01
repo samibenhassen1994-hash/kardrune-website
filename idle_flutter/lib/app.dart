@@ -1932,92 +1932,97 @@ class _CardsState extends State<_Cards> {
     final skill = SkillCatalog.byId(skills[id])?.localized(context);
     showDialog<void>(
       context: context,
-      builder: (dialogContext) => Dialog(
-        key: ValueKey('card-details-$id'),
-        backgroundColor: const Color(0xff101d36),
-        shape: RoundedRectangleBorder(
-          side: const BorderSide(color: Color(0xffd5ad62)),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: 470,
-            maxHeight: MediaQuery.sizeOf(dialogContext).height * .94,
+      builder: (dialogContext) => KrLocaleScope(
+        language: widget.language,
+        child: Dialog(
+          key: ValueKey('card-details-$id'),
+          backgroundColor: const Color(0xff101d36),
+          shape: RoundedRectangleBorder(
+            side: const BorderSide(color: Color(0xffd5ad62)),
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${hero.name.toString().toUpperCase()} · STAGE $stage',
-                    style: const TextStyle(
-                      fontFamily: 'Georgia',
-                      fontSize: 20,
-                      color: Color(0xfff5d28b),
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 220,
-                    child: CharacterCardArt(
-                      key: ValueKey('card-detail-frame-$id'),
-                      asset: hero.cardAsset(hero.stages[stage - 1]),
-                      hp: CombatRules.hpForStage(stage),
-                      attack: isOwned ? attacks[id] : null,
-                      crit: isOwned ? crits[id] : null,
-                      skillId: isOwned ? skills[id] : null,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (isOwned && skill != null) ...[
-                    Center(child: SkillRarityBadge(skill: skill)),
-                    const SizedBox(height: 4),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 470,
+              maxHeight: MediaQuery.sizeOf(dialogContext).height * .94,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     Text(
-                      skill.description,
-                      textAlign: TextAlign.center,
+                      '${hero.name.toString().toUpperCase()} · ${_t('STAGE', 'STAGE')} $stage',
                       style: const TextStyle(
-                        color: Color(0xffd2dced),
-                        fontSize: 11,
+                        fontFamily: 'Georgia',
+                        fontSize: 20,
+                        color: Color(0xfff5d28b),
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    Text(
-                      '${skill.trigger} · ${skill.limit}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xffa9bdd4),
-                        fontSize: 10,
-                      ),
-                    ),
-                    Text(
-                      'Stage $stage: ${(SkillCatalog.weights[stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% per pull',
-                      style: const TextStyle(
-                        color: Color(0xffa9bdd4),
-                        fontSize: 10,
-                      ),
-                    ),
-                    SkillPreviewButton(skill: skill),
                     const SizedBox(height: 8),
-                  ],
-                  Text(
-                    isOwned ? 'ACTIVE CHAMPION' : 'NOT COLLECTED',
-                    style: TextStyle(
-                      color: isOwned
-                          ? const Color(0xff7fd7c3)
-                          : const Color(0xffa0b0c8),
-                      fontSize: 10,
-                      letterSpacing: 1.1,
-                      fontWeight: FontWeight.w800,
+                    SizedBox(
+                      height: 220,
+                      child: CharacterCardArt(
+                        key: ValueKey('card-detail-frame-$id'),
+                        asset: hero.cardAsset(hero.stages[stage - 1]),
+                        hp: CombatRules.hpForStage(stage),
+                        attack: isOwned ? attacks[id] : null,
+                        crit: isOwned ? crits[id] : null,
+                        skillId: isOwned ? skills[id] : null,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  _RuneButton(
-                    label: 'CLOSE',
-                    onTap: () => Navigator.pop(dialogContext),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    if (isOwned && skill != null) ...[
+                      Center(child: SkillRarityBadge(skill: skill)),
+                      const SizedBox(height: 4),
+                      Text(
+                        skill.description,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xffd2dced),
+                          fontSize: 11,
+                        ),
+                      ),
+                      Text(
+                        '${skill.trigger} · ${skill.limit}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xffa9bdd4),
+                          fontSize: 10,
+                        ),
+                      ),
+                      Text(
+                        '${_t('STAGE', 'STAGE')} $stage: ${(SkillCatalog.weights[stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% ${_t('PER EVOCAZIONE', 'PER PULL')}',
+                        style: const TextStyle(
+                          color: Color(0xffa9bdd4),
+                          fontSize: 10,
+                        ),
+                      ),
+                      SkillPreviewButton(skill: skill),
+                      const SizedBox(height: 8),
+                    ],
+                    Text(
+                      isOwned
+                          ? _t('CAMPIONE ATTIVO', 'ACTIVE CHAMPION')
+                          : _t('NON COLLEZIONATA', 'NOT COLLECTED'),
+                      style: TextStyle(
+                        color: isOwned
+                            ? const Color(0xff7fd7c3)
+                            : const Color(0xffa0b0c8),
+                        fontSize: 10,
+                        letterSpacing: 1.1,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _RuneButton(
+                      label: _t('CHIUDI', 'CLOSE'),
+                      onTap: () => Navigator.pop(dialogContext),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

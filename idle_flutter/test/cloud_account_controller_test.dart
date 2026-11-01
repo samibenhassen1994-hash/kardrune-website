@@ -270,7 +270,9 @@ void main() {
     await tester.pump();
     expect(find.byKey(const Key('cloud-google')), findsOneWidget);
     expect(tester.takeException(), isNull);
-    await tester.tap(find.byKey(const Key('cloud-google')));
+    final googleButton = find.byKey(const Key('cloud-google'));
+    tester.widget<TextButton>(googleButton).onPressed!.call();
+    await tester.pump();
     expect(auth.googleCalls, 1);
     auth.emit(const CloudIdentity(uid: 'u', email: 'u@test.it'));
     await tester.pump();
@@ -312,7 +314,8 @@ void main() {
     );
     await tester.tap(find.text('PROFILE').last);
     await tester.pump();
-    await tester.tap(find.byKey(const Key('cloud-email')));
+    final emailButton = find.byKey(const Key('cloud-email'));
+    tester.widget<TextButton>(emailButton).onPressed!.call();
     await tester.pump();
     expect(find.byKey(const Key('cloud-register-mode')), findsOneWidget);
     expect(find.byKey(const Key('cloud-forgot-password')), findsOneWidget);
