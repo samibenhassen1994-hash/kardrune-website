@@ -139,7 +139,7 @@ class ArenaLanding extends StatelessWidget {
                 ),
                 if (rewardRemaining != null)
                   Positioned(
-                    top: imageTop + imageHeight * .778,
+                    top: imageTop + imageHeight * .798,
                     left: artWidth * .08,
                     right: artWidth * .08,
                     child: Center(
