@@ -1,4 +1,5 @@
 import {SKILLS,SKILL_BY_ID,SKILL_WEIGHTS,SKILL_VERSION,RARITIES,validSkillForStage} from '../../../shared/skill_catalog.js';
+import {effectiveCardStats,rollCardStats} from '../../../shared/card_stat_limits.js';
 
 // Rejection sampling avoids modulo bias in server-issued rarity/stat rolls.
 export function secureInt(max){
@@ -21,7 +22,7 @@ export function rollCard(featured){
   :stageTicket<78?1:stageTicket<97?2:3;
  const heroes=['sam','lira','rhea','dren','tor','aria','kael','neris','nyra'];
  const hero=featured&&secureInt(100)<35?'dren':heroes[secureInt(9)];
- return {id:`${hero}:${stage}`,attack:1+secureInt(100),crit:secureInt(26),skill:rollSkill(stage)};
+ return {id:`${hero}:${stage}`,...rollCardStats(stage,secureInt),skill:rollSkill(stage)};
 }
 export async function grantsFor(env,uid){
  const rows=await env.DB.prepare('SELECT card_id,attack,crit,skill_id,rarity,skill_version,source FROM skill_grants WHERE uid=?').bind(uid).all();
@@ -56,9 +57,10 @@ export function mergeGrantedSave(save,grants,serverPending=undefined){
  for(const grant of grants){
   const stage=Number(grant.card_id.split(':')[1]);
   if(!validSkillForStage(grant.skill_id,stage)||grant.skill_version!==SKILL_VERSION)continue;
+  const effective=effectiveCardStats(stage,grant.attack,grant.crit);
   if(!next.owned?.includes(grant.card_id))next.owned=[...(next.owned||[]),grant.card_id];
-  next.attacks[grant.card_id]=grant.attack;
-  next.crits[grant.card_id]=grant.crit;
+  next.attacks[grant.card_id]=effective.attack;
+  next.crits[grant.card_id]=effective.crit;
   next.skills[grant.card_id]={id:grant.skill_id,rarity:SKILL_BY_ID[grant.skill_id].rarity,v:SKILL_VERSION};
  }
  if(serverPending!==undefined)next.pendingDuplicate=serverPending;

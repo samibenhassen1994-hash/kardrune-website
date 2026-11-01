@@ -3,6 +3,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../../localization/kr_localizations.dart';
+
 import '../../game/skill_catalog.dart';
 import 'free_pull_notifications.dart';
 
@@ -29,7 +31,8 @@ class SummonScreen extends StatefulWidget {
   State<SummonScreen> createState() => _SummonScreenState();
 }
 
-class _SummonScreenState extends State<SummonScreen> {
+class _SummonScreenState extends State<SummonScreen>
+    with SingleTickerProviderStateMixin {
   int section = 0, available = 0;
   int? nextAt;
   DateTime now = DateTime.now();
@@ -37,10 +40,24 @@ class _SummonScreenState extends State<SummonScreen> {
   Timer? rechargeNotification;
   bool notificationsEnabled = freePullNotificationsGranted;
   bool busy = false;
+  late final AnimationController _entranceController;
+  late final Animation<Offset> _entranceOffset;
 
   @override
   void initState() {
     super.initState();
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+    _entranceOffset =
+        Tween<Offset>(begin: const Offset(0, .35), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+    if (widget.active) _entranceController.forward();
     if (widget.active) _refresh();
     ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted || !widget.active) return;
@@ -59,6 +76,9 @@ class _SummonScreenState extends State<SummonScreen> {
     if ((widget.active && !oldWidget.active) ||
         widget.accountKey != oldWidget.accountKey) {
       _refresh();
+    }
+    if (widget.active && !oldWidget.active) {
+      _entranceController.forward(from: 0);
     }
   }
 
@@ -107,6 +127,7 @@ class _SummonScreenState extends State<SummonScreen> {
 
   @override
   void dispose() {
+    _entranceController.dispose();
     ticker?.cancel();
     rechargeNotification?.cancel();
     super.dispose();
@@ -129,11 +150,11 @@ class _SummonScreenState extends State<SummonScreen> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, box) {
-      final compact = box.maxHeight < 540;
-      final panelHeight = (box.maxHeight * (compact ? .72 : .62)).clamp(
-        290.0,
-        470.0,
-      );
+      final compact = box.maxHeight < 700;
+      final maxPanelHeight = (box.maxHeight - 68).clamp(290.0, 600.0);
+      final panelHeight = (box.maxHeight * (compact ? .88 : .78))
+          .clamp(290.0, maxPanelHeight)
+          .toDouble();
       return Stack(
         fit: StackFit.expand,
         children: [
@@ -159,51 +180,53 @@ class _SummonScreenState extends State<SummonScreen> {
               ),
             ),
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              width: double.infinity,
-              height: panelHeight,
-              margin: const EdgeInsets.fromLTRB(10, 0, 10, 5),
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-              decoration: BoxDecoration(
-                color: const Color(0xe5111b31),
-                border: Border.all(color: const Color(0xffddb46b), width: 1.5),
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: const [
-                  BoxShadow(color: Color(0x99000000), blurRadius: 18),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      _tab(
-                        0,
-                        'STANDARD',
-                        'assets/idle/cards/young_sam/young_sam_stage_1.webp',
-                      ),
-                      const SizedBox(width: 5),
-                      _tab(
-                        1,
-                        'FEATURED',
-                        'assets/idle/cards/dren/dren_stage_3.webp',
-                      ),
-                      const SizedBox(width: 5),
-                      _tab(2, 'EVENT', 'assets/idle/summon/summon_arena.webp'),
-                    ],
+          SlideTransition(
+            position: _entranceOffset,
+            transformHitTests: false,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                key: const Key('summon-content-panel'),
+                width: double.infinity,
+                height: panelHeight,
+                margin: const EdgeInsets.fromLTRB(10, 0, 10, 5),
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+                decoration: BoxDecoration(
+                  color: const Color(0x8a111b31),
+                  border: Border.all(
+                    color: const Color(0xffddb46b),
+                    width: 1.5,
                   ),
-                  const SizedBox(height: 7),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: switch (section) {
-                        0 => _standard(),
-                        1 => _featured(),
-                        _ => _event(),
-                      },
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0x99000000), blurRadius: 18),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    _banner(compact),
+                    const SizedBox(height: 7),
+                    Row(
+                      children: [
+                        _tab(0, context.tr('STANDARD')),
+                        const SizedBox(width: 5),
+                        _tab(1, context.tr('FEATURED')),
+                        const SizedBox(width: 5),
+                        _tab(2, context.tr('EVENT')),
+                      ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 7),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: switch (section) {
+                          0 => _standard(),
+                          1 => _featured(),
+                          _ => _event(),
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -213,13 +236,144 @@ class _SummonScreenState extends State<SummonScreen> {
     },
   );
 
-  Widget _tab(int index, String label, String image) => Expanded(
-    child: GestureDetector(
-      onTap: () => setState(() => section = index),
+  Widget _banner(bool compact) {
+    final title = switch (section) {
+      0 => 'STANDARD PORTAL',
+      1 => 'DREN · FEATURED SUMMON',
+      _ => 'COMING SOON',
+    };
+    final emptyKey = switch (section) {
+      0 => const Key('summon-banner-empty-standard'),
+      _ => const Key('summon-banner-empty-event'),
+    };
+    return Container(
+      key: const Key('summon-banner-frame'),
+      height: compact ? 92 : 250,
+      width: double.infinity,
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xffffe3a0),
+            Color(0xff9a5c20),
+            Color(0xffffcd69),
+            Color(0xff6d3a14),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [
+          BoxShadow(color: Color(0xaa000000), blurRadius: 12),
+          BoxShadow(color: Color(0x66ffc85d), blurRadius: 10),
+        ],
+      ),
       child: Container(
-        height: 82,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
+          color: const Color(0x66091326),
+          border: Border.all(color: const Color(0xff4f2d13), width: 2),
+          borderRadius: BorderRadius.circular(11),
+        ),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 240),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          child: Stack(
+            key: ValueKey<int>(section),
+            fit: StackFit.expand,
+            children: [
+              if (section == 0)
+                Opacity(
+                  opacity: .9,
+                  child: Image.asset(
+                    'assets/idle/summon/banners/Standard_banner.jpg',
+                    key: const Key('summon-banner-art-standard'),
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                  ),
+                )
+              else if (section == 1)
+                Image.asset(
+                  'assets/idle/summon/banners/Dren_banner.webp',
+                  key: const Key('summon-banner-art-featured'),
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  opacity: const AlwaysStoppedAnimation(.9),
+                )
+              else
+                DecoratedBox(
+                  key: emptyKey,
+                  decoration: const BoxDecoration(
+                    gradient: RadialGradient(
+                      colors: [Color(0xff162a47), Color(0xff07101f)],
+                      radius: 1.15,
+                    ),
+                  ),
+                ),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0x00000000),
+                      Color(0x12000000),
+                      Color(0x88020712),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: compact ? 7 : 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0x88020712),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Text(
+                    context.tr(title),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: const Color(0xffffedbd),
+                      fontFamily: 'Georgia',
+                      fontSize: compact ? 14 : 22,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                      shadows: const [
+                        Shadow(color: Colors.black, blurRadius: 8),
+                        Shadow(color: Color(0xffffb638), blurRadius: 10),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _tab(int index, String label) => Expanded(
+    child: GestureDetector(
+      onTap: () => setState(() => section = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        height: 34,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: section == index
+              ? const Color(0xff7a4b1f)
+              : const Color(0xff101c31),
           border: Border.all(
             color: section == index
                 ? const Color(0xffffe2a1)
@@ -231,41 +385,17 @@ class _SummonScreenState extends State<SummonScreen> {
               ? const [BoxShadow(color: Color(0x88f9bf58), blurRadius: 9)]
               : null,
         ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(
-              image,
-              fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
+        child: FittedBox(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xffffe7b5),
+              fontWeight: FontWeight.w900,
+              fontSize: 10,
+              letterSpacing: .4,
+              shadows: [Shadow(color: Colors.black, blurRadius: 5)],
             ),
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0x08000000), Color(0xdd0b1020)],
-                ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 5),
-                child: FittedBox(
-                  child: Text(
-                    label,
-                    style: const TextStyle(
-                      color: Color(0xffffe7b5),
-                      fontWeight: FontWeight.w900,
-                      fontSize: 10,
-                      shadows: [Shadow(color: Colors.black, blurRadius: 5)],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     ),
@@ -274,10 +404,10 @@ class _SummonScreenState extends State<SummonScreen> {
   Widget _standard() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      _title('STANDARD SUMMON'),
+      _title(context.tr('STANDARD SUMMON')),
       _info('Nine heroes · 300 Shards or a free charge'),
       const SizedBox(height: 5),
-      _info('FREE PULLS  $available / 2', gold: true),
+      _info('${context.tr('FREE PULLS')}  $available / 2', gold: true),
       if (nextAt != null) ...[
         const SizedBox(height: 4),
         LinearProgressIndicator(
@@ -286,19 +416,20 @@ class _SummonScreenState extends State<SummonScreen> {
           color: const Color(0xffffd677),
           backgroundColor: const Color(0xff34465f),
         ),
-        _info('Next charge in ${_remaining()}', gold: true),
+        _info('${context.tr('NEXT CHARGE IN')} ${_remaining()}', gold: true),
       ],
       const SizedBox(height: 6),
       _button(
-        'FREE SUMMON',
+        context.tr('FREE SUMMON'),
         available > 0 && !busy,
         () => _pull(featured: false, free: true),
       ),
       const SizedBox(height: 6),
       _button(
-        'SUMMON 1  ◆ 300',
+        context.tr('SUMMON 1  ◆ 300'),
         widget.shards >= 300 && !busy,
         () => _pull(featured: false),
+        key: const Key('summon-paid-button'),
       ),
     ],
   );
@@ -306,11 +437,11 @@ class _SummonScreenState extends State<SummonScreen> {
   Widget _featured() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      _title('FEATURED SUMMON · DREN'),
+      _title('${context.tr('FEATURED SUMMON')} · DREN'),
       _info('Dren rate-up · 600 Shards'),
       const SizedBox(height: 9),
       _button(
-        'FEATURED PULL  ◆ 600',
+        context.tr('FEATURED PULL  ◆ 600'),
         widget.shards >= 600 && !busy,
         () => _pull(featured: true),
       ),
@@ -320,7 +451,7 @@ class _SummonScreenState extends State<SummonScreen> {
   Widget _event() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      _title('EVENT SUMMON'),
+      _title(context.tr('EVENT SUMMON')),
       _info(
         'No event banner is active. Rates and featured heroes will appear here when an event is configured.',
       ),
@@ -376,7 +507,7 @@ class _SummonScreenState extends State<SummonScreen> {
       TextButton.icon(
         onPressed: _showInfo,
         icon: const Icon(Icons.info_outline, size: 17),
-        label: const Text('INFO'),
+        label: Text(context.tr('INFO')),
         style: TextButton.styleFrom(foregroundColor: const Color(0xffffd986)),
       ),
     ],
@@ -400,11 +531,13 @@ class _SummonScreenState extends State<SummonScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  section == 0
-                      ? 'STANDARD SUMMON'
-                      : section == 1
-                      ? 'FEATURED SUMMON'
-                      : 'EVENT SUMMON',
+                  context.tr(
+                    section == 0
+                        ? 'STANDARD SUMMON'
+                        : section == 1
+                        ? 'FEATURED SUMMON'
+                        : 'EVENT SUMMON',
+                  ),
                   style: const TextStyle(
                     color: Color(0xffffdf9d),
                     fontFamily: 'Georgia',
@@ -448,7 +581,7 @@ class _SummonScreenState extends State<SummonScreen> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () => Navigator.pop(dialogContext),
-                    child: const Text('CLOSE'),
+                    child: Text(context.tr('CLOSE')),
                   ),
                 ),
               ],
@@ -462,7 +595,7 @@ class _SummonScreenState extends State<SummonScreen> {
   Widget _info(String text, {bool gold = false}) => Padding(
     padding: const EdgeInsets.only(bottom: 4),
     child: Text(
-      text,
+      context.tr(text),
       style: TextStyle(
         color: gold ? const Color(0xffffd986) : const Color(0xffe4e9f3),
         fontSize: 10,
@@ -470,8 +603,9 @@ class _SummonScreenState extends State<SummonScreen> {
       ),
     ),
   );
-  Widget _button(String label, bool enabled, VoidCallback action) =>
+  Widget _button(String label, bool enabled, VoidCallback action, {Key? key}) =>
       GestureDetector(
+        key: key,
         onTap: enabled ? action : null,
         child: Container(
           height: 39,

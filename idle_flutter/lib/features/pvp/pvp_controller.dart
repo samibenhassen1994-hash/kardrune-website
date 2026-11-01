@@ -21,6 +21,7 @@ class PvpController {
       case LockedEvent():
         locked = true;
       case WaitingEvent() ||
+          DiceEvent() ||
           OpponentLockedEvent() ||
           RoundResultEvent() ||
           FinishedEvent() ||

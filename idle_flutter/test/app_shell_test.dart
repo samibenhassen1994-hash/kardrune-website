@@ -5,7 +5,11 @@ import 'package:idle_kardrune/models/player_save.dart';
 import 'package:idle_kardrune/services/local_save_service.dart';
 
 class _MemoryStorage implements KeyValueStorage {
-  final values = <String, String>{};
+  final values = <String, String>{
+    'idle-tutorial-arena-v1': 'seen',
+    'idle-tutorial-cards-v1': 'seen',
+    'idle-tutorial-summon-v1': 'seen',
+  };
   @override
   String? read(String key) => values[key];
   @override
@@ -36,7 +40,7 @@ void main() {
         expect(find.byKey(const Key('collection-scroll-grid')), findsOneWidget);
         expect(tester.takeException(), isNull);
         await tester.tap(find.text('SUMMON').last);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('STANDARD SUMMON'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await tester.tap(find.text('PROFILE').last);
@@ -46,9 +50,60 @@ void main() {
       },
     );
   }
-  testWidgets('cards collection and summon update the wallet', (
+  testWidgets('summon banner follows the selected section without overflow', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const KardRuneApp(enableCloudBootstrap: false));
+    await tester.tap(find.text('SUMMON').last);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('summon-banner-frame')), findsOneWidget);
+    final panel = tester.widget<Container>(
+      find.byKey(const Key('summon-content-panel')),
+    );
+    final panelDecoration = panel.decoration! as BoxDecoration;
+    expect(panelDecoration.color!.a, lessThan(.75));
+    expect(find.byKey(const Key('summon-banner-art-standard')), findsOneWidget);
+    expect(find.byKey(const Key('summon-banner-art-featured')), findsNothing);
+    expect(
+      find.byKey(const Key('summon-paid-button')).hitTestable(),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('FEATURED'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('summon-banner-art-featured')), findsOneWidget);
+    expect(find.byKey(const Key('summon-banner-art-standard')), findsNothing);
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('EVENT'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('summon-banner-empty-event')), findsOneWidget);
+    expect(find.byKey(const Key('summon-banner-art-featured')), findsNothing);
+    expect(find.text('COMING SOON'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('summon content panel enters upward when opened', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const KardRuneApp(enableCloudBootstrap: false));
+    await tester.tap(find.text('SUMMON').last);
+    await tester.pump();
+    final panel = find.byKey(const Key('summon-content-panel'));
+    final enteringY = tester.getTopLeft(panel).dy;
+    await tester.pump(const Duration(milliseconds: 500));
+    final settledY = tester.getTopLeft(panel).dy;
+    expect(enteringY - settledY, greaterThan(40));
+  });
+  testWidgets('cards collection and summon update the wallet', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -59,7 +114,7 @@ void main() {
     expect(find.byKey(const Key('collection-scroll-grid')), findsOneWidget);
     expect(find.textContaining('1/27'), findsOneWidget);
     await tester.tap(find.text('SUMMON').last);
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('1,500'), findsOneWidget);
     await tester.tap(find.textContaining('SUMMON 1'));
     await tester.pump();
@@ -87,7 +142,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(KardRuneApp(random: () => 0));
     await tester.tap(find.text('SUMMON').last);
-    await tester.pump();
+    await tester.pumpAndSettle();
     await tester.tap(find.textContaining('SUMMON 1'));
     await tester.pump();
     await tester.pumpAndSettle();
@@ -100,66 +155,110 @@ void main() {
     await tester.pump();
     expect(find.text('1,300'), findsOneWidget);
   });
-  testWidgets('duplicate arrows and pending save survive until choice', (tester) async {
+  testWidgets('duplicate arrows and pending save survive until choice', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final storage = _MemoryStorage(), service = LocalSaveService(storage);
-    var index=0;
-    const rolls=[0.0,0.0,0.0,0.8,0.0];
-    await tester.pumpWidget(KardRuneApp(saveService: service,
-      enableCloudBootstrap:false,random:()=>rolls[index++ % rolls.length]));
+    var index = 0;
+    const rolls = [0.0, 0.0, 0.0, 0.8, 0.0];
+    await tester.pumpWidget(
+      KardRuneApp(
+        saveService: service,
+        enableCloudBootstrap: false,
+        random: () => rolls[index++ % rolls.length],
+      ),
+    );
     await tester.tap(find.text('SUMMON').last);
-    await tester.pump();
+    await tester.pumpAndSettle();
     await tester.tap(find.textContaining('SUMMON 1'));
     await tester.pumpAndSettle();
     expect(find.text('DUPLICATE CARD'), findsOneWidget);
-    expect(service.load().pendingDuplicate,{
-      'id':'sam:1','attack':1,'crit':0,'skillId':'C5','skillVersion':1,
+    expect(service.load().pendingDuplicate, {
+      'id': 'sam:1',
+      'attack': 25,
+      'crit': 0,
+      'skillId': 'C5',
+      'skillVersion': 1,
     });
-    expect(find.descendant(of:find.byKey(const Key('summon-delta-atk')),
-      matching:find.byIcon(Icons.arrow_downward)),findsOneWidget);
-    expect(find.descendant(of:find.byKey(const Key('summon-delta-crit')),
-      matching:find.byIcon(Icons.arrow_downward)),findsOneWidget);
-    expect(service.load().attacks['sam:1'],40);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('summon-delta-atk')),
+        matching: find.byIcon(Icons.arrow_downward),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('summon-delta-crit')),
+        matching: find.byIcon(Icons.arrow_downward),
+      ),
+      findsOneWidget,
+    );
+    expect(service.load().attacks['sam:1'], 40);
     await tester.tap(find.byKey(const Key('summon-replace')));
     await tester.pumpAndSettle();
-    expect(service.load().attacks['sam:1'],1);
-    expect(service.load().crits['sam:1'],0);
-    expect(service.load().skills['sam:1'],'C5');
-    expect(service.load().pendingDuplicate,isNull);
+    expect(service.load().attacks['sam:1'], 25);
+    expect(service.load().crits['sam:1'], 0);
+    expect(service.load().skills['sam:1'], 'C5');
+    expect(service.load().pendingDuplicate, isNull);
   });
 
-  testWidgets('unresolved duplicate is reopened after app restart', (tester) async {
-    tester.view.physicalSize=const Size(390,844);
-    tester.view.devicePixelRatio=1;
+  testWidgets('unresolved duplicate is reopened after app restart', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    final service=LocalSaveService(_MemoryStorage());
-    service.save(PlayerSave.initial().copyWith(shards:1200,
-      pendingDuplicate:{'id':'sam:1','attack':92,'crit':2}));
-    await tester.pumpWidget(KardRuneApp(saveService:service,enableCloudBootstrap:false));
+    final service = LocalSaveService(_MemoryStorage());
+    service.save(
+      PlayerSave.initial().copyWith(
+        shards: 1200,
+        pendingDuplicate: {'id': 'sam:1', 'attack': 92, 'crit': 2},
+      ),
+    );
+    await tester.pumpWidget(
+      KardRuneApp(saveService: service, enableCloudBootstrap: false),
+    );
     await tester.pumpAndSettle();
-    expect(find.text('DUPLICATE CARD'),findsOneWidget);
+    expect(find.text('DUPLICATE CARD'), findsOneWidget);
     await tester.tap(find.byKey(const Key('summon-keep')));
     await tester.pumpAndSettle();
-    expect(service.load().shards,1300);
-    expect(service.load().pendingDuplicate,isNull);
+    expect(service.load().shards, 1300);
+    expect(service.load().pendingDuplicate, isNull);
     await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pumpWidget(KardRuneApp(saveService:service,enableCloudBootstrap:false));
+    await tester.pumpWidget(
+      KardRuneApp(saveService: service, enableCloudBootstrap: false),
+    );
     await tester.pumpAndSettle();
-    expect(find.text('DUPLICATE CARD'),findsNothing);
+    expect(find.text('DUPLICATE CARD'), findsNothing);
   });
 
-  testWidgets('profile language toggle exposes Italian navigation', (
+  testWidgets('profile language selector exposes all languages', (
     tester,
   ) async {
     await tester.pumpWidget(const KardRuneApp());
     await tester.tap(find.text('PROFILE').last);
     await tester.pump();
-    await tester.tap(find.textContaining('ITALIANO'));
-    await tester.pump();
+    await tester.tap(find.textContaining('English'));
+    await tester.pumpAndSettle();
+    for (final label in [
+      'English',
+      'Italiano',
+      'Español',
+      '日本語',
+      '한국어',
+      '简体中文',
+      'Deutsch',
+    ]) {
+      expect(find.text(label), findsOneWidget);
+    }
+    await tester.tap(find.text('Italiano'));
+    await tester.pumpAndSettle();
     expect(find.text('CARTE'), findsOneWidget);
   });
   testWidgets('Cards opens the integrated nine-slot deck builder', (
@@ -229,7 +328,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.descendant(of: stats, matching: find.text('19%')),
+      find.descendant(of: stats, matching: find.text('16%')),
       findsOneWidget,
     );
     final frameRect = tester.getRect(frame);
@@ -315,7 +414,7 @@ void main() {
     await tester.tap(find.text('ARENA').last);
     await tester.pump();
     expect(service.load().active, 'sam:2');
-    expect(service.load().attacks['sam:2'], 100);
+    expect(service.load().attacks['sam:2'], 75);
   });
 
   testWidgets(
@@ -327,7 +426,7 @@ void main() {
         KardRuneApp(saveService: service, random: () => 0),
       );
       await tester.tap(find.text('SUMMON').last);
-      await tester.pump();
+      await tester.pumpAndSettle();
       await tester.tap(find.textContaining('SUMMON 1'));
       await tester.pump();
       await tester.pumpAndSettle();
@@ -335,15 +434,13 @@ void main() {
       await tester.pump();
       await tester.tap(find.text('CARDS').last);
       await tester.pump();
-      expect(find.text('1'), findsWidgets);
+      expect(find.text('25'), findsWidgets);
       expect(find.text('0%'), findsWidgets);
-      expect(service.load().attacks['sam:1'], 1);
+      expect(service.load().attacks['sam:1'], 25);
       expect(service.load().crits['sam:1'], 0);
     },
   );
-  testWidgets('runtime loads and displays the legacy save', (
-    tester,
-  ) async {
+  testWidgets('runtime loads and displays the legacy save', (tester) async {
     final storage = _MemoryStorage();
     final service = LocalSaveService(storage);
     service.save(
@@ -388,5 +485,66 @@ void main() {
     await tester.tap(find.text('PROFILE').last);
     await tester.pump();
     expect(find.byKey(const Key('motion-reduced-selected')), findsOneWidget);
+  });
+
+  testWidgets('selected language persists outside the game save', (
+    tester,
+  ) async {
+    final storage = _MemoryStorage(), service = LocalSaveService(storage);
+    await tester.pumpWidget(
+      KardRuneApp(saveService: service, enableCloudBootstrap: false),
+    );
+    await tester.tap(find.text('PROFILE').last);
+    await tester.pump();
+    await tester.tap(find.textContaining('English'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Deutsch'));
+    await tester.pumpAndSettle();
+    expect(storage.values['idle-language-v1'], 'de');
+    expect(find.text('KARTEN'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(
+      KardRuneApp(saveService: service, enableCloudBootstrap: false),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('KARTEN'), findsOneWidget);
+  });
+
+  testWidgets('Korean translates collection sorting and card details dialogs', (
+    tester,
+  ) async {
+    final storage = _MemoryStorage()..values['idle-language-v1'] = 'ko';
+    final service = LocalSaveService(storage);
+    final initial = PlayerSave.initial();
+    service.save(initial.copyWith(skills: {...initial.skills, 'sam:1': 'R2'}));
+    await tester.pumpWidget(
+      KardRuneApp(saveService: service, enableCloudBootstrap: false),
+    );
+    await tester.tap(find.text('카드').last);
+    await tester.pump();
+
+    await tester.tap(find.text('ATK 높은 순 → 낮은 순'));
+    await tester.pumpAndSettle();
+    expect(find.text('CRIT 높은 순 → 낮은 순'), findsOneWidget);
+    expect(find.text('스킬 희귀도'), findsOneWidget);
+    expect(find.text('스테이지 높은 순 → 낮은 순'), findsOneWidget);
+    expect(find.text('이름 A–Z'), findsOneWidget);
+    await tester.tap(find.text('ATK 높은 순 → 낮은 순').last);
+    await tester.pumpAndSettle();
+
+    final cardArt = find.byKey(const Key('card-art-sam:1'));
+    await tester.ensureVisible(cardArt);
+    await tester.pump();
+    await tester.tap(cardArt);
+    await tester.pumpAndSettle();
+    expect(find.text('회피'), findsWidgets);
+    expect(find.text('효과 보기'), findsOneWidget);
+    expect(find.text('활성 챔피언'), findsOneWidget);
+    expect(find.text('닫기'), findsOneWidget);
+    expect(find.textContaining('회당'), findsOneWidget);
+    expect(find.text('DODGE'), findsNothing);
+    expect(find.text('VIEW EFFECT'), findsNothing);
+    expect(find.text('ACTIVE CHAMPION'), findsNothing);
   });
 }

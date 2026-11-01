@@ -40,8 +40,8 @@ void main() {
       expect(save.owned, ['sam:1', 'lira:2']);
       expect(save.active, 'sam:1');
       expect(save.wins, 3);
-      expect(save.attacks['lira:2'], 99);
-      expect(save.crits['lira:2'], 25);
+      expect(save.attacks['lira:2'], 75);
+      expect(save.crits['lira:2'], 16);
     },
   );
 
@@ -54,7 +54,7 @@ void main() {
     }, nowMs: now);
     expect(save.practiceDay, '2026-10-25');
     expect(save.practiceCount, 8);
-    expect(save.pendingDuplicate, {'id': 'sam:1', 'attack': 77, 'crit': 25});
+    expect(save.pendingDuplicate, {'id': 'sam:1', 'attack': 50, 'crit': 8});
   });
 
   test('shards clamp to the largest integer exactly representable on Web', () {

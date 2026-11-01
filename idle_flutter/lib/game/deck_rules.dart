@@ -1,5 +1,14 @@
 abstract final class DeckRules {
   static const size = 9;
+  static List<String> auto(List<String> owned, Map<String, int> attacks) {
+    final cards = owned.toSet().toList()
+      ..sort((a, b) {
+        final byAttack = (attacks[b] ?? 0).compareTo(attacks[a] ?? 0);
+        return byAttack != 0 ? byAttack : a.compareTo(b);
+      });
+    return cards.take(size).toList();
+  }
+
   static List<String?> normalize(List<Object?>? input, List<String> owned) {
     final out = List<String?>.filled(size, null), seen = <String>{};
     if (input == null) return out;

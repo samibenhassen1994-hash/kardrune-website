@@ -4,7 +4,7 @@ const baseHp=stage=>[0,240,340,430][stage]||240;
 const floor=Math.floor;
 const percent=(value,rate)=>floor(value*rate/100);
 
-export function resolveSkillDuel(cards,random=Math.random){
+export function resolveSkillDuel(cards,random=Math.random,starter=null){
  const players=cards.map(card=>({
   card,skill:SKILL_BY_ID[card.skillId]||null,
   maxHp:baseHp(card.stage)+(card.skillId==='C3'?15:0),
@@ -89,7 +89,7 @@ export function resolveSkillDuel(cards,random=Math.random){
   if(players[i].card.skillId==='C5')activate(i,i,{status:'passive'});
  }
  const startHp=players.map(p=>p.hp),maxHp=players.map(p=>p.maxHp);
- let turn=random()<.5?0:1;
+ let turn=starter===0||starter===1?starter:random()<.5?0:1;
  for(let action=0;action<100&&players[0].hp>0&&players[1].hp>0;action++){
   const self=players[turn],enemy=players[1-turn],silenced=self.silence>0;
   for(const dot of [...self.dots]){

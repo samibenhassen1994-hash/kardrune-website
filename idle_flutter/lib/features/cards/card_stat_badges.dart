@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../../game/skill_catalog.dart';
+import '../../localization/skill_localizations.dart';
 
 class CharacterCardArt extends StatelessWidget {
   const CharacterCardArt({
@@ -36,8 +38,12 @@ class CharacterCardArt extends StatelessWidget {
         children: [
           Opacity(
             opacity: imageOpacity,
-            child: Image.asset(asset, key: artKey, fit: BoxFit.contain,
-              cacheWidth: imageCacheWidth),
+            child: Image.asset(
+              asset,
+              key: artKey,
+              fit: BoxFit.contain,
+              cacheWidth: imageCacheWidth,
+            ),
           ),
           Positioned(
             left: compact ? 2 : 4,
@@ -61,12 +67,15 @@ class CharacterCardArt extends StatelessWidget {
   );
 }
 
-
 /// Shared placement for skill ribbons inside all card artwork (collection,
 /// summon duplicates, deck editor, PvP). Never place SkillRarityBadge in an
 /// unconstrained Align/FractionallySizedBox: it can cover the entire card.
 class CardSkillOverlay extends StatelessWidget {
-  const CardSkillOverlay({super.key, required this.skill, this.compact = false});
+  const CardSkillOverlay({
+    super.key,
+    required this.skill,
+    this.compact = false,
+  });
   final SkillDefinition skill;
   final bool compact;
 
@@ -92,20 +101,30 @@ class CardSkillOverlay extends StatelessWidget {
 /// A legible fantasy plate with rarity-colored enamel and a luminous rim.
 /// Purely presentational: the parent card stays responsible for inspection taps.
 class SkillRarityBadge extends StatelessWidget {
-  const SkillRarityBadge({super.key, required this.skill, this.compact = false});
+  const SkillRarityBadge({
+    super.key,
+    required this.skill,
+    this.compact = false,
+  });
   final SkillDefinition skill;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
+    final displaySkill = skill.localized(context);
     final color = skill.color;
     final ultra = skill.rarity == 'ultra';
     final radius = BorderRadius.circular(compact ? 5 : 8);
     final gradient = ultra
-        ? const LinearGradient(colors: [
-            Color(0xfff24d8b), Color(0xffffca48), Color(0xff49e6ae),
-            Color(0xff54a9ff), Color(0xffbe75ff),
-          ])
+        ? const LinearGradient(
+            colors: [
+              Color(0xfff24d8b),
+              Color(0xffffca48),
+              Color(0xff49e6ae),
+              Color(0xff54a9ff),
+              Color(0xffbe75ff),
+            ],
+          )
         : LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -116,56 +135,68 @@ class SkillRarityBadge extends StatelessWidget {
             ],
           );
     return Semantics(
-      label: '${skill.name}, ${skill.rarity}',
+      label: '${displaySkill.name}, ${skill.rarity}',
       child: SizedBox(
         width: compact ? 124 : 152,
         height: compact ? 13 : 18,
         child: Container(
           padding: EdgeInsets.all(compact ? 1 : 1.5),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: radius,
-          boxShadow: [
-            BoxShadow(color: color.withValues(alpha: .65),
-                blurRadius: compact ? 5 : 10, spreadRadius: compact ? 0 : 1),
-            const BoxShadow(color: Color(0x99000000), blurRadius: 5,
-                offset: Offset(0, 2)),
-          ],
-        ),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-              horizontal: compact ? 3 : 5, vertical: 0),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(compact ? 4 : 6),
-            gradient: LinearGradient(colors: [
-              Color.lerp(color, const Color(0xff101328), .43)!,
-              Color.lerp(color, const Color(0xff07101b), .72)!,
-            ]),
-            border: Border.all(color: Colors.white.withValues(alpha: .60),
-                width: .6),
+            gradient: gradient,
+            borderRadius: radius,
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: .65),
+                blurRadius: compact ? 5 : 10,
+                spreadRadius: compact ? 0 : 1,
+              ),
+              const BoxShadow(
+                color: Color(0x99000000),
+                blurRadius: 5,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
-          child: Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                skill.name.toUpperCase(),
-                maxLines: 1,
-                softWrap: false,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: compact ? 8 : 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: compact ? .1 : .35,
-                  shadows: [
-                    Shadow(color: color, blurRadius: 6),
-                    const Shadow(color: Color(0xff000000), blurRadius: 2),
-                  ],
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 3 : 5,
+              vertical: 0,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(compact ? 4 : 6),
+              gradient: LinearGradient(
+                colors: [
+                  Color.lerp(color, const Color(0xff101328), .43)!,
+                  Color.lerp(color, const Color(0xff07101b), .72)!,
+                ],
+              ),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: .60),
+                width: .6,
+              ),
+            ),
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  displaySkill.name.toUpperCase(),
+                  maxLines: 1,
+                  softWrap: false,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: compact ? 8 : 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: compact ? .1 : .35,
+                    shadows: [
+                      Shadow(color: color, blurRadius: 6),
+                      const Shadow(color: Color(0xff000000), blurRadius: 2),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
         ),
       ),
     );

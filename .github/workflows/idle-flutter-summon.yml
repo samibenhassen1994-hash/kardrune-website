@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - feature/idle-arena-mobile-handoff
       - feature/idle-summon-animated-comparison
       - fix/idle-summon-stats-ios-update
       - fix/idle-pvp-ios-combined-main
@@ -38,6 +39,7 @@ jobs:
         run: |
           flutter pub get
           flutter analyze
+          flutter test
       - name: Embed running release identity before build
         shell: bash
         run: |

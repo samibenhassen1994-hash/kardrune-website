@@ -1,4 +1,5 @@
 import '../game/catalog.dart';
+import '../game/card_stat_limits.dart';
 import '../game/combat_rules.dart';
 import '../game/game_rules.dart';
 import '../game/skill_catalog.dart';
@@ -69,6 +70,15 @@ class PlayerSave {
         v is int && v >= min && v <= max ? v : fallback;
     final a = json['attacks'] is Map ? json['attacks'] as Map : const {},
         c = json['crits'] is Map ? json['crits'] as Map : const {};
+    ({int attack, int crit}) effectiveFor(String id) {
+      final stage = int.parse(id.split(':').last);
+      return CardStatLimits.effective(
+        stage,
+        a[id] is int ? a[id] as int : CombatRules.legacyAttack(id),
+        c[id] is int ? c[id] as int : CombatRules.legacyCrit(id),
+      );
+    }
+
     final rawSkills = json['skills'] is Map ? json['skills'] as Map : const {};
     final dailyRaw = json['practiceDaily'] is Map
         ? json['practiceDaily'] as Map
@@ -89,17 +99,21 @@ class PlayerSave {
         (p['attack'] as int) >= 1 &&
         (p['attack'] as int) <= 100) {
       final id = p['id'] as String;
+      final stage = int.parse(id.split(':').last);
+      final effective = CardStatLimits.effective(
+        stage,
+        p['attack'] as int,
+        bounded(p['crit'], CombatRules.legacyCrit('$id:duplicate'), 0, 25),
+      );
       pending = {
         'id': id,
-        'attack': p['attack'] as int,
-        'crit': bounded(
-          p['crit'],
-          CombatRules.legacyCrit('$id:duplicate'),
-          0,
-          25,
-        ),
-        if (p['skillId'] is String && SkillCatalog.validForStage(
-          p['skillId'] as String, int.parse(id.split(':').last)))
+        'attack': effective.attack,
+        'crit': effective.crit,
+        if (p['skillId'] is String &&
+            SkillCatalog.validForStage(
+              p['skillId'] as String,
+              int.parse(id.split(':').last),
+            ))
           'skillId': p['skillId'] as String,
         if (p['skillVersion'] == SkillCatalog.version)
           'skillVersion': SkillCatalog.version,
@@ -126,14 +140,8 @@ class PlayerSave {
       pulls: count(json['pulls']),
       practiceDay: daily.day,
       practiceCount: daily.count,
-      attacks: {
-        for (final id in owned)
-          id: bounded(a[id], CombatRules.legacyAttack(id), 1, 100),
-      },
-      crits: {
-        for (final id in owned)
-          id: bounded(c[id], CombatRules.legacyCrit(id), 0, 25),
-      },
+      attacks: {for (final id in owned) id: effectiveFor(id).attack},
+      crits: {for (final id in owned) id: effectiveFor(id).crit},
       skills: {
         for (final id in owned)
           if (rawSkills[id] is Map &&
@@ -141,7 +149,8 @@ class PlayerSave {
               (rawSkills[id] as Map)['v'] == SkillCatalog.version &&
               SkillCatalog.validForStage(
                 (rawSkills[id] as Map)['id'] as String,
-                int.parse(id.split(':').last)))
+                int.parse(id.split(':').last),
+              ))
             id: (rawSkills[id] as Map)['id'] as String,
       },
       pendingDuplicate: pending,
@@ -162,7 +171,11 @@ class PlayerSave {
     'skills': {
       for (final entry in skills.entries)
         if (SkillCatalog.byId(entry.value) case final skill?)
-          entry.key: {'id': skill.id, 'rarity': skill.rarity, 'v': SkillCatalog.version},
+          entry.key: {
+            'id': skill.id,
+            'rarity': skill.rarity,
+            'v': SkillCatalog.version,
+          },
     },
     'pendingDuplicate': pendingDuplicate,
   };

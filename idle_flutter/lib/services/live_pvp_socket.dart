@@ -37,6 +37,15 @@ sealed class PvpEvent {
         return const PingEvent();
       case 'waiting':
         return const WaitingEvent();
+      case 'dice':
+        return DiceEvent(
+          rolls: List<int>.from(j['rolls'] as List),
+          attempts: (j['attempts'] as List)
+              .map((value) => List<int>.from(value as List))
+              .toList(),
+          starter: j['starter'] as int,
+          matchId: j['matchId'] as String,
+        );
       case 'hand':
         return HandEvent(
           round: j['round'] as int,
@@ -65,6 +74,7 @@ sealed class PvpEvent {
           j['reason'] as String,
           j['winner'] as String,
           List<int>.from(j['score'] as List),
+          reward: (j['reward'] as num?)?.toInt() ?? 0,
         );
       case 'error':
         return ErrorEvent(j['message'] as String);
@@ -80,6 +90,19 @@ class PingEvent extends PvpEvent {
 
 class WaitingEvent extends PvpEvent {
   const WaitingEvent();
+}
+
+class DiceEvent extends PvpEvent {
+  const DiceEvent({
+    required this.rolls,
+    required this.attempts,
+    required this.starter,
+    required this.matchId,
+  });
+  final List<int> rolls;
+  final List<List<int>> attempts;
+  final int starter;
+  final String matchId;
 }
 
 class OpponentLockedEvent extends PvpEvent {
@@ -120,9 +143,10 @@ class RoundResultEvent extends PvpEvent {
 }
 
 class FinishedEvent extends PvpEvent {
-  const FinishedEvent(this.reason, this.winner, this.score);
+  const FinishedEvent(this.reason, this.winner, this.score, {this.reward = 0});
   final String reason, winner;
   final List<int> score;
+  final int reward;
 }
 
 class ErrorEvent extends PvpEvent {

@@ -2,7 +2,7 @@
  * Never cache /api/ responses, authenticated requests, WebSockets or video.
  * This also supersedes the legacy /idle/sw.js cache on activation.
  */
-const CACHE_NAME = 'idle-kardrune-flutter-v3';
+const CACHE_NAME = 'idle-kardrune-flutter-v4';
 const SCOPE = new URL(self.registration.scope);
 const SHELL = ['./', './index.html', './manifest.json', './flutter_bootstrap.js'];
 const STATIC_FILES = new Set([
@@ -47,4 +47,25 @@ self.addEventListener('fetch', (event) => {
       return response;
     }).catch(async () => (await caches.match(request)) || Response.error()),
   );
+});
+
+self.addEventListener('push',event=>{
+  event.waitUntil((async()=>{
+    let data={};try{data=event.data?.json()||{}}catch(_){}
+    const free=data.topic==='free_pull';
+    await self.registration.showNotification(free?'KardRune · Free Summon':'KardRune',{
+      body:free?'A free Standard Summon is ready.':'New activity in KardRune.',
+      tag:typeof data.id==='string'?data.id:'kardrune',icon:'icons/Icon-192.png',
+      renotify:false,
+      data:{url:'./'}
+    });
+  })());
+});
+self.addEventListener('notificationclick',event=>{
+  event.notification.close();
+  event.waitUntil((async()=>{
+    const targets=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+    const tab=targets.find(t=>t.url.startsWith(self.registration.scope));
+    if(tab)await tab.focus();else await self.clients.openWindow(self.registration.scope);
+  })());
 });

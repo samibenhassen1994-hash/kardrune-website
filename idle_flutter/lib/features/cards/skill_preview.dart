@@ -4,6 +4,8 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import '../../game/skill_catalog.dart';
+import '../../localization/kr_localizations.dart';
+import '../../localization/skill_localizations.dart';
 
 class SkillPreviewButton extends StatefulWidget {
   const SkillPreviewButton({super.key, required this.skill});
@@ -21,17 +23,22 @@ class _SkillPreviewButtonState extends State<SkillPreviewButton> {
   }
 
   @override
-  Widget build(BuildContext context) => Column(children: [
-    TextButton(
-      onPressed: () {
-        game?.dispose();
-        setState(() => game = SkillPreviewGame(widget.skill));
-      },
-      child: const Text('VEDI EFFETTO'),
-    ),
-    if (game != null)
-      SizedBox(height: 85, child: IgnorePointer(child: GameWidget(game: game!))),
-  ]);
+  Widget build(BuildContext context) => Column(
+    children: [
+      TextButton(
+        onPressed: () {
+          game?.dispose();
+          setState(() => game = SkillPreviewGame(widget.skill.localized(context)));
+        },
+        child: Text(context.tr('VIEW EFFECT')),
+      ),
+      if (game != null)
+        SizedBox(
+          height: 85,
+          child: IgnorePointer(child: GameWidget(game: game!)),
+        ),
+    ],
+  );
 }
 
 class SkillPreviewGame extends FlameGame {
@@ -56,22 +63,40 @@ class SkillPreviewGame extends FlameGame {
     final phase = (elapsed / 1.3).clamp(0.0, 1.0);
     final opacity = (1 - phase).clamp(0.0, 1.0);
     final color = skill.color;
-    canvas.drawCircle(center, 12 + phase * size.y * .48,
-      Paint()..color = color.withValues(alpha: opacity)
-        ..style = PaintingStyle.stroke..strokeWidth = 3);
+    canvas.drawCircle(
+      center,
+      12 + phase * size.y * .48,
+      Paint()
+        ..color = color.withValues(alpha: opacity)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
     for (var i = 0; i < 12; i++) {
       final angle = i * math.pi / 6;
       final distance = 8 + phase * (18 + i % 3 * 7);
-      final point = center + Offset(math.cos(angle), math.sin(angle)) * distance;
-      canvas.drawCircle(point, 2.5, Paint()..color = color.withValues(alpha: opacity));
+      final point =
+          center + Offset(math.cos(angle), math.sin(angle)) * distance;
+      canvas.drawCircle(
+        point,
+        2.5,
+        Paint()..color = color.withValues(alpha: opacity),
+      );
     }
     final text = TextPainter(
-      text: TextSpan(text: skill.name.toUpperCase(), style: TextStyle(
-        color: color.withValues(alpha: .5 + .5 * opacity), fontSize: 13,
-        fontWeight: FontWeight.w900,
-        shadows: [Shadow(color: color, blurRadius: 11)])),
+      text: TextSpan(
+        text: skill.name.toUpperCase(),
+        style: TextStyle(
+          color: color.withValues(alpha: .5 + .5 * opacity),
+          fontSize: 13,
+          fontWeight: FontWeight.w900,
+          shadows: [Shadow(color: color, blurRadius: 11)],
+        ),
+      ),
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: size.x);
-    text.paint(canvas, Offset(center.dx - text.width / 2, center.dy - text.height / 2));
+    text.paint(
+      canvas,
+      Offset(center.dx - text.width / 2, center.dy - text.height / 2),
+    );
   }
 }

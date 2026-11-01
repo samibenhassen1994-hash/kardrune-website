@@ -1,10 +1,12 @@
-import {buildHand,resolveDuel,pickWinner} from './rules.js';
+import {buildHand,resolveDuelFromStarter,pickWinner,rollInitiative,starterForRound} from './rules.js';
 import {validSkillForStage,SKILL_BY_ID,SKILL_VERSION} from '../../shared/skill_catalog.js';
+import {effectiveCardStats} from '../../shared/card_stat_limits.js';
 const CHOOSE_MS=30000;
 const MAX_ROUNDS=3;
 const WINS_TO_WIN=2;
 const PONG_GRACE_MS=18000;
 const send=(ws,obj)=>{try{if(ws.readyState===1)ws.send(JSON.stringify(obj))}catch{}};
+const secureRandom=()=>crypto.getRandomValues(new Uint32Array(1))[0]/0x100000000;
 export default {
  async fetch(request,env){
   const url=new URL(request.url);
@@ -30,7 +32,8 @@ export default {
    if(!save.owned?.includes(id)||!['sam','lira','rhea','dren','tor','aria','kael','neris','nyra'].includes(hero)||![1,2,3].includes(stage)||!Number.isInteger(attack)||attack<1||attack>100||!Number.isInteger(crit)||crit<0||crit>25)
     return new Response('Invalid card',{status:400});
    if(grant.skill_version!==SKILL_VERSION||!validSkillForStage(skillId,stage))return new Response('Skill grant unavailable',{status:409});
-   deck.push({id,hero,stage,attack,crit,skillId,skillRarity:SKILL_BY_ID[skillId].rarity,skillVersion:SKILL_VERSION});
+   const effective=effectiveCardStats(stage,attack,crit);
+   deck.push({id,hero,stage,...effective,skillId,skillRarity:SKILL_BY_ID[skillId].rarity,skillVersion:SKILL_VERSION});
   }
   const id=env.LOBBY.idFromName('friendly-global-v1');
   const avatar=['player','guard','vassal','king'].includes(save.avatar)?save.avatar:'player';
@@ -67,8 +70,14 @@ export class PvpLobby {
   server.addEventListener('error',()=>this.drop(player));
   const waiting=this.waiting;this.waiting=null;
   if(waiting&&waiting.uid!==uid&&this.sockets.get(waiting.uid)===waiting){
-   const match={id:crypto.randomUUID(),players:[waiting,player],round:0,scores:[0,0],selectTimer:null,readyTimer:null,awaiting:null};
+   const initiative=rollInitiative(secureRandom);
+   const match={id:crypto.randomUUID(),players:[waiting,player],round:0,scores:[0,0],selectTimer:null,readyTimer:null,awaiting:null,initiative};
    waiting.match=match;player.match=match;this.matches.set(match.id,match);
+   send(waiting.ws,{type:'dice',rolls:initiative.rolls,attempts:initiative.attempts,
+    starter:initiative.starter,matchId:match.id});
+   send(player.ws,{type:'dice',rolls:[...initiative.rolls].reverse(),
+    attempts:initiative.attempts.map(rolls=>[...rolls].reverse()),
+    starter:1-initiative.starter,matchId:match.id});
    this.next(match);
   }else{this.waiting=player;send(server,{type:'waiting'})}
   return new Response(null,{status:101,webSocket:client});
@@ -126,17 +135,18 @@ export class PvpLobby {
   this.clearTimers(match);
   const [a,b]=match.players;
   a.used.push(a.chosen.id);b.used.push(b.chosen.id);
-  const result=resolveDuel(a.chosen,b.chosen);
+  const roundStarter=starterForRound(match.initiative?.starter??0,match.round);
+  const result=resolveDuelFromStarter(a.chosen,b.chosen,roundStarter);
   const timeline=result.log.map(entry=>({...entry,round:match.round,matchId:match.id}));
   if(result.winner===0)match.scores[0]++;
   if(result.winner===1)match.scores[1]++;
   const event={type:'round_result',round:match.round,cards:[a.chosen,b.chosen],winner:result.winner,
    log:timeline,startHp:result.startHp,finalHp:result.hp,maxHp:result.maxHp,
-   score:match.scores,selfIndex:0};
+   score:match.scores,selfIndex:0,starter:roundStarter};
   match.awaiting=new Set([a.uid,b.uid]);
   send(a.ws,event);
   send(b.ws,{...event,cards:[b.chosen,a.chosen],winner:result.winner==='draw'?'draw':1-result.winner,
-   selfIndex:1,score:[...match.scores].reverse()});
+   selfIndex:1,starter:1-roundStarter,score:[...match.scores].reverse()});
   match.readyTimer=setTimeout(()=>{if(!this.matches.has(match.id)||!match.awaiting)return;
    const late=[...match.awaiting];this.finish(match,'replay_timeout',late.length===1?late[0]:null)
   },180000);
@@ -153,15 +163,30 @@ export class PvpLobby {
   this.clearTimers(match);this.matches.delete(match.id);
   const winner=leaverUid?match.players.find(p=>p.uid!==leaverUid)?.uid:null;
   const winning=winner||(reason==='completed'&&pickWinner(match.scores)!=='draw'?match.players[pickWinner(match.scores)].uid:null);
-  match.players.forEach((p,i)=>{
-   p.match=null;p.chosen=null;
-   if(this.sockets.get(p.uid)!==p)return;
-   send(p.ws,{type:'finished',reason,winner:winning===null?'draw':winning===p.uid?'you':'opponent',
-    score:i===0?match.scores:[...match.scores].reverse()});
-  });
   const [a,b]=match.players;
-  const job=this.env.DB.prepare('INSERT INTO pvp_live_history(id,player_a,player_b,score_a,score_b,winner_uid,completed_at,reason) VALUES(?,?,?,?,?,?,?,?)')
-   .bind(match.id,a.uid,b.uid,match.scores[0],match.scores[1],winning,Date.now(),reason).run().catch(()=>{});
+  const job=this.persistResult(match,a,b,winning,reason).then(persisted=>{
+   match.players.forEach((p,i)=>{
+    p.match=null;p.chosen=null;
+    if(this.sockets.get(p.uid)!==p)return;
+    send(p.ws,{type:'finished',reason,winner:winning===null?'draw':winning===p.uid?'you':'opponent',
+     reward:persisted&&['completed','opponent_disconnected','replay_timeout'].includes(reason)&&winning===p.uid?100:0,
+     score:i===0?match.scores:[...match.scores].reverse()});
+   });
+  });
   if(typeof this.state.waitUntil==='function')this.state.waitUntil(job);
+  return job;
+ }
+ async persistResult(match,a,b,winning,reason){
+  for(let attempt=0;attempt<4;attempt++){
+   try{
+    await this.env.DB.prepare('INSERT INTO pvp_live_history(id,player_a,player_b,score_a,score_b,winner_uid,completed_at,reason) VALUES(?,?,?,?,?,?,?,?)')
+     .bind(match.id,a.uid,b.uid,match.scores[0],match.scores[1],winning,Date.now(),reason).run();
+    return true;
+   }catch(error){
+    if(attempt===3){console.error('Unable to persist PvP result',match.id,error);return false}
+    await new Promise(resolve=>setTimeout(resolve,100*(attempt+1)));
+   }
+  }
+  return false;
  }
 }
