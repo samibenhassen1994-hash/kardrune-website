@@ -667,10 +667,12 @@ class _IdleShellState extends State<IdleShell> {
                                     setState(() => name = cloud.chosenDisplayName!);
                                     _persist();
                                   }
-                                } catch (_) {
-                                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(context.tr('Choose a valid name (3–20 characters).'))),
-                                  );
+                                 } catch (_) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(this.context).showSnackBar(
+                                      SnackBar(content: Text(this.context.tr('Choose a valid name (3–20 characters).'))),
+                                    );
+                                  }
                                 }
                               },
                               onAvatar: (v) {
@@ -2205,7 +2207,7 @@ class _Profile extends StatelessWidget {
             if (cloud?.identity != null && cloud!.nameChosen)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Text('${context.tr('DISPLAY NAME')}: ${cloud.chosenDisplayName ?? name}',
+                child: Text('${context.tr('DISPLAY NAME')}: ${cloud!.chosenDisplayName ?? name}',
                   style: const TextStyle(fontSize: 12, color: Color(0xffffdfa8))),
               )
             else if (cloud?.identity != null)
