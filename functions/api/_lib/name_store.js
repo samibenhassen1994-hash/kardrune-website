@@ -9,7 +9,7 @@ export async function ensureNameChoices(env){
 }
 
 export function normalizeDisplayName(raw){
- if(typeof raw!=='string')return null;
+ if(typeof raw!=='string'||/[\r\n\t]/.test(raw))return null;
  const name=raw.trim().normalize('NFC').replace(/\s+/g,' ');
  const length=Array.from(name).length;
  if(length<3||length>20||name.toLowerCase()==='runebearer'||
