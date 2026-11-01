@@ -6,20 +6,28 @@ deployed automatically.
 
 ## Cloudflare configuration before release
 
-1. Apply `migrations/0006_mobile_auth_handoff.sql` to the **existing** Pages D1
+1. Apply `migrations/0008_mobile_auth_handoff.sql` to the **existing** Pages D1
    database bound as `DB`. Do not create another database. Apply it first in a
    non-production environment for testing, then in production before deploying
    the Pages functions.
 2. Confirm the existing `FIREBASE_PROJECT_ID` is `idle-kardrune`.
-3. Add these Cloudflare Pages encrypted secrets for the same Firebase project:
+3. In Firebase Console, select the `idle-kardrune` project → Project settings
+   → Service accounts. Create a dedicated service account key for server-side
+   custom-token signing and keep its downloaded JSON outside both repositories.
+   In Cloudflare Dashboard → Workers & Pages → `kardrune-website` → Settings
+   → Variables and Secrets, add these as **Secret** values in the Preview
+   environment used for isolated testing. Add them to Production only after
+   review:
    - `FIREBASE_SERVICE_ACCOUNT_EMAIL`: the `client_email` field from a dedicated
      Firebase service account JSON.
    - `FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY`: the matching PEM `private_key`
      field, including its BEGIN/END lines. Preserve actual newlines.
-4. Never commit or print the service account JSON, private key, or secret values.
+4. Confirm that the Pages project already binds the existing `idle-kardrune`
+   D1 database as `DB`. The live PvP Worker and its secrets need no changes.
+5. Never commit or print the service account JSON, private key, or secret values.
    Grant access to the secrets only to the Pages deployment environment that
    serves `kardrune.com`.
-5. Build and package `idle_flutter` with base href `/idle/` using the existing
+6. Build and package `idle_flutter` with base href `/idle/` using the existing
    website release workflow. Deploy the Web client, Pages functions and D1
    migration together after review. The separate live PvP Worker is unchanged.
 

@@ -137,6 +137,65 @@ void main() {
     },
   );
 
+  test('mobile account switch loads the new cloud save without upload', () async {
+    final local = LocalSaveService(_Storage()),
+        auth = _Auth(),
+        transport = _Transport();
+    transport.responses = {
+      'GET /api/me': const ApiResponse(200, '{}'),
+      'GET /api/save': const ApiResponse(
+        200,
+        '{"save":{"name":"First","shards":111,"owned":["sam:1"]},"revision":1}',
+      ),
+    };
+    final controller = CloudAccountController(
+      auth: auth,
+      api: ApiClient(auth, transport),
+      local: local,
+      mobileHandoff: true,
+    );
+    controller.start();
+    auth.emit(const CloudIdentity(uid: 'first-uid'));
+    await Future<void>.delayed(Duration.zero);
+    await controller.settle;
+    expect(local.load().shards, 111);
+    transport.responses['GET /api/save'] = const ApiResponse(
+      200,
+      '{"save":{"name":"Second","shards":222,"owned":["rhea:2"]},"revision":2}',
+    );
+    auth.emit(const CloudIdentity(uid: 'second-uid'));
+    await Future<void>.delayed(Duration.zero);
+    await controller.settle;
+    expect(local.load().shards, 222);
+    expect(local.load().owned, contains('rhea:2'));
+    expect(transport.requests.where((r) => r.method == 'PUT'), isEmpty);
+    controller.dispose();
+  });
+
+  test('mobile network failure preserves local Arena data', () async {
+    final local = LocalSaveService(_Storage()),
+        auth = _Auth(),
+        transport = _Transport();
+    local.save(PlayerSave.initial().copyWith(shards: 987));
+    transport.responses = {
+      'GET /api/me': const ApiResponse(503, '{"error":"offline"}'),
+    };
+    final controller = CloudAccountController(
+      auth: auth,
+      api: ApiClient(auth, transport),
+      local: local,
+      mobileHandoff: true,
+    );
+    controller.start();
+    auth.emit(const CloudIdentity(uid: 'offline-uid'));
+    await Future<void>.delayed(Duration.zero);
+    await controller.settle;
+    expect(controller.state, CloudAccountState.error);
+    expect(local.load().shards, 987);
+    expect(transport.requests.where((r) => r.method == 'PUT'), isEmpty);
+    controller.dispose();
+  });
+
   test(
     'first account creates cloud backup without changing save schema',
     () async {
