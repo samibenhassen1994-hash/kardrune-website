@@ -14,6 +14,8 @@ class ArenaLanding extends StatelessWidget {
     required this.hint,
     required this.searching,
     this.onCancel,
+    this.rewardRemaining,
+    this.rewardLimit = 10,
   });
 
   final VoidCallback onStart;
@@ -21,6 +23,8 @@ class ArenaLanding extends StatelessWidget {
   final VoidCallback? onCancel;
   final String hint;
   final bool searching;
+  final int? rewardRemaining;
+  final int rewardLimit;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -133,6 +137,24 @@ class ArenaLanding extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (rewardRemaining != null)
+                  Positioned(
+                    top: imageTop + imageHeight * .778,
+                    left: artWidth * .08,
+                    right: artWidth * .08,
+                    child: Center(
+                      child: Text(
+                        '${context.tr('PvP rewards left (24h)')}: $rewardRemaining/$rewardLimit',
+                        key: const Key('pvp-rewards-remaining'),
+                        maxLines: 1,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: const Color(0xffffdfa8),
+                          fontFamily: 'Georgia', fontSize: small ? 9 : 11,
+                          fontWeight: FontWeight.w700,
+                          shadows: const [Shadow(color: Colors.black, blurRadius: 7)]),
+                      ),
+                    ),
+                  ),
                 Positioned(
                   left: 12,
                   right: 12,
