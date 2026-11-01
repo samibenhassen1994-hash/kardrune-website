@@ -695,6 +695,7 @@ class _IdleShellState extends State<IdleShell> {
             arenaOverlay: tab == 0 || tab == 2,
             onTap: _chooseTab,
           ),
+        ),
           if (_tutorialSection != null)
             Positioned.fill(
               child: IdleFirstVisitTutorial(
