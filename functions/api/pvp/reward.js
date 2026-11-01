@@ -1,6 +1,6 @@
 import {userFromRequest,failure,json} from '../_lib/auth.js';
 import {ensureLegacySkills,mergeGrantedSave,currentAccount} from '../_lib/skill_store.js';
-import {rewardForHistory,rewardAccess,pendingRewardMatchIds} from '../_lib/pvp_reward_policy.js';
+import {rewardForHistory,rewardAccess,rewardQuota,pendingRewardMatchIds} from '../_lib/pvp_reward_policy.js';
 import {requireActiveAccount} from '../_lib/account_status.js';
 
 export async function onRequestGet({request,env}){
@@ -8,12 +8,15 @@ export async function onRequestGet({request,env}){
   const user=await userFromRequest(request,env);
   if(!env.DB)return json({error:'D1 not configured'},503);
   await requireActiveAccount(env,user.uid);
-  const rows=await env.DB.prepare(`SELECT h.id
-   FROM pvp_live_history h
-   LEFT JOIN pvp_reward_claims c ON c.uid=? AND c.match_id=h.id
-   WHERE h.winner_uid=? AND h.reason IN ('completed','opponent_disconnected','replay_timeout') AND c.match_id IS NULL
-   ORDER BY h.completed_at DESC LIMIT 10`).bind(user.uid,user.uid).all();
-  return json({matchIds:pendingRewardMatchIds(rows.results)});
+  const now=Date.now();
+  const [rows,quota]=await Promise.all([
+    env.DB.prepare(`SELECT h.id FROM pvp_live_history h LEFT JOIN pvp_reward_claims c ON c.uid=? AND c.match_id=h.id
+    WHERE h.winner_uid=? AND h.reason IN ('completed','opponent_disconnected','replay_timeout') AND c.match_id IS NULL
+    ORDER BY h.completed_at DESC LIMIT 10`).bind(user.uid,user.uid).all(),
+    env.DB.prepare('SELECT COUNT(*) AS used, MIN(claimed_at) AS oldest FROM pvp_reward_claims WHERE uid=? AND claimed_at>=?')
+      .bind(user.uid,now-86400000).first(),
+  ]);
+  return json({matchIds:pendingRewardMatchIds(rows.results),...rewardQuota(quota?.used,quota?.oldest,now)});
  }catch(error){return failure(error)}
 }
 
