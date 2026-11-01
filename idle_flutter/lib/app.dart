@@ -437,7 +437,7 @@ class _IdleShellState extends State<IdleShell> {
   void _applyRemoteSave(PlayerSave save) {
     if (!mounted) return;
     setState(() {
-      name = save.name;
+      name = _cloud?.chosenDisplayName ?? save.name;
       avatar = save.avatar;
       shards = save.shards;
       active = save.active;
@@ -658,9 +658,20 @@ class _IdleShellState extends State<IdleShell> {
                             _Profile(
                               name: name,
                               avatar: avatar,
-                              onName: (v) {
-                                setState(() => name = v);
-                                _persist();
+                              onName: (v) async {
+                                final cloud = _cloud;
+                                if (cloud?.identity == null || cloud!.nameChosen) return;
+                                try {
+                                  await cloud.chooseDisplayName(v);
+                                  if (mounted && cloud.chosenDisplayName != null) {
+                                    setState(() => name = cloud.chosenDisplayName!);
+                                    _persist();
+                                  }
+                                } catch (_) {
+                                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(context.tr('Choose a valid name (3–20 characters).'))),
+                                  );
+                                }
                               },
                               onAvatar: (v) {
                                 setState(() => avatar = v);
@@ -2032,6 +2043,31 @@ class _CardsState extends State<_Cards> {
   }
 }
 
+class _OneTimeNameField extends StatefulWidget {
+  const _OneTimeNameField({required this.initialName,required this.onSubmit});
+  final String initialName;
+  final Future<void> Function(String) onSubmit;
+  @override
+  State<_OneTimeNameField> createState()=>_OneTimeNameFieldState();
+}
+class _OneTimeNameFieldState extends State<_OneTimeNameField> {
+  late final TextEditingController controller=TextEditingController(
+    text: widget.initialName=='Runebearer'?'':widget.initialName);
+  bool busy=false;
+  @override
+  void dispose(){controller.dispose();super.dispose();}
+  @override
+  Widget build(BuildContext context)=>Row(children:[
+    Expanded(child: TextField(controller:controller,maxLength:20,
+      decoration: InputDecoration(labelText:context.tr('DISPLAY NAME'),counterText:''))),
+    TextButton(key:const Key('confirm-display-name'),onPressed:busy?null:() async {
+      setState(()=>busy=true);
+      try{await widget.onSubmit(controller.text.trim());}
+      finally{if(mounted)setState(()=>busy=false);}
+    },child:Text(context.tr('CONFIRM NAME'))),
+  ]);
+}
+
 class _Profile extends StatelessWidget {
   const _Profile({
     required this.name,
@@ -2047,7 +2083,8 @@ class _Profile extends StatelessWidget {
     required this.onCloudRetry,
   });
   final String name, avatar;
-  final ValueChanged<String> onName, onAvatar;
+  final Future<void> Function(String) onName;
+  final ValueChanged<String> onAvatar;
   final KrLanguage language;
   final VoidCallback onLanguage;
   final MotionPreference motion;
@@ -2165,7 +2202,18 @@ class _Profile extends StatelessWidget {
                 ],
               ),
             ],
-            TextField(
+            if (cloud?.identity != null && cloud!.nameChosen)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Text('${context.tr('DISPLAY NAME')}: ${cloud.chosenDisplayName ?? name}',
+                  style: const TextStyle(fontSize: 12, color: Color(0xffffdfa8))),
+              )
+            else if (cloud?.identity != null)
+              _OneTimeNameField(initialName: name, onSubmit: onName)
+            else
+              Text(context.tr('Sign in to choose your permanent name.'),
+                style: const TextStyle(fontSize: 10)),
+            /*TextField(
               maxLength: 20,
               style: const TextStyle(fontSize: 12),
               decoration: InputDecoration(
@@ -2184,7 +2232,7 @@ class _Profile extends StatelessWidget {
                 ),
               ),
               onSubmitted: onName,
-            ),
+            ),*/
             Container(
               key: const Key('account-section'),
               width: double.infinity,

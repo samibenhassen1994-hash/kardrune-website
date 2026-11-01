@@ -55,6 +55,19 @@ class CloudAccountController extends ChangeNotifier {
   String message = 'Local save';
   int revision = 0;
   Map<String, Object?>? remoteSave;
+  bool nameChosen = false;
+  String? chosenDisplayName;
+
+  Future<void> chooseDisplayName(String requested) async {
+    if (identity == null || nameChosen) return;
+    final response = await api.post('/api/name', {'name': requested});
+    if (response['name'] is String) {
+      nameChosen = true;
+      chosenDisplayName = response['name'] as String;
+      notifyListeners();
+      await loadCloud();
+    }
+  }
 
   Future<void> get settle => _settle;
   String get _linkKey => 'idle-cloud-sync-v1:${identity!.uid}';
@@ -84,6 +97,8 @@ class CloudAccountController extends ChangeNotifier {
   Future<void> _handleAccount(CloudIdentity? account) async {
     _syncTimer?.cancel();
     identity = account;
+    nameChosen = false;
+    chosenDisplayName = null;
     if (account == null) {
       state = CloudAccountState.signedOut;
       message = 'Local save · sign in to enable cloud backup';
@@ -94,7 +109,12 @@ class CloudAccountController extends ChangeNotifier {
     message = 'Checking cloud save…';
     notifyListeners();
     try {
-      await api.get('/api/me');
+      final profile = await api.get('/api/me');
+      if (identity?.uid != account.uid) return;
+      nameChosen = profile['nameChosen'] == true;
+      if (nameChosen && profile['player'] is Map) {
+        chosenDisplayName = (profile['player'] as Map)['display_name'] as String?;
+      }
       final response = await api.get('/api/save');
       if (identity?.uid != account.uid) return;
       revision = response['revision'] is int ? response['revision'] as int : 0;

@@ -66,6 +66,27 @@ abstract final class KrTranslations {
   };
 
   static const _catalog = <String, Map<KrLanguage, String>>{
+    'CONFIRM NAME': {
+      KrLanguage.italian: 'CONFERMA NOME', KrLanguage.spanish: 'CONFIRMAR NOMBRE',
+      KrLanguage.japanese: '名前を確定', KrLanguage.korean: '이름 확정',
+      KrLanguage.chinese: '确认名称', KrLanguage.german: 'NAMEN BESTÄTIGEN',
+    },
+    'Sign in to choose your permanent name.': {
+      KrLanguage.italian: 'Accedi per scegliere il tuo nome definitivo.',
+      KrLanguage.spanish: 'Inicia sesión para elegir tu nombre definitivo.',
+      KrLanguage.japanese: 'ログインして名前を一度だけ設定してください。',
+      KrLanguage.korean: '로그인하여 영구 이름을 선택하세요.',
+      KrLanguage.chinese: '登录以选择永久名称。',
+      KrLanguage.german: 'Anmelden, um den dauerhaften Namen zu wählen.',
+    },
+    'Choose a valid name (3–20 characters).': {
+      KrLanguage.italian: 'Scegli un nome valido (3–20 caratteri).',
+      KrLanguage.spanish: 'Elige un nombre válido (3–20 caracteres).',
+      KrLanguage.japanese: '3～20文字の有効な名前を選択してください。',
+      KrLanguage.korean: '유효한 이름을 선택하세요 (3~20자).',
+      KrLanguage.chinese: '请选择有效名称（3–20个字符）。',
+      KrLanguage.german: 'Wähle einen gültigen Namen (3–20 Zeichen).',
+    },
     'CARD STATISTICS': {
       KrLanguage.italian: 'STATISTICHE DELLE CARTE',
       KrLanguage.spanish: 'ESTADÍSTICAS DE CARTA',
