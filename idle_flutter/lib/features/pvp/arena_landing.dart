@@ -14,6 +14,7 @@ class ArenaLanding extends StatelessWidget {
     required this.hint,
     required this.searching,
     this.onCancel,
+    this.onLeaderboard,
     this.rewardRemaining,
     this.rewardLimit = 10,
   });
@@ -21,6 +22,7 @@ class ArenaLanding extends StatelessWidget {
   final VoidCallback onStart;
   final Widget header;
   final VoidCallback? onCancel;
+  final VoidCallback? onLeaderboard;
   final String hint;
   final bool searching;
   final int? rewardRemaining;
@@ -140,6 +142,18 @@ class ArenaLanding extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (onLeaderboard != null)
+                  Positioned(
+                    top: imageTop + imageHeight * .755,
+                    left: artWidth * .24,
+                    right: artWidth * .24,
+                    child: Center(child: OutlinedButton.icon(
+                      key: const Key('pvp-leaderboard'),
+                      onPressed: onLeaderboard,
+                      icon: const Icon(Icons.emoji_events_outlined,size:16),
+                      label: Text(context.tr('PVP LEAGUES')),
+                    )),
+                  ),
                 if (rewardRemaining != null)
                   Positioned(
                     top: imageTop + imageHeight * .798,
