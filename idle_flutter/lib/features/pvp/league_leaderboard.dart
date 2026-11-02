@@ -233,7 +233,7 @@ class _LeagueLeaderboardState extends State<LeagueLeaderboard> {
     final inTopTen = firstTen.any((row) => row['isYou'] == true);
     return ListView(children: [
       for (final row in firstTen) _rankingTile(row),
-      if (globalPinned && !inTopTen && me != null) ...[
+      if (globalPinned && !inTopTen) ...[
         const Divider(color: Color(0xffb38d5b)),
         Text(context.tr('YOUR POSITION'),textAlign: TextAlign.center),
         _rankingTile({
