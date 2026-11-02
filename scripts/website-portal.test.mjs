@@ -35,3 +35,12 @@ test('auth and admin pages exist',()=>{
  for(const item of ['auth-form','dashboard','admin-section','register','logout']) assert.match(page,new RegExp('id="'+item+'"'));
  assert.match(read('index.html'),/href="account.html"/);
 });
+
+test('portal and Idle use identical Firebase named app for shared-origin persistence',()=>{
+ const portal=read('account.js');
+ const idle=read('idle_flutter/lib/services/firebase_auth_service.dart');
+ assert.match(portal,/a\.name==='idle-kardrune-cloud'/);
+ assert.match(portal,/},'idle-kardrune-cloud'\)/);
+ assert.match(idle,/name == 'idle-kardrune-cloud'/);
+ assert.match(idle,/Persistence\.LOCAL/);
+});
