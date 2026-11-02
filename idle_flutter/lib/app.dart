@@ -2247,10 +2247,6 @@ class _CardsState extends State<_Cards> {
         ),
       ),
     );
-  }     ),
-        ),
-      ),
-    );
   }
 }
 
