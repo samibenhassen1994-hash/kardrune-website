@@ -1,6 +1,6 @@
 import {userFromRequest,json,failure} from '../_lib/auth.js';
 import {requireActiveAccount} from '../_lib/account_status.js';
-import {ranking} from '../_lib/ranked_store.js';
+import {ranking,ensureRankedSchema} from '../_lib/ranked_store.js';
 import {LEAGUES} from '../_lib/ranked_leagues.js';
 import {currentAccount} from '../_lib/skill_store.js';
 export async function onRequestPost({request,env}){
@@ -8,6 +8,7 @@ export async function onRequestPost({request,env}){
   if(!env.DB)return json({error:'Database unavailable'},503);
   const user=await userFromRequest(request,env);
   await requireActiveAccount(env,user.uid);
+  await ensureRankedSchema(env);
   const body=await request.json();
   const league=LEAGUES.find(x=>x.name===body?.league&&x.reward>0);
   if(!league)return json({error:'Unknown milestone'},400);
