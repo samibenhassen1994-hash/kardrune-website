@@ -20,10 +20,11 @@ WITH eligible AS (
 SELECT id,uid,opponent,day,completed_at FROM daily_filtered
 WHERE daily_n<=10 ORDER BY completed_at,id`;
 
-let initPromise;
+const schemaPromises=new WeakMap();
 export async function ensureRankedSchema(env){
- if (initPromise) return initPromise;
- initPromise=(async()=>{
+ const existing=schemaPromises.get(env.DB);
+ if (existing) return existing;
+ const initPromise=(async()=>{
   const db=env.DB;
   await db.prepare(`CREATE TABLE IF NOT EXISTS pvp_league_claims(
    uid TEXT NOT NULL REFERENCES players(uid) ON DELETE CASCADE,
@@ -83,7 +84,8 @@ export async function ensureRankedSchema(env){
     db.prepare("INSERT OR IGNORE INTO pvp_ranked_meta(key,value) VALUES('backfill_v1','done')")
    ]);
   }
- })().catch(error=>{initPromise=null;throw error});
+ })().catch(error=>{schemaPromises.delete(env.DB);throw error});
+ schemaPromises.set(env.DB,initPromise);
  return initPromise;
 }
 
