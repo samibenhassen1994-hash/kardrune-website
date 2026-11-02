@@ -1,11 +1,12 @@
 import {userFromRequest,json,failure} from '../_lib/auth.js';
 import {requireActiveAccount} from '../_lib/account_status.js';
-import {ranking} from '../_lib/ranked_store.js';
+import {ranking,ensureRankedSchema} from '../_lib/ranked_store.js';
 export async function onRequestGet({request,env}){
  try{
   if(!env.DB)return json({error:'Database unavailable'},503);
   const user=await userFromRequest(request,env);
   await requireActiveAccount(env,user.uid);
+  await ensureRankedSchema(env);
   const data=await ranking(env,user.uid);
   const top=data.top;
   let names=[];
