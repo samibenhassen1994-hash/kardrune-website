@@ -225,10 +225,28 @@ class _LeagueLeaderboardState extends State<LeagueLeaderboard> {
     final me = data?['you'] as Map?;
     final personalPosition = selected == 1
       ? me?['leaguePosition'] : me?['position'];
-    final inPage = entries.any((e) => e['isYou'] == true);
+    // In Global Ranking the viewer stays in the dedicated eleventh row
+    // even when additional pages are loaded. Never duplicate that user.
+    final globalPinned = selected == 2 && me != null;
+    final firstTen = entries.take(10).toList();
+    final following = entries.skip(10).toList();
+    final inTopTen = firstTen.any((row) => row['isYou'] == true);
     return ListView(children: [
-      for (final row in entries)
-        _rankingTile(row),
+      for (final row in firstTen) _rankingTile(row),
+      if (globalPinned && !inTopTen) ...[
+        const Divider(color: Color(0xffb38d5b)),
+        Text(context.tr('YOUR POSITION'),textAlign: TextAlign.center),
+        _rankingTile({
+          'position': personalPosition,
+          'name': context.tr('YOU'),
+          'league': me['league'],
+          'points': me['points'],
+          'wins': me['wins'],
+          'isYou': true,
+        }),
+      ],
+      for (final row in following)
+        if (!globalPinned || row['isYou'] != true) _rankingTile(row),
       if (entries.isEmpty && !loading)
         Padding(
           padding: const EdgeInsets.all(20),
@@ -240,21 +258,6 @@ class _LeagueLeaderboardState extends State<LeagueLeaderboard> {
           onPressed: loadingMore ? null : () => _load(reset: false),
           child: Text(context.tr(loadingMore ? 'LOADING' : 'LOAD MORE')),
         )),
-      // Display the viewer after the currently loaded ten rows, without
-      // changing pagination, when outside the visible page.
-      if (!inPage && me != null) ...[
-        const Divider(color: Color(0xffb38d5b)),
-        Text(context.tr('YOUR POSITION'),
-          textAlign: TextAlign.center),
-        _rankingTile({
-          'position': personalPosition,
-          'name': context.tr('YOU'),
-          'league': me['league'],
-          'points': me['points'],
-          'wins': me['wins'],
-          'isYou': true,
-        }),
-      ],
     ]);
   }
 
