@@ -1,3 +1,4 @@
+import {validatePlayerName} from './name_policy.js';
 // Names are keyed to Firebase UID, not to a device or browser save.
 // This small table is created lazily, so existing D1 deployments need no manual migration.
 export async function ensureNameChoices(env){
@@ -9,12 +10,7 @@ export async function ensureNameChoices(env){
 }
 
 export function normalizeDisplayName(raw){
- if(typeof raw!=='string'||/[\r\n\t]/.test(raw))return null;
- const name=raw.trim().normalize('NFC').replace(/\s+/g,' ');
- const length=Array.from(name).length;
- if(length<3||length>20||name.toLowerCase()==='runebearer'||
-   !/^[\p{L}\p{N} _.'-]+$/u.test(name))return null;
- return name;
+ return validatePlayerName(raw).name;
 }
 
 export async function chosenNameFor(env,uid){
