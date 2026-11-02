@@ -103,6 +103,28 @@ void main() {
     final settledY = tester.getTopLeft(panel).dy;
     expect(enteringY - settledY, greaterThan(40));
   });
+  testWidgets('card detail has glass, larger art and stage-specific lore', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const KardRuneApp(enableCloudBootstrap: false));
+    await tester.tap(find.text('CARDS').last);
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('collection-card-sam:1')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('card-details-sam:1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('card-story-info-sam:1')), findsOneWidget);
+    expect(find.text('VIEW EFFECT'), findsNothing);
+    final image = tester.getRect(find.byKey(const ValueKey('card-detail-frame-sam:1')));
+    expect(image.height, greaterThan(220));
+    await tester.tap(find.byKey(const ValueKey('card-story-info-sam:1')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('card-story-dialog-sam:1')), findsOneWidget);
+    expect(find.textContaining('Sam is a young swordsman'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('cards collection and summon update the wallet', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
