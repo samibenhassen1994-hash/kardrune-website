@@ -9,3 +9,12 @@
 .site-account-label{font-family:Inter,system-ui,sans-serif;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:1120px){.site-header .site-account-link{margin-left:auto}.page-home .site-header .home-top-actions{margin-left:0;margin-right:0}}
 @media(max-width:767px){.site-header .site-account-link{padding:3px;max-width:none}.site-header .site-account-label{display:none}.site-header .site-account-avatar{width:33px;height:33px;flex-basis:33px}}
+
+.player-insights{margin-bottom:22px}
+.player-insights .insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.player-insights .insight-grid>div{border:1px solid #354762;border-radius:14px;background:#0a1930;padding:18px}
+.player-insights h3{font-size:16px;color:#e4bb76;margin:0 0 8px}
+.player-insights a{display:inline-block;margin-top:6px}
+.player-insights ul{margin:0;padding-left:20px}
+.player-insights li{margin:5px 0}
+@media(max-width:700px){.player-insights .insight-grid{grid-template-columns:1fr}}
