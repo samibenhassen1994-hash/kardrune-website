@@ -223,8 +223,8 @@ class _LeagueLeaderboardState extends State<LeagueLeaderboard> {
 
   Widget _rankings() {
     final me = data?['you'] as Map?;
-    final personalPosition = selected == 1
-      ? me?['leaguePosition'] : me?['position'];
+    final personalPosition = me == null
+      ? null : (selected == 1 ? me['leaguePosition'] : me['position']);
     // In Global Ranking the viewer stays in the dedicated eleventh row
     // even when additional pages are loaded. Never duplicate that user.
     final globalPinned = selected == 2 && me != null;
