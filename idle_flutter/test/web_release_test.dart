@@ -25,7 +25,8 @@ void main() {
       bootstrap,
       contains("hostElement: document.getElementById('idle-game-frame')"),
     );
-    expect(index, contains('kardrune_service_worker.js?v=__KARDRUNE_PACKAGED_RELEASE__'));
+    expect(index, contains("url.searchParams.set('v', release)"));
+    expect(index, contains('workerUrl(pendingRelease)'));
     expect(index, contains('kardrune-update-available'));
     expect(index, contains('kardrune-apply-update'));
     expect(index, contains('release-id.json'));

@@ -2047,7 +2047,13 @@ class _CardsState extends State<_Cards> {
           duration: const Duration(milliseconds: 120),
           padding: const EdgeInsets.all(5),
           decoration: BoxDecoration(
-            color: const Color(0xff111e35),
+            // Frosted glass around the original card artwork. The Cards page
+            // already blurs its backdrop, so no costly blur is needed per card.
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0x9a344962), Color(0x55111e35)],
+            ),
             border: Border.all(
               color: isSelected
                   ? const Color(0xff7fd7c3)

@@ -21,6 +21,15 @@ void main() {
       )),
     )));
     expect(find.byKey(const Key('find-live-match')), findsOneWidget);
+    // The translated title and swords stay centered on the illustrated
+    // button, with the swords above it on mobile screens.
+    final button = tester.getRect(find.byKey(const Key('find-live-match')));
+    final swords = tester.getRect(find.byType(DuelingSwords));
+    final title = tester.getRect(find.text('INIZIA PARTITA'));
+    expect((title.center.dx - button.center.dx).abs(), lessThan(1));
+    expect((title.center.dy - button.center.dy).abs(), lessThan(1));
+    expect((swords.center.dx - button.center.dx).abs(), lessThan(1));
+    expect(swords.bottom, lessThan(button.top));
     expect(find.text('Ricompense PvP rimaste (24 ore): 7/10'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

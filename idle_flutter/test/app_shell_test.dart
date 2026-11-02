@@ -112,6 +112,15 @@ void main() {
     await tester.tap(find.text('CARDS').last);
     await tester.pump();
     expect(find.byKey(const Key('collection-scroll-grid')), findsOneWidget);
+    final glassCard = tester.widget<AnimatedContainer>(
+      find.descendant(
+        of: find.byKey(const Key('collection-scroll-grid')),
+        matching: find.byType(AnimatedContainer),
+      ).first,
+    );
+    final glass = glassCard.decoration! as BoxDecoration;
+    final glassGradient = glass.gradient! as LinearGradient;
+    expect(glassGradient.colors.every((color) => color.a < 1), isTrue);
     expect(find.textContaining('1/27'), findsOneWidget);
     await tester.tap(find.text('SUMMON').last);
     await tester.pumpAndSettle();

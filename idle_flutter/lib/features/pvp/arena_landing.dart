@@ -58,7 +58,7 @@ class ArenaLanding extends StatelessWidget {
                 ),
                 Positioned(top: 0, left: 0, right: 0, child: header),
                 Positioned(
-                  top: imageTop + imageHeight * (small ? .48 : .515),
+                  top: imageTop + imageHeight * (small ? .455 : .49),
                   left: 0,
                   right: 0,
                   child: Center(
@@ -91,7 +91,7 @@ class ArenaLanding extends StatelessWidget {
                     ),
                   ),
                 Positioned(
-                  top: imageTop + imageHeight * .681,
+                  top: imageTop + imageHeight * .669,
                   left: artWidth * .22,
                   right: artWidth * .22,
                   height: imageHeight * .073,
@@ -109,6 +109,9 @@ class ArenaLanding extends StatelessWidget {
                           fit: BoxFit.scaleDown,
                           child: Text(
                             context.tr('START MATCH'),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            softWrap: false,
                             style: TextStyle(
                               color: const Color(0xfffff1c4),
                               fontFamily: 'Georgia',
