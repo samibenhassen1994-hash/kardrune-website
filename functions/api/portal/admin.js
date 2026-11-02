@@ -12,10 +12,10 @@ export async function onRequestGet({request,env}) {
     const rawPage=Number(url.searchParams.get('page')||'1');
     const page=Number.isSafeInteger(rawPage)?Math.max(1,Math.min(rawPage,100)):1;
     const size=20, offset=(page-1)*size;
-    const where=rawQuery?'WHERE p.uid=? OR p.display_name LIKE ? ESCAPE \'\\\'':'';
+    const where=rawQuery?'WHERE p.uid=? OR instr(lower(p.display_name), lower(?)) > 0':'';
     // Escaped SQL LIKE wildcards preserve literal-search semantics.
-    const like='%'+rawQuery.replace(/[\\%_]/g,'\\$&')+'%';
-    const binds=rawQuery?[rawQuery,like]:[];
+    
+    const binds=rawQuery?[rawQuery,rawQuery]:[];
     const [accounts,players,idle,matches,tournaments,total,results]=await Promise.all([
       env.DB.prepare('SELECT COUNT(*) AS n FROM website_accounts').first(),
       env.DB.prepare('SELECT COUNT(*) AS n FROM players').first(),
