@@ -1436,6 +1436,7 @@ class _RuneNavigation extends StatelessWidget {
       (Icons.person_outline, KrTranslations.translate(language, 'PROFILE')),
     ];
     return Container(
+      key: const Key('idle-navigation-bar'),
       height: 68,
       decoration: BoxDecoration(
         color: arenaOverlay ? const Color(0xc2091426) : const Color(0xf5091426),
