@@ -355,7 +355,7 @@ class _SummonScreenState extends State<SummonScreen>
                     style: TextStyle(
                       color: const Color(0xffffedbd),
                       fontFamily: 'Georgia',
-                      fontSize: compact ? 14 : 22,
+                      fontSize: height < 195 ? 16 : 22,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.2,
                       shadows: const [
