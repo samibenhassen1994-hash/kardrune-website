@@ -150,10 +150,20 @@ class _SummonScreenState extends State<SummonScreen>
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, box) {
-      final compact = box.maxHeight < 700;
-      final maxPanelHeight = (box.maxHeight - 68).clamp(290.0, 600.0);
-      final panelHeight = (box.maxHeight * (compact ? .88 : .78))
-          .clamp(290.0, maxPanelHeight)
+      // A browser shortcut on Android can lose 70-100 logical pixels to
+      // Chrome's native title bar. Do not collapse the art to 92px and
+      // stretch the glass panel across the rest of the screen in that case:
+      // that hides the HERO SUMMON heading and leaves a huge empty card.
+      //
+      // Size the banner continuously with the *available* body height and
+      // size the panel to its actual content, not a percentage of the screen.
+      final bannerHeight = (box.maxHeight * .34)
+          .clamp(166.0, 250.0)
+          .toDouble();
+      // Leave the first 80px of the arena artwork for the game header:
+      // the summoning panel must never overlap the profile or wallet.
+      final panelHeight = (bannerHeight + 279.0)
+          .clamp(0.0, box.maxHeight - 80.0)
           .toDouble();
       return Stack(
         fit: StackFit.expand,
@@ -204,7 +214,7 @@ class _SummonScreenState extends State<SummonScreen>
                 ),
                 child: Column(
                   children: [
-                    _banner(compact),
+                    _banner(bannerHeight),
                     const SizedBox(height: 7),
                     Row(
                       children: [
@@ -236,7 +246,7 @@ class _SummonScreenState extends State<SummonScreen>
     },
   );
 
-  Widget _banner(bool compact) {
+  Widget _banner(double height) {
     final title = switch (section) {
       0 => 'STANDARD PORTAL',
       1 => 'DREN · FEATURED SUMMON',
@@ -248,7 +258,7 @@ class _SummonScreenState extends State<SummonScreen>
     };
     return Container(
       key: const Key('summon-banner-frame'),
-      height: compact ? 92 : 250,
+      height: height,
       width: double.infinity,
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
@@ -327,7 +337,7 @@ class _SummonScreenState extends State<SummonScreen>
               Positioned(
                 left: 12,
                 right: 12,
-                bottom: compact ? 7 : 12,
+                bottom: height < 195 ? 7 : 12,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -345,7 +355,7 @@ class _SummonScreenState extends State<SummonScreen>
                     style: TextStyle(
                       color: const Color(0xffffedbd),
                       fontFamily: 'Georgia',
-                      fontSize: compact ? 14 : 22,
+                      fontSize: height < 195 ? 16 : 22,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.2,
                       shadows: const [
