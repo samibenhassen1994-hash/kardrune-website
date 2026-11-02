@@ -34,6 +34,7 @@ import 'services/storage_factory.dart';
 import 'theme/kardrune_theme.dart';
 import 'localization/kr_localizations.dart';
 import 'localization/skill_localizations.dart';
+import 'localization/card_lore.dart';
 import 'tutorial/first_visit_tutorial.dart';
 
 typedef RandomRoll = double Function();
@@ -2093,111 +2094,155 @@ class _CardsState extends State<_Cards> {
                   ),
                 ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _openCard(BuildContext context, dynamic hero, int stage, bool isOwned) {
+         void _openCard(BuildContext context, dynamic hero, int stage, bool isOwned) {
     final id = '${hero.id}:$stage';
     final skill = SkillCatalog.byId(skills[id])?.localized(context);
+    final availableHeight = MediaQuery.sizeOf(context).height;
     showDialog<void>(
       context: context,
       builder: (dialogContext) => KrLocaleScope(
         language: widget.language,
         child: Dialog(
           key: ValueKey('card-details-$id'),
-          backgroundColor: const Color(0xff101d36),
-          shape: RoundedRectangleBorder(
-            side: const BorderSide(color: Color(0xffd5ad62)),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: 470,
-              maxHeight: MediaQuery.sizeOf(dialogContext).height * .94,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${hero.name.toString().toUpperCase()} · ${_t('STAGE', 'STAGE')} $stage',
-                      style: const TextStyle(
-                        fontFamily: 'Georgia',
-                        fontSize: 20,
-                        color: Color(0xfff5d28b),
-                        fontWeight: FontWeight.w700,
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xd92b405b), Color(0xb509152c)],
+                  ),
+                  border: Border.all(color: const Color(0xb8d5ad62), width: 1.3),
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                constraints: BoxConstraints(
+                  maxWidth: 520,
+                  maxHeight: availableHeight * .94,
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          const SizedBox(width: 42),
+                          Expanded(
+                            child: Text(
+                              '${hero.name.toString().toUpperCase()} · ${_t('STAGE', 'STAGE')} $stage',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontFamily: 'Georgia',
+                                fontSize: 20,
+                                color: Color(0xfff5d28b),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            key: ValueKey('card-story-info-$id'),
+                            tooltip: CardLore.title(widget.language),
+                            icon: const Icon(Icons.info_outline, color: Color(0xffffd892), size: 27),
+                            onPressed: () => showDialog<void>(
+                              context: dialogContext,
+                              builder: (storyContext) => KrLocaleScope(
+                                language: widget.language,
+                                child: AlertDialog(
+                                  key: ValueKey('card-story-dialog-$id'),
+                                  backgroundColor: const Color(0xff15243c),
+                                  shape: RoundedRectangleBorder(
+                                    side: const BorderSide(color: Color(0xffd5ad62)),
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  title: Text(
+                                    '${hero.name} · ${CardLore.title(widget.language)}',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: Color(0xffffd892), fontSize: 18),
+                                  ),
+                                  content: ConstrainedBox(
+                                    constraints: BoxConstraints(maxWidth: 410, maxHeight: availableHeight * .55),
+                                    child: SingleChildScrollView(
+                                      child: Text(
+                                        CardLore.forStage(widget.language, hero.id as String, stage),
+                                        style: const TextStyle(color: Color(0xffe4e7ed), fontSize: 14, height: 1.5),
+                                      ),
+                                    ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(storyContext),
+                                      child: Text(context.tr('CLOSE')),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: 220,
-                      child: CharacterCardArt(
-                        key: ValueKey('card-detail-frame-$id'),
-                        asset: hero.cardAsset(hero.stages[stage - 1]),
-                        hp: CombatRules.hpForStage(stage),
-                        attack: isOwned ? attacks[id] : null,
-                        crit: isOwned ? crits[id] : null,
-                        skillId: isOwned ? skills[id] : null,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (isOwned && skill != null) ...[
-                      Center(child: SkillRarityBadge(skill: skill)),
-                      const SizedBox(height: 4),
-                      Text(
-                        skill.description,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xffd2dced),
-                          fontSize: 11,
-                        ),
-                      ),
-                      Text(
-                        '${skill.trigger} · ${skill.limit}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xffa9bdd4),
-                          fontSize: 10,
-                        ),
-                      ),
-                      Text(
-                        '${_t('STAGE', 'STAGE')} $stage: ${(SkillCatalog.weights[stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% ${_t('PER EVOCAZIONE', 'PER PULL')}',
-                        style: const TextStyle(
-                          color: Color(0xffa9bdd4),
-                          fontSize: 10,
-                        ),
-                      ),
-                      SkillPreviewButton(skill: skill),
                       const SizedBox(height: 8),
-                    ],
-                    Text(
-                      isOwned
-                          ? _t('CAMPIONE ATTIVO', 'ACTIVE CHAMPION')
-                          : _t('NON COLLEZIONATA', 'NOT COLLECTED'),
-                      style: TextStyle(
-                        color: isOwned
-                            ? const Color(0xff7fd7c3)
-                            : const Color(0xffa0b0c8),
-                        fontSize: 10,
-                        letterSpacing: 1.1,
-                        fontWeight: FontWeight.w800,
+                      SizedBox(
+                        height: (availableHeight * .43).clamp(245.0, 360.0),
+                        child: CharacterCardArt(
+                          key: ValueKey('card-detail-frame-$id'),
+                          asset: hero.cardAsset(hero.stages[stage - 1]),
+                          hp: CombatRules.hpForStage(stage),
+                          attack: isOwned ? attacks[id] : null,
+                          crit: isOwned ? crits[id] : null,
+                          skillId: isOwned ? skills[id] : null,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    _RuneButton(
-                      label: _t('CHIUDI', 'CLOSE'),
-                      onTap: () => Navigator.pop(dialogContext),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      if (isOwned && skill != null) ...[
+                        Center(child: SkillRarityBadge(skill: skill)),
+                        const SizedBox(height: 6),
+                        Text(
+                          skill.description,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Color(0xffd2dced), fontSize: 11),
+                        ),
+                        Text(
+                          '${skill.trigger} · ${skill.limit}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Color(0xffa9bdd4), fontSize: 10),
+                        ),
+                        Text(
+                          '${_t('STAGE', 'STAGE')} $stage: ${(SkillCatalog.weights[stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% ${_t('PER EVOCAZIONE', 'PER PULL')}',
+                          style: const TextStyle(color: Color(0xffa9bdd4), fontSize: 10),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      Text(
+                        isOwned
+                            ? _t('CAMPIONE ATTIVO', 'ACTIVE CHAMPION')
+                            : _t('NON COLLEZIONATA', 'NOT COLLECTED'),
+                        style: TextStyle(
+                          color: isOwned ? const Color(0xff7fd7c3) : const Color(0xffa0b0c8),
+                          fontSize: 10,
+                          letterSpacing: 1.1,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _RuneButton(
+                        label: _t('CHIUDI', 'CLOSE'),
+                        onTap: () => Navigator.pop(dialogContext),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }     ),
         ),
       ),
     );
