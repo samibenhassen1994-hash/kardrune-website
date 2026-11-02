@@ -145,7 +145,7 @@ class ArenaLanding extends StatelessWidget {
                 if (onLeaderboard != null)
                   Positioned(
                     // Trophy in the right-hand arena banner, not under Start Match.
-                    top: imageTop + imageHeight * .365,
+                    top: imageTop + imageHeight * .415,
                     right: artWidth * .018,
                     child: Semantics(
                       button: true,
