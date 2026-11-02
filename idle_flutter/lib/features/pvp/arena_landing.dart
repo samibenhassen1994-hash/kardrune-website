@@ -51,6 +51,10 @@ class ArenaLanding extends StatelessWidget {
       // Match the gilded button painted into the original image.
       final ctaTop = renderedArtHeight * .735;
       final ctaHeight = renderedArtHeight * .14;
+      // Raise the title and its tappable area by approximately 1.5 cm,
+      // while keeping the painted frame and PvP quota in place.
+      // Limit the offset on shorter viewports so the title remains visible.
+      final titleRise = math.min(56.0, renderedArtHeight * .08);
       final quotaHeight = rewardRemaining == null ? 0.0 : renderedArtHeight * .034;
       final titleSize = (artWidth * .060).clamp(17.0, 29.0).toDouble();
       final small = height < 650;
@@ -117,7 +121,9 @@ class ArenaLanding extends StatelessWidget {
                   child: Column(
                     children: [
                       Expanded(
-                        child: Semantics(
+                        child: Transform.translate(
+                          offset: Offset(0, -titleRise),
+                          child: Semantics(
                           button: true,
                           label: searching
                               ? context.tr('SEARCHING FOR OPPONENT')
@@ -160,6 +166,7 @@ class ArenaLanding extends StatelessWidget {
                               ),
                             ),
                           ),
+                        ),
                         ),
                       ),
                       if (rewardRemaining != null)
