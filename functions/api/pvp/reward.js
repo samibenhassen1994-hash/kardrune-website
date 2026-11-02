@@ -38,15 +38,11 @@ export async function onRequestPost({request,env}){
   if(previous){
    const snapshot=await currentAccount(env,user.uid);
    if(!snapshot)return json({error:'Verified progress unavailable'},503);
-   return json({...JSON.parse(previous.response_json),...snapshot});
+   return json({...JSON.parse(previous.response_json),...snapshot,alreadyClaimed:true});
   }
-  const opponent=history.player_a===user.uid?history.player_b:history.player_a;
   const since=Date.now()-24*60*60*1000;
-  const claims=await env.DB.prepare(`SELECT COUNT(*) AS total,
-   SUM(CASE WHEN (h.player_a=? AND h.player_b=?) OR (h.player_a=? AND h.player_b=?) THEN 1 ELSE 0 END) AS againstOpponent
-   FROM pvp_reward_claims c JOIN pvp_live_history h ON h.id=c.match_id
-   WHERE c.uid=? AND c.claimed_at>=?`)
-   .bind(user.uid,opponent,opponent,user.uid,user.uid,since).first();
+  const claims=await env.DB.prepare('SELECT COUNT(*) AS total FROM pvp_reward_claims WHERE uid=? AND claimed_at>=?')
+   .bind(user.uid,since).first();
   const access=rewardAccess(history,user.uid,claims);
   if(!access.allowed)return json({error:'PvP reward rate limit reached',reason:access.reason},429);
   const row=await env.DB.prepare('SELECT save_json,revision FROM demo_saves WHERE uid=?').bind(user.uid).first();
@@ -70,7 +66,7 @@ export async function onRequestPost({request,env}){
   return json(response);
  }catch(error){
   if(String(error).includes('pvp reward rate limit'))
-   return json({error:'PvP reward rate limit reached'},429);
+   return json({error:'PvP reward rate limit reached',reason:'daily_limit'},429);
   if(String(error).includes('revision conflict')||String(error).includes('UNIQUE constraint'))
    return json({error:'Save conflict'},409);
   return failure(error);

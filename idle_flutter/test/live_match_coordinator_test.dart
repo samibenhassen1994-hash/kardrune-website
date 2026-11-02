@@ -24,7 +24,7 @@ class _Transport implements ApiTransport {
       );
     }
     if (r.path.endsWith('/deck')) {
-      return const ApiResponse(200, '{"cards":["sam:1"]}');
+      return const ApiResponse(200, '{"cards":["sam:1"],"revision":1}');
     }
     return const ApiResponse(200, '{}');
   }
@@ -59,14 +59,24 @@ const hand = HandEvent(
 
 void main() {
   test('iOS sees understandable errors instead of minified class names', () {
-    expect(describeLivePvpError(const ApiFailure(503, 'unavailable')),
-      'Live PvP server unavailable. Please try again later.');
-    expect(describeLivePvpError(const ApiFailure(400, 'Save and configure your deck first')),
-      contains('Save and configure your deck first'));
-    expect(describeLivePvpError(const FormatException('bad response')),
-      contains('invalid server response'));
-    expect(describeLivePvpError(StateError('connection refused')),
-      contains('Check your internet connection'));
+    expect(
+      describeLivePvpError(const ApiFailure(503, 'unavailable')),
+      'Live PvP server unavailable. Please try again later.',
+    );
+    expect(
+      describeLivePvpError(
+        const ApiFailure(400, 'Save and configure your deck first'),
+      ),
+      contains('Save and configure your deck first'),
+    );
+    expect(
+      describeLivePvpError(const FormatException('bad response')),
+      contains('invalid server response'),
+    );
+    expect(
+      describeLivePvpError(StateError('connection refused')),
+      contains('Check your internet connection'),
+    );
   });
   test('ticket opens socket and first hand opens arena', () async {
     final transport = _Transport(), socket = _Socket();
@@ -128,15 +138,34 @@ void main() {
       repository: PvpRepository(ApiClient(_Auth(), transport)),
       connect: (url, ticket) => _Socket(),
     );
-    await c.saveDeck(['sam:1']);
+    await c.saveDeck(['sam:1'], 0);
     final loaded = await c.loadDeck();
-    expect(loaded, ['sam:1']);
+    expect(loaded.cards, ['sam:1']);
+    expect(loaded.revision, 1);
     expect(
       transport.requests.any(
         (r) => r.method == 'PUT' && r.path == '/api/pvp/deck',
       ),
       isTrue,
     );
+    c.dispose();
+  });
+  test('duplicate session error leaves the first match untouched and never shows connection lost', () async {
+    final socket = _Socket();
+    final c = LiveMatchCoordinator(
+      repository: PvpRepository(ApiClient(_Auth(), _Transport())),
+      connect: (_, _) => socket,
+    );
+    await c.findMatch();
+    socket.controller.add(const ErrorEvent('', code: 'account_session_active'));
+    await socket.controller.close();
+    await Future<void>.delayed(Duration.zero);
+    expect(c.state, LiveMatchState.error);
+    expect(
+      c.message,
+      'Account already in a match or matchmaking on another device.',
+    );
+    expect(c.arena.popup, isNot('CONNECTION LOST'));
     c.dispose();
   });
 }

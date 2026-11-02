@@ -30,13 +30,16 @@ class LiveMatchCoordinator extends ChangeNotifier {
   LiveMatchState state = LiveMatchState.idle;
   String message = 'Ready for a live match.';
   bool _closing = false;
+  bool _duplicateRejected = false;
   void Function(String matchId, String reason, int reward)? onMatchFinished;
 
-  Future<List<String>> loadDeck() => repository.loadDeck();
-  Future<void> saveDeck(List<String> cards) => repository.saveDeck(cards);
+  Future<CloudDeck> loadDeck() => repository.loadDeck();
+  Future<CloudDeck> saveDeck(List<String> cards, int revision) =>
+      repository.saveDeck(cards, revision);
 
   Future<void> findMatch() async {
     await close();
+    _duplicateRejected = false;
     state = LiveMatchState.connecting;
     message = 'Requesting secure match ticket…';
     notifyListeners();
@@ -48,9 +51,15 @@ class LiveMatchCoordinator extends ChangeNotifier {
       _closing = false;
       _subscription = socket.events.listen(
         _handle,
-        onError: (Object error) => _disconnected('Connection error.'),
+        onError: (Object error) {
+          if (!_closing && !_duplicateRejected) {
+            _disconnected('Connection error.');
+          }
+        },
         onDone: () {
-          if (!_closing) _disconnected('Connection lost. Match forfeited.');
+          if (!_closing && !_duplicateRejected) {
+            _disconnected('Connection lost. Match forfeited.');
+          }
         },
       );
       state = LiveMatchState.waiting;
@@ -92,7 +101,10 @@ class LiveMatchCoordinator extends ChangeNotifier {
         final id = _protocol?.matchId;
         if (id != null) onMatchFinished?.call(id, event.reason, event.reward);
       case ErrorEvent():
-        message = event.message;
+        _duplicateRejected = event.code == 'account_session_active';
+        message = _duplicateRejected
+            ? 'Account already in a match or matchmaking on another device.'
+            : event.message;
         state = LiveMatchState.error;
     }
     notifyListeners();

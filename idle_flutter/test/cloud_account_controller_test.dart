@@ -522,6 +522,27 @@ void main() {
     cloud.dispose();
   });
 
+  test('reward outcome distinguishes daily cap, temporary failure, and prior claim', () async {
+    Future<PvpRewardClaimOutcome> outcome(ApiResponse response) async {
+      final auth = _Auth()..identity = const CloudIdentity(uid: 'winner');
+      final cloud = CloudAccountController(
+        auth: auth, api: ApiClient(auth, _SequenceTransport([response])),
+        local: LocalSaveService(_Storage()),
+      )..identity = auth.identity..state = CloudAccountState.synced..revision = 1;
+      final result = await cloud.claimPvpRewardOutcome(
+        '00000000-0000-0000-0000-000000000099', retryDelay: Duration.zero);
+      cloud.dispose();
+      return result;
+    }
+    expect(await outcome(const ApiResponse(429, '{"reason":"daily_limit"}')),
+        PvpRewardClaimOutcome.dailyLimit);
+    expect(await outcome(const ApiResponse(503, '{"error":"offline"}')),
+        PvpRewardClaimOutcome.temporaryError);
+    expect(await outcome(const ApiResponse(200,
+        '{"revision":2,"reward":100,"alreadyClaimed":true,"save":{"shards":1600}}')),
+        PvpRewardClaimOutcome.alreadyClaimed);
+  });
+
   test('reconnect discovers and claims an eligible missed win', () async {
     final auth = _Auth()..identity = const CloudIdentity(uid: 'winner');
     final transport = _SequenceTransport([

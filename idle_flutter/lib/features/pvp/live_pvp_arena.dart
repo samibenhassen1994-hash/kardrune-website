@@ -334,9 +334,8 @@ class ArenaViewController extends ChangeNotifier {
     roundsPlayed = hand?.round ?? roundsPlayed;
     _clock?.cancel();
     attackWindup = false;
-    actionText = reward > 0
-        ? 'MATCH COMPLETE  ·  +$reward SHARDS'
-        : 'MATCH ENDED';
+    // The Worker result advertises eligibility, not a confirmed D1 credit.
+    actionText = 'MATCH ENDED';
     popup = winner == 'you'
         ? 'VICTORY'
         : winner == 'opponent'

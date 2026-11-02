@@ -18,14 +18,14 @@ test('pending reward discovery returns distinct valid match ids only',()=>{
  ]),['m1','m2']);
 });
 
-test('reward farming limits repeated opponents and daily claims',()=>{
+test('daily cap applies across all opponents without a per-opponent cap',()=>{
  const history={reason:'completed',player_a:'a',player_b:'b',winner_uid:'a'};
  assert.deepEqual(rewardAccess(history,'a',{total:9,againstOpponent:2}),
   {allowed:true,opponent:'b'});
  assert.deepEqual(rewardAccess(history,'a',{total:10,againstOpponent:2}),
   {allowed:false,reason:'daily_limit'});
- assert.deepEqual(rewardAccess(history,'a',{total:2,againstOpponent:3}),
-  {allowed:false,reason:'opponent_limit'});
+ assert.deepEqual(rewardAccess(history,'a',{total:9,againstOpponent:9}),
+  {allowed:true,opponent:'b'});
  assert.deepEqual(rewardAccess(history,'b',{total:0,againstOpponent:0}),
   {allowed:false,reason:'ineligible'});
 });

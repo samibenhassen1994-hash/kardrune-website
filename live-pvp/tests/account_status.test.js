@@ -13,7 +13,6 @@ test('every economic mutation is wired to the shared account guard',()=>{
   '../../functions/api/save.js',
   '../../functions/api/summon.js',
   '../../functions/api/summon/decision.js',
-  '../../functions/api/practice.js',
   '../../functions/api/pvp/reward.js',
   '../../functions/api/_lib/pvp.js',
  ];
@@ -21,6 +20,9 @@ test('every economic mutation is wired to the shared account guard',()=>{
   const source=readFileSync(new URL(path,import.meta.url),'utf8');
   assert.match(source,/requireActiveAccount\(/,path);
  }
+ const practice=readFileSync(new URL('../../functions/api/practice.js',import.meta.url),'utf8');
+ assert.match(practice,/Practice retired/);
+ assert.match(practice,/status:410/);
 });
 
 test('active accounts pass and only bootstrap may allow a missing player',()=>{

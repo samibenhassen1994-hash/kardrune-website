@@ -28,6 +28,7 @@ abstract interface class CloudAuthPort implements AuthTokenProvider {
 }
 
 enum CloudAccountState { signedOut, loading, synced, review, error }
+enum PvpRewardClaimOutcome { credited, alreadyClaimed, dailyLimit, ineligible, temporaryError }
 
 class CloudAccountController extends ChangeNotifier {
   CloudAccountController({
@@ -49,7 +50,7 @@ class CloudAccountController extends ChangeNotifier {
   Future<void> _settle = Future.value();
   Timer? _syncTimer;
   bool _rewardRecoveryRunning = false;
-  final Map<String, Future<bool>> _rewardClaims = {};
+  final Map<String, Future<PvpRewardClaimOutcome>> _rewardClaims = {};
   String? _observedUid;
   bool _hasObservedAccount = false;
   CloudIdentity? identity;
@@ -302,6 +303,11 @@ class CloudAccountController extends ChangeNotifier {
   Future<bool> claimPvpReward(
     String matchId, {
     Duration retryDelay = const Duration(milliseconds: 500),
+  }) async => (await claimPvpRewardOutcome(matchId, retryDelay: retryDelay)) == PvpRewardClaimOutcome.credited;
+
+  Future<PvpRewardClaimOutcome> claimPvpRewardOutcome(
+    String matchId, {
+    Duration retryDelay = const Duration(milliseconds: 500),
   }) => _rewardClaims.putIfAbsent(matchId, () async {
     try {
       return await _claimPvpReward(matchId, retryDelay);
@@ -310,24 +316,26 @@ class CloudAccountController extends ChangeNotifier {
     }
   });
 
-  Future<bool> _claimPvpReward(String matchId, Duration retryDelay) async {
+  Future<PvpRewardClaimOutcome> _claimPvpReward(String matchId, Duration retryDelay) async {
     final accountUid = identity?.uid;
-    if (accountUid == null) return false;
+    if (accountUid == null) return PvpRewardClaimOutcome.ineligible;
     for (var attempt = 0; attempt < 8; attempt++) {
-      if (identity?.uid != accountUid) return false;
+      if (identity?.uid != accountUid) return PvpRewardClaimOutcome.ineligible;
       try {
         final response = await api.post('/api/pvp/reward', {
           'matchId': matchId,
           'revision': revision,
         });
-        if (identity?.uid != accountUid) return false;
+        if (identity?.uid != accountUid) return PvpRewardClaimOutcome.ineligible;
         applyServerSave(response);
-        return response['reward'] == 100;
+        if (response['alreadyClaimed'] == true) return PvpRewardClaimOutcome.alreadyClaimed;
+        return response['reward'] == 100 ? PvpRewardClaimOutcome.credited : PvpRewardClaimOutcome.ineligible;
       } on SaveConflict {
         await loadCloud();
-        if (state != CloudAccountState.synced) return false;
+        if (state != CloudAccountState.synced) return PvpRewardClaimOutcome.temporaryError;
       } on ApiFailure catch (error) {
-        if (error.statusCode == 403 || error.statusCode == 429) return false;
+        if (error.statusCode == 429) return PvpRewardClaimOutcome.dailyLimit;
+        if (error.statusCode == 403) return PvpRewardClaimOutcome.ineligible;
       } catch (_) {}
       if (attempt < 7 && retryDelay > Duration.zero) {
         await Future<void>.delayed(
@@ -335,7 +343,7 @@ class CloudAccountController extends ChangeNotifier {
         );
       }
     }
-    return false;
+    return PvpRewardClaimOutcome.temporaryError;
   }
 
   Future<int> recoverPvpRewards({

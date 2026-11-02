@@ -49,9 +49,15 @@ export class PvpLobby {
   if(request.headers.get('Upgrade')?.toLowerCase()!=='websocket')return new Response('WebSocket required',{status:426});
   const uid=request.headers.get('X-Player'),name=request.headers.get('X-Name'),avatar=request.headers.get('X-Avatar')||'player',deck=JSON.parse(request.headers.get('X-Deck')||'[]');
   if(!uid||deck.length<MAX_ROUNDS||deck.length>9)return new Response('Invalid match participant',{status:400});
+  // The Durable Object serializes requests to this lobby. Reject a second
+  // session before creating a socket or touching the active match.
+  if(this.sockets.has(uid)){
+   const pair=new WebSocketPair(),client=pair[0],server=pair[1];server.accept();
+   send(server,{type:'error',code:'account_session_active'});
+   server.close(4009,'Account session active');
+   return new Response(null,{status:101,webSocket:client});
+  }
   const pair=new WebSocketPair(),client=pair[0],server=pair[1];server.accept();
-  const previous=this.sockets.get(uid);
-  if(previous){this.drop(previous);try{previous.ws.close(4000,'Reconnected')}catch{}}
   for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]]}
   const player={uid,name,avatar,deck,ws:server,used:[],chosen:null,match:null,lastSeen:Date.now()};
   this.sockets.set(uid,player);

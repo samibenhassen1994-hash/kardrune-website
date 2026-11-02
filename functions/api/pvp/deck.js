@@ -4,7 +4,7 @@ import {validSkillForStage,SKILL_VERSION} from '../../../shared/skill_catalog.js
 // An existing D1 database may have 0001/0002 but not the 0003 deck table yet.
 // Initialize only this non-competitive table on first access; the rest of 0003
 // remains a separate, explicit migration for the live-match Worker.
-const DECK_SCHEMA='CREATE TABLE IF NOT EXISTS pvp_decks (uid TEXT PRIMARY KEY REFERENCES players(uid) ON DELETE CASCADE, cards_json TEXT NOT NULL, updated_at INTEGER NOT NULL)';
+const DECK_SCHEMA='CREATE TABLE IF NOT EXISTS pvp_decks (uid TEXT PRIMARY KEY REFERENCES players(uid) ON DELETE CASCADE, cards_json TEXT NOT NULL, updated_at INTEGER NOT NULL, revision INTEGER NOT NULL DEFAULT 1)';
 async function deckQuery(env,operation){
  try{return await operation()}
  catch(error){
@@ -20,24 +20,30 @@ function validate(save,ids){
 export async function onRequestGet({request,env}){
  try{
   const user=await context(request,env);
-  const row=await deckQuery(env,()=>env.DB.prepare('SELECT cards_json FROM pvp_decks WHERE uid=?').bind(user.uid).first());
-  return json({cards:row?JSON.parse(row.cards_json):[]});
+  const row=await deckQuery(env,()=>env.DB.prepare('SELECT cards_json,revision FROM pvp_decks WHERE uid=?').bind(user.uid).first());
+  return json({cards:row?JSON.parse(row.cards_json):[],revision:row?.revision??0});
  }catch(e){return failure(e)}
 }
 export async function onRequestPut({request,env}){
  try{
   const user=await context(request,env);
   const raw=await request.text();if(raw.length>1500)return json({error:'Deck too large'},413);
-  let ids;try{ids=JSON.parse(raw).cards}catch{return json({error:'Invalid deck'},400)}
+  let ids,revision;try{const body=JSON.parse(raw);ids=body.cards;revision=body.revision}catch{return json({error:'Invalid deck'},400)}
+  if(!Number.isSafeInteger(revision)||revision<0)return json({error:'Deck revision required'},400);
   const row=await env.DB.prepare('SELECT save_json FROM demo_saves WHERE uid=?').bind(user.uid).first();
   if(!row)return json({error:'Cloud save required before saving a deck'},400);
-  if(!validate(JSON.parse(row.save_json),ids))return json({error:'Deck cards do not match the latest cloud save. Wait for cloud backup and try again (1–9 distinct owned cards).'},409);
+  if(!validate(JSON.parse(row.save_json),ids))return json({error:'Deck cards do not match the latest cloud save. Wait for cloud backup and try again (1–9 distinct owned cards).'},422);
   const grants=await ensureLegacySkills(env,user.uid);
   if(!ids.every(id=>grants.some(g=>g.card_id===id&&g.skill_version===SKILL_VERSION&&
     validSkillForStage(g.skill_id,Number(id.split(':')[1])))))
-   return json({error:'Deck contains an unverified card. Summon online or choose a verified card.'},409);
-  await deckQuery(env,()=>env.DB.prepare('INSERT INTO pvp_decks(uid,cards_json,updated_at) VALUES(?,?,?) ON CONFLICT(uid) DO UPDATE SET cards_json=excluded.cards_json,updated_at=excluded.updated_at')
-   .bind(user.uid,JSON.stringify(ids),Date.now()).run());
-  return json({cards:ids});
+   return json({error:'Deck contains an unverified card. Summon online or choose a verified card.'},422);
+  const write=await deckQuery(env,()=>revision===0
+   ? env.DB.prepare('INSERT INTO pvp_decks(uid,cards_json,updated_at,revision) VALUES(?,?,?,1) ON CONFLICT(uid) DO NOTHING').bind(user.uid,JSON.stringify(ids),Date.now()).run()
+   : env.DB.prepare('UPDATE pvp_decks SET cards_json=?,updated_at=?,revision=revision+1 WHERE uid=? AND revision=?').bind(JSON.stringify(ids),Date.now(),user.uid,revision).run());
+  if(write.meta?.changes!==1){
+   const latest=await env.DB.prepare('SELECT cards_json,revision FROM pvp_decks WHERE uid=?').bind(user.uid).first();
+   return json({error:'Deck changed on another device',cards:latest?JSON.parse(latest.cards_json):[],revision:latest?.revision??0},409);
+  }
+  return json({cards:ids,revision:revision+1});
  }catch(e){return failure(e)}
 }

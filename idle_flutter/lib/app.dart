@@ -25,6 +25,7 @@ import 'features/pvp/arena_landing.dart';
 import 'models/player_save.dart';
 import 'services/local_save_service.dart';
 import 'services/live_pvp_socket.dart';
+import 'services/api_client.dart';
 import 'repositories/pvp_repository.dart';
 import 'services/cloud_factory.dart';
 import 'services/app_update_controller.dart';
@@ -124,6 +125,7 @@ class _IdleShellState extends State<IdleShell> {
 
   void _chooseTab(int value) {
     setState(() => tab = value);
+    if (value == 1) unawaited(_loadCloudDeck());
     final section = switch (value) {
       0 => IdleTutorialSection.arena,
       1 => IdleTutorialSection.cards,
@@ -133,7 +135,12 @@ class _IdleShellState extends State<IdleShell> {
     if (section != null) _openTutorial(section);
     if (value == 0 && _cloud?.identity != null) unawaited(_refreshQuota());
   }
+
   int tab = 0, shards = 1500, page = 0;
+  int _deckRevision = 0;
+  String? _deckUid;
+  String? _deckLoadedUid;
+  bool _deckDirty = false;
   String name = 'Runebearer', avatar = 'player';
   KrLanguage language = KrLanguage.english;
   final owned = <String>{};
@@ -287,13 +294,29 @@ class _IdleShellState extends State<IdleShell> {
 
   void _cloudChanged() {
     final uid = _cloud?.identity?.uid;
+    if (uid != _deckUid) {
+      _deckUid = uid;
+      _deckRevision = 0;
+      _deckDirty = false;
+      _deckLoadedUid = null;
+      deck = [];
+      if (uid != null) {
+        final pending = _saveService?.loadPendingDeck(uid);
+        if (pending != null) {
+          deck = pending.cards;
+          _deckRevision = pending.revision;
+          _deckDirty = true;
+        }
+      }
+    }
     if (uid != _quotaUid) {
       _quotaUid = uid;
       _quotaRemaining = null;
       _quotaTimer?.cancel();
       _quotaVersion++;
     }
-    if (uid != null && _quotaRemaining == null &&
+    if (uid != null &&
+        _quotaRemaining == null &&
         _cloud?.state == CloudAccountState.synced) {
       unawaited(_refreshQuota());
     }
@@ -313,13 +336,13 @@ class _IdleShellState extends State<IdleShell> {
         connect: LivePvpSocket.connect,
       )..addListener(_pvpChanged);
       _pvp!.onMatchFinished = _pvpFinished;
-      _loadCloudDeck();
     } else if (_cloud?.identity == null && _pvp != null) {
       _pvp!.removeListener(_pvpChanged);
       _pvp!.dispose();
       _pvp = null;
     }
     if (_cloud?.identity != null && _cloud?.state == CloudAccountState.synced) {
+      if (_deckLoadedUid != uid) unawaited(_loadCloudDeck());
       unawaited(_recoverPvpRewards(_cloud!));
     }
     if (mounted) setState(() {});
@@ -332,7 +355,9 @@ class _IdleShellState extends State<IdleShell> {
     final version = ++_quotaVersion;
     try {
       final response = await cloud!.api.get('/api/pvp/reward');
-      if (!mounted || _cloud?.identity?.uid != uid || version != _quotaVersion) return;
+      if (!mounted || _cloud?.identity?.uid != uid || version != _quotaVersion) {
+        return;
+      }
       final remaining = response['remaining'], limit = response['limit'];
       if (remaining is! int || limit is! int || limit < 1) return;
       setState(() {
@@ -342,7 +367,8 @@ class _IdleShellState extends State<IdleShell> {
       _quotaTimer?.cancel();
       final next = response['nextRefreshAt'];
       if (next is int && next > DateTime.now().millisecondsSinceEpoch) {
-        final delay = (next - DateTime.now().millisecondsSinceEpoch + 1000).clamp(1000,86400000);
+        final delay = (next - DateTime.now().millisecondsSinceEpoch + 1000)
+            .clamp(1000, 86400000);
         _quotaTimer = Timer(Duration(milliseconds: delay.toInt()), () {
           if (mounted && tab == 0) unawaited(_refreshQuota());
         });
@@ -361,13 +387,18 @@ class _IdleShellState extends State<IdleShell> {
   Future<void> _claimPvpReward(String matchId) async {
     final cloud = _cloud;
     if (cloud == null) return;
-    final claimed = await cloud.claimPvpReward(matchId);
+    final outcome = await cloud.claimPvpRewardOutcome(matchId);
     unawaited(_refreshQuota());
-    if (!claimed && mounted) {
+    if (mounted && _cloud?.identity?.uid == cloud.identity?.uid && outcome != PvpRewardClaimOutcome.alreadyClaimed) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            context.tr('PvP reward pending. It will retry automatically.'),
+            context.tr(switch (outcome) {
+              PvpRewardClaimOutcome.credited => '+100 Shards credited.',
+              PvpRewardClaimOutcome.dailyLimit => 'PvP daily reward limit reached (10/24h).',
+              PvpRewardClaimOutcome.ineligible => 'No PvP reward for this match.',
+              _ => 'PvP reward temporarily unavailable. Try again later.',
+            }),
           ),
         ),
       );
@@ -379,7 +410,7 @@ class _IdleShellState extends State<IdleShell> {
     if (recovered > 0) unawaited(_refreshQuota());
     if (recovered > 0 && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Recovered $recovered pending PvP reward.')),
+        SnackBar(content: Text('${context.tr('Recovered PvP rewards')}: $recovered')),
       );
     }
   }
@@ -410,25 +441,88 @@ class _IdleShellState extends State<IdleShell> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _loadCloudDeck() async {
+  Future<void> _loadCloudDeck({bool discardLocal = false}) async {
+    final uid = _cloud?.identity?.uid;
+    final pvp = _pvp;
+    if (uid == null || pvp == null || (_deckDirty && !discardLocal)) return;
     try {
-      final value = await _pvp!.loadDeck();
-      if (!mounted || value.isEmpty) return;
-      setState(() => deck = value.where(owned.contains).take(9).toList());
+      final value = await pvp.loadDeck();
+      if (!mounted ||
+          uid != _cloud?.identity?.uid ||
+          (_deckDirty && !discardLocal)) {
+        return;
+      }
+      setState(() {
+        deck = value.cards.where(owned.contains).take(9).toList();
+        _deckRevision = value.revision;
+        _deckLoadedUid = uid;
+        _deckDirty = false;
+      });
+      _saveService?.clearPendingDeck(uid);
       _saveService?.saveDeck(deck);
-    } catch (_) {}
+    } catch (_) {
+      if (mounted && uid == _cloud?.identity?.uid) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              KrTranslations.translate(
+                language,
+                'Deck cloud unavailable. Changes on this device are not synchronized.',
+              ),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _saveDeck(List<String> value) async {
-    setState(() => deck = [...value]);
+    final uid = _cloud?.identity?.uid;
+    setState(() {
+      deck = [...value];
+      _deckDirty = uid != null;
+    });
     _saveService?.saveDeck(deck);
-    if (_pvp != null) {
+    if (uid != null) _saveService?.savePendingDeck(uid, deck, _deckRevision);
+    if (_pvp != null && uid != null) {
       try {
-        await _pvp!.saveDeck(deck);
+        final saved = await _pvp!.saveDeck(deck, _deckRevision);
+        if (!mounted || uid != _cloud?.identity?.uid) return;
+        setState(() {
+          _deckRevision = saved.revision;
+          _deckDirty = false;
+        });
+        _saveService?.clearPendingDeck(uid);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              KrTranslations.translate(language, 'Deck saved to cloud.'),
+            ),
+          ),
+        );
       } catch (error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Deck saved locally · Cloud: $error')),
+            SnackBar(
+              content: Text(
+                KrTranslations.translate(
+                  language,
+                  error is SaveConflict
+                      ? 'Deck changed on another device. Local changes are not synchronized.'
+                      : 'Deck saved locally. Cloud sync failed.',
+                ),
+              ),
+              action: error is SaveConflict
+                  ? SnackBarAction(
+                      label: KrTranslations.translate(
+                        language,
+                        'LOAD CLOUD DECK',
+                      ),
+                      onPressed: () =>
+                          unawaited(_loadCloudDeck(discardLocal: true)),
+                    )
+                  : null,
+            ),
           );
         }
       }
@@ -460,7 +554,9 @@ class _IdleShellState extends State<IdleShell> {
         ..clear()
         ..addAll(save.skills);
       _pendingDuplicate = save.pendingDuplicate;
-      deck = _saveService?.loadDeck().where(owned.contains).toList() ?? [];
+      if (_cloud?.identity == null) {
+        deck = _saveService?.loadDeck().where(owned.contains).toList() ?? [];
+      }
     });
   }
 
@@ -538,185 +634,206 @@ class _IdleShellState extends State<IdleShell> {
       _withUpdate(
         Stack(
           children: [
-        Scaffold(
-          backgroundColor: Colors.transparent,
-          extendBody: tab == 0 || tab == 2,
-          body: SafeArea(
-            top: tab != 0 && tab != 2,
-            bottom: tab != 0 && tab != 2,
-            child: DecoratedBox(
-              decoration: const BoxDecoration(
-                color: Color(0xff070e20),
-                gradient: RadialGradient(
-                  center: Alignment(0, -1.12),
-                  radius: 1.25,
-                  colors: [Color(0xff1c3256), Color(0xff070e20)],
-                  stops: [0, .58],
-                ),
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 720),
-                  child: Column(
-                    children: [
-                      if (tab != 0 && tab != 2)
-                        _Header(shards: shards, name: name, avatar: avatar),
-                      Expanded(
-                        child: IndexedStack(
-                          index: tab,
-                          children: [
-                            ArenaLanding(
-                              header: _Header(
-                                shards: shards,
-                                name: name,
-                                avatar: avatar,
-                                transparent: true,
-                              ),
-                              hint: _cloud?.identity == null
-                                  ? KrTranslations.translate(
-                                      language,
-                                      'SIGN IN FROM PROFILE TO PLAY LIVE',
-                                    )
-                                  : deck.length < 3
-                                  ? KrTranslations.translate(
-                                      language,
-                                      'ADD THREE CARDS TO YOUR DECK',
-                                    )
-                                  : _pvp?.state == LiveMatchState.idle
-                                  ? ''
-                                  : _pvp?.message ?? '',
-                              rewardRemaining: _quotaRemaining,
-                              rewardLimit: _quotaLimit,
-                              searching:
-                                  _pvp?.state == LiveMatchState.connecting ||
-                                  _pvp?.state == LiveMatchState.waiting,
-                              onStart: _pvp != null && deck.length >= 3
-                                  ? _pvp!.findMatch
-                                  : () => setState(
-                                      () => tab = _cloud?.identity == null
-                                          ? 3
-                                          : 1,
-                                    ),
-                              onCancel: _pvp?.close,
-                            ),
-                            _Cards(
-                              page: page,
-                              language: language,
-                              title: KrTranslations.translate(
-                                language,
-                                'CARDS',
-                              ),
-                              owned: owned.toList(),
-                              deck: deck,
-                              active: active,
-                              attacks: attacks,
-                              crits: crits,
-                              skills: skills,
-                              onPage: (v) => setState(() => page = v),
-                              onDeck: _saveDeck,
-                              onSelect: (id) {
-                                setState(() => active = id);
-                                _persist();
-                              },
-                            ),
-                            SummonScreen(
-                              header: _Header(
-                                shards: shards,
-                                name: name,
-                                avatar: avatar,
-                                transparent: true,
-                                onNotifications: () async {
-                                  try {
-                                    await toggleFreePullNotifications(
-                                      api: _cloud?.identity == null
-                                          ? null
-                                          : _cloud?.api,
-                                      uid: _cloud?.identity?.uid,
-                                    );
-                                    if (mounted) setState(() {});
-                                  } catch (error) {
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'Notifications unavailable: $error',
-                                          ),
+            Scaffold(
+              backgroundColor: Colors.transparent,
+              extendBody: tab == 0 || tab == 2,
+              body: SafeArea(
+                top: tab != 0 && tab != 2,
+                bottom: tab != 0 && tab != 2,
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(
+                    color: Color(0xff070e20),
+                    gradient: RadialGradient(
+                      center: Alignment(0, -1.12),
+                      radius: 1.25,
+                      colors: [Color(0xff1c3256), Color(0xff070e20)],
+                      stops: [0, .58],
+                    ),
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 720),
+                      child: Column(
+                        children: [
+                          if (tab != 0 && tab != 2)
+                            _Header(shards: shards, name: name, avatar: avatar),
+                          Expanded(
+                            child: IndexedStack(
+                              index: tab,
+                              children: [
+                                ArenaLanding(
+                                  header: _Header(
+                                    shards: shards,
+                                    name: name,
+                                    avatar: avatar,
+                                    transparent: true,
+                                  ),
+                                  hint: _cloud?.identity == null
+                                      ? KrTranslations.translate(
+                                          language,
+                                          'SIGN IN FROM PROFILE TO PLAY LIVE',
+                                        )
+                                      : deck.length < 3
+                                      ? KrTranslations.translate(
+                                          language,
+                                          'ADD THREE CARDS TO YOUR DECK',
+                                        )
+                                      : _pvp?.state == LiveMatchState.idle
+                                      ? ''
+                                      : KrTranslations.translate(
+                                          language,
+                                          _pvp?.message ?? '',
                                         ),
-                                      );
-                                    }
-                                  }
-                                },
-                              ),
-                              shards: shards,
-                              active: tab == 2,
-                              accountKey: _cloud?.identity?.uid ?? 'guest',
-                              loadFreeStatus: _freeSummonStatus,
-                              onSummon: _summon,
-                              onFreeSummon: () => _summon(false, free: true),
-                            ),
-                            _Profile(
-                              name: name,
-                              avatar: avatar,
-                              onName: (v) async {
-                                final cloud = _cloud;
-                                if (cloud?.identity == null || cloud!.nameChosen) return;
-                                try {
-                                  await cloud.chooseDisplayName(v);
-                                  if (mounted && cloud.chosenDisplayName != null) {
-                                    setState(() => name = cloud.chosenDisplayName!);
+                                  rewardRemaining: _quotaRemaining,
+                                  rewardLimit: _quotaLimit,
+                                  searching:
+                                      _pvp?.state ==
+                                          LiveMatchState.connecting ||
+                                      _pvp?.state == LiveMatchState.waiting,
+                                  onStart: _pvp != null && deck.length >= 3
+                                      ? _pvp!.findMatch
+                                      : () => setState(
+                                          () => tab = _cloud?.identity == null
+                                              ? 3
+                                              : 1,
+                                        ),
+                                  onCancel: _pvp?.close,
+                                ),
+                                _Cards(
+                                  page: page,
+                                  language: language,
+                                  title: KrTranslations.translate(
+                                    language,
+                                    'CARDS',
+                                  ),
+                                  owned: owned.toList(),
+                                  deck: deck,
+                                  deckDirty: _deckDirty,
+                                  active: active,
+                                  attacks: attacks,
+                                  crits: crits,
+                                  skills: skills,
+                                  onPage: (v) => setState(() => page = v),
+                                  onDeck: _saveDeck,
+                                  onOpenDeck: _loadCloudDeck,
+                                  onSelect: (id) {
+                                    setState(() => active = id);
                                     _persist();
-                                  }
-                                 } catch (_) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(this.context).showSnackBar(
-                                      SnackBar(content: Text(this.context.tr('Choose a valid name (3–20 characters).'))),
+                                  },
+                                ),
+                                SummonScreen(
+                                  header: _Header(
+                                    shards: shards,
+                                    name: name,
+                                    avatar: avatar,
+                                    transparent: true,
+                                    onNotifications: () async {
+                                      try {
+                                        await toggleFreePullNotifications(
+                                          api: _cloud?.identity == null
+                                              ? null
+                                              : _cloud?.api,
+                                          uid: _cloud?.identity?.uid,
+                                        );
+                                        if (mounted) setState(() {});
+                                      } catch (error) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Notifications unavailable: $error',
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                  ),
+                                  shards: shards,
+                                  active: tab == 2,
+                                  accountKey: _cloud?.identity?.uid ?? 'guest',
+                                  loadFreeStatus: _freeSummonStatus,
+                                  onSummon: _summon,
+                                  onFreeSummon: () =>
+                                      _summon(false, free: true),
+                                ),
+                                _Profile(
+                                  name: name,
+                                  avatar: avatar,
+                                  onName: (v) async {
+                                    final cloud = _cloud;
+                                    if (cloud?.identity == null ||
+                                        cloud!.nameChosen) {
+                                      return;
+                                    }
+                                    try {
+                                      await cloud.chooseDisplayName(v);
+                                      if (mounted &&
+                                          cloud.chosenDisplayName != null) {
+                                        setState(
+                                          () => name = cloud.chosenDisplayName!,
+                                        );
+                                        _persist();
+                                      }
+                                    } catch (_) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(this.context)
+                                            .showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  this.context.tr(
+                                                    'Choose a valid name (3–20 characters).',
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                      }
+                                    }
+                                  },
+                                  onAvatar: (v) {
+                                    setState(() => avatar = v);
+                                    _persist();
+                                  },
+                                  language: language,
+                                  onLanguage: () =>
+                                      _showLanguagePicker(context),
+                                  motion: motion,
+                                  onMotion: (value) {
+                                    setState(() => motion = value);
+                                    _saveService?.storage.write(
+                                      _motionKey,
+                                      value.name,
                                     );
-                                  }
-                                }
-                              },
-                              onAvatar: (v) {
-                                setState(() => avatar = v);
-                                _persist();
-                              },
-                              language: language,
-                              onLanguage: () => _showLanguagePicker(context),
-                              motion: motion,
-                              onMotion: (value) {
-                                setState(() => motion = value);
-                                _saveService?.storage.write(
-                                  _motionKey,
-                                  value.name,
-                                );
-                              },
-                              cloud: _cloud,
-                              cloudMessage: _cloudInitializationMessage,
-                              onCloudRetry: _initializeCloud,
+                                  },
+                                  cloud: _cloud,
+                                  cloudMessage: _cloudInitializationMessage,
+                                  onCloudRetry: _initializeCloud,
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
-          bottomNavigationBar: _RuneNavigation(
-            current: tab,
-            language: language,
-            arenaOverlay: tab == 0 || tab == 2,
-            onTap: _chooseTab,
-          ),
-        ),
-          if (_tutorialSection != null)
-            Positioned.fill(
-              child: IdleFirstVisitTutorial(
-                section: _tutorialSection!,
-                onDone: _closeTutorial,
+              bottomNavigationBar: _RuneNavigation(
+                current: tab,
+                language: language,
+                arenaOverlay: tab == 0 || tab == 2,
+                onTap: _chooseTab,
               ),
             ),
+            if (_tutorialSection != null)
+              Positioned.fill(
+                child: IdleFirstVisitTutorial(
+                  section: _tutorialSection!,
+                  onDone: _closeTutorial,
+                ),
+              ),
           ],
         ),
       ),
@@ -1443,12 +1560,14 @@ class _Cards extends StatefulWidget {
     required this.title,
     required this.owned,
     required this.deck,
+    required this.deckDirty,
     required this.active,
     required this.attacks,
     required this.crits,
     required this.skills,
     required this.onPage,
     required this.onDeck,
+    required this.onOpenDeck,
     required this.onSelect,
   });
   final int page;
@@ -1456,11 +1575,13 @@ class _Cards extends StatefulWidget {
   final String title;
   final List<String> owned;
   final List<String> deck;
+  final bool deckDirty;
   final String active;
   final Map<String, int> attacks, crits;
   final Map<String, String> skills;
   final ValueChanged<int> onPage;
   final ValueChanged<List<String>> onDeck;
+  final Future<void> Function() onOpenDeck;
   final ValueChanged<String> onSelect;
   @override
   State<_Cards> createState() => _CardsState();
@@ -1597,12 +1718,23 @@ class _CardsState extends State<_Cards> {
                         fontSize: 11,
                       ),
                     ),
+                    if (widget.deckDirty)
+                      Text(
+                        context.tr('Local deck · not synchronized'),
+                        style: const TextStyle(
+                          color: Color(0xffffc36b),
+                          fontSize: 11,
+                        ),
+                      ),
                   ],
                 ),
               ),
               OutlinedButton.icon(
                 key: const Key('collection-edit-deck'),
-                onPressed: () => _openDeck(context),
+                onPressed: () async {
+                  await widget.onOpenDeck();
+                  if (context.mounted) _openDeck(context);
+                },
                 icon: const Icon(Icons.style_outlined, size: 16),
                 label: Text(_t('MODIFICA MAZZO', 'EDIT DECK')),
                 style: OutlinedButton.styleFrom(
@@ -2067,28 +2199,53 @@ class _CardsState extends State<_Cards> {
 }
 
 class _OneTimeNameField extends StatefulWidget {
-  const _OneTimeNameField({required this.initialName,required this.onSubmit});
+  const _OneTimeNameField({required this.initialName, required this.onSubmit});
   final String initialName;
   final Future<void> Function(String) onSubmit;
   @override
-  State<_OneTimeNameField> createState()=>_OneTimeNameFieldState();
+  State<_OneTimeNameField> createState() => _OneTimeNameFieldState();
 }
+
 class _OneTimeNameFieldState extends State<_OneTimeNameField> {
-  late final TextEditingController controller=TextEditingController(
-    text: widget.initialName=='Runebearer'?'':widget.initialName);
-  bool busy=false;
+  late final TextEditingController controller = TextEditingController(
+    text: widget.initialName == 'Runebearer' ? '' : widget.initialName,
+  );
+  bool busy = false;
   @override
-  void dispose(){controller.dispose();super.dispose();}
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
   @override
-  Widget build(BuildContext context)=>Row(children:[
-    Expanded(child: TextField(controller:controller,maxLength:20,
-      decoration: InputDecoration(labelText:context.tr('DISPLAY NAME'),counterText:''))),
-    TextButton(key:const Key('confirm-display-name'),onPressed:busy?null:() async {
-      setState(()=>busy=true);
-      try{await widget.onSubmit(controller.text.trim());}
-      finally{if(mounted)setState(()=>busy=false);}
-    },child:Text(context.tr('CONFIRM NAME'))),
-  ]);
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(
+        child: TextField(
+          controller: controller,
+          maxLength: 20,
+          decoration: InputDecoration(
+            labelText: context.tr('DISPLAY NAME'),
+            counterText: '',
+          ),
+        ),
+      ),
+      TextButton(
+        key: const Key('confirm-display-name'),
+        onPressed: busy
+            ? null
+            : () async {
+                setState(() => busy = true);
+                try {
+                  await widget.onSubmit(controller.text.trim());
+                } finally {
+                  if (mounted) setState(() => busy = false);
+                }
+              },
+        child: Text(context.tr('CONFIRM NAME')),
+      ),
+    ],
+  );
 }
 
 class _Profile extends StatelessWidget {
@@ -2228,14 +2385,21 @@ class _Profile extends StatelessWidget {
             if (cloud?.identity != null && cloud!.nameChosen)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Text('${context.tr('DISPLAY NAME')}: ${cloud!.chosenDisplayName ?? name}',
-                  style: const TextStyle(fontSize: 12, color: Color(0xffffdfa8))),
+                child: Text(
+                  '${context.tr('DISPLAY NAME')}: ${cloud!.chosenDisplayName ?? name}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xffffdfa8),
+                  ),
+                ),
               )
             else if (cloud?.identity != null)
               _OneTimeNameField(initialName: name, onSubmit: onName)
             else
-              Text(context.tr('Sign in to choose your permanent name.'),
-                style: const TextStyle(fontSize: 10)),
+              Text(
+                context.tr('Sign in to choose your permanent name.'),
+                style: const TextStyle(fontSize: 10),
+              ),
             /*TextField(
               maxLength: 20,
               style: const TextStyle(fontSize: 12),
@@ -2372,11 +2536,11 @@ class _Profile extends StatelessWidget {
                           ],
                           if (!cloud!.mobileHandoff)
                             TextButton.icon(
-                            key: const Key('cloud-logout'),
-                            onPressed: cloud!.signOut,
-                            icon: const Icon(Icons.logout, size: 14),
-                            label: Text(context.tr('LOGOUT')),
-                          ),
+                              key: const Key('cloud-logout'),
+                              onPressed: cloud!.signOut,
+                              icon: const Icon(Icons.logout, size: 14),
+                              label: Text(context.tr('LOGOUT')),
+                            ),
                           if (cloud!.hasGuestBackup)
                             TextButton(
                               onPressed: cloud!.restoreGuestBackup,
