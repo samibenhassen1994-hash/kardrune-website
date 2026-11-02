@@ -68,7 +68,7 @@ const CONFUSABLE_LATIN = Object.freeze({
 });
 
 function skeleton(value) {
-  return Array.from(value.normalize('NFKD').toLowerCase())
+  return Array.from(value.normalize('NFKD').toLowerCase().replace(/ß/g, 'ss'))
     .filter(character => !/\p{M}/u.test(character))
     .map(character => CONFUSABLE_LATIN[character] || character)
     .join('')
