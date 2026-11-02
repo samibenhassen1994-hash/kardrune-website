@@ -21,6 +21,7 @@ import 'features/pvp/live_match_coordinator.dart';
 import 'features/pvp/live_pvp_arena.dart';
 import 'features/pvp/flame_battle_audio.dart';
 import 'features/pvp/arena_landing.dart';
+import 'features/pvp/league_leaderboard.dart';
 import 'models/player_save.dart';
 import 'services/local_save_service.dart';
 import 'services/live_pvp_socket.dart';
@@ -662,6 +663,18 @@ class _IdleShellState extends State<IdleShell> {
                               index: tab,
                               children: [
                                 ArenaLanding(
+                                  onLeaderboard: _cloud?.identity == null ? null : () => showModalBottomSheet<void>(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: const Color(0xff0b1930),
+                                    builder: (sheetContext) => FractionallySizedBox(
+                                      heightFactor: .87,
+                                      child: LeagueLeaderboard(
+                                        api: _cloud!.api,
+                                        onClaimed: () => _cloud!.loadCloud(),
+                                      ),
+                                    ),
+                                  ),
                                   header: _Header(
                                     shards: shards,
                                     name: name,
