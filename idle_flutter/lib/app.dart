@@ -784,7 +784,7 @@ class _IdleShellState extends State<IdleShell> {
                                               SnackBar(
                                                 content: Text(
                                                   this.context.tr(
-                                                    'Choose a valid name (3–20 characters).',
+                                                    'Name must be 3–16 characters, with no spaces or inappropriate words.',
                                                   ),
                                                 ),
                                               ),
@@ -2289,7 +2289,7 @@ class _OneTimeNameFieldState extends State<_OneTimeNameField> {
             : () async {
                 setState(() => busy = true);
                 try {
-                  await widget.onSubmit(controller.text.trim());
+                  await widget.onSubmit(controller.text);
                 } finally {
                   if (mounted) setState(() => busy = false);
                 }
