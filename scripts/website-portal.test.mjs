@@ -44,3 +44,11 @@ test('portal and Idle use identical Firebase named app for shared-origin persist
  assert.match(idle,/name == 'idle-kardrune-cloud'/);
  assert.match(idle,/Persistence\.LOCAL/);
 });
+
+test('Idle link always opens production origin and never preview guest save',()=>{
+ const ui=read('account.js');
+ assert.match(ui,/const IDLE_ORIGINAL_URL='https:\/\/kardrune\.com\/idle\/'/);
+ assert.match(ui,/a\.href=href/);
+ assert.match(ui,/a\.rel='noopener noreferrer'/);
+ assert.doesNotMatch(ui,/,\s*'idle\/'\)\)/);
+});
