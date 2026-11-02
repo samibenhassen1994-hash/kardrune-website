@@ -110,6 +110,29 @@ void main() {
     });
   }
 
+  for (final size in const [Size(320, 568), Size(375, 620), Size(393, 690), Size(430, 932)]) {
+    testWidgets('Summon banner remains prominent with no wasted panel space at $size', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(const KardRuneApp(enableCloudBootstrap: false));
+      await tester.tap(find.text('SUMMON').last);
+      await tester.pumpAndSettle();
+      final banner = tester.getRect(find.byKey(const Key('summon-banner-frame')));
+      final panel = tester.getRect(find.byKey(const Key('summon-content-panel')));
+      final navigation = tester.getRect(find.byKey(const Key('idle-navigation-bar')));
+      expect(banner.height, greaterThanOrEqualTo(165));
+      expect(panel.top, greaterThanOrEqualTo(75));
+      expect(panel.bottom, lessThanOrEqualTo(navigation.top + 1));
+      expect(panel.height - banner.height, lessThanOrEqualTo(285));
+      expect(find.byKey(const Key('summon-paid-button')).hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('summon content panel enters upward when opened', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
