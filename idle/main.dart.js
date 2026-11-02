@@ -107103,23 +107103,23 @@ break A}if(1===i){r="DREN \xb7 FEATURED SUMMON"
 break A}r="COMING SOON"
 break A}B:{if(s){s=B.awJ
 break B}s=B.awO
-break B}q=a?92:250
-p=A.c2(14)
-o=A.cM(B.Tq,2)
-n=A.c2(11)
-m=A.b([],t.p)
-l=this.d
-if(l===0)m.push(A.F_(A.k2("assets/idle/summon/banners/Standard_banner.jpg",B.D,j,j,B.b0,B.dB,!1,j,B.awt,j,j,j),0.9))
-else if(l===1)m.push(A.k2("assets/idle/summon/banners/Dren_banner.webp",B.D,j,j,B.b0,B.dB,!1,j,B.axm,B.L9,j,j))
-else m.push(new A.f8(B.Mf,B.bU,j,s))
-m.push(B.Ux)
-s=a?7:12
+break B}q=A.c2(14)
+p=A.cM(B.Tq,2)
+o=A.c2(11)
+n=A.b([],t.p)
+m=this.d
+if(m===0)n.push(A.F_(A.k2("assets/idle/summon/banners/Standard_banner.jpg",B.D,j,j,B.b0,B.dB,!1,j,B.awt,j,j,j),0.9))
+else if(m===1)n.push(A.k2("assets/idle/summon/banners/Dren_banner.webp",B.D,j,j,B.b0,B.dB,!1,j,B.axm,B.L9,j,j))
+else n.push(new A.f8(B.Mf,B.bU,j,s))
+n.push(B.Ux)
+s=a<195
+m=s?7:12
 l=A.c2(9)
 k=this.c
 k.toString
 r=A.a6(A.aa(k),r)
-m.push(A.fd(s,A.bV(j,A.S(r,j,1,B.at,j,j,A.cV(j,j,B.PT,j,j,j,j,j,"Georgia",j,j,a?14:22,j,j,B.R,j,j,!0,j,1.2,j,j,j,B.a77,j,j),B.al,j),B.t,j,new A.b8(B.qB,j,j,l,j,j,B.J),j,j,j,j,B.VA,j,j,j),j,j,12,12,j,j))
-return A.bV(j,A.bV(j,A.aP9(new A.cE(B.aT,j,B.dX,B.I,m,new A.aj(i,t.f3)),B.V3,A.aSn(),B.dE,B.ef,A.aSo()),B.ck,j,new A.b8(B.S5,j,o,n,j,j,B.J),j,j,j,j,j,j,j,j),B.t,j,new A.b8(j,j,j,p,B.a02,B.Yt,B.J),j,q,B.awC,j,B.jg,j,j,1/0)},
+n.push(A.fd(m,A.bV(j,A.S(r,j,1,B.at,j,j,A.cV(j,j,B.PT,j,j,j,j,j,"Georgia",j,j,s?16:22,j,j,B.R,j,j,!0,j,1.2,j,j,j,B.a77,j,j),B.al,j),B.t,j,new A.b8(B.qB,j,j,l,j,j,B.J),j,j,j,j,B.VA,j,j,j),j,j,12,12,j,j))
+return A.bV(j,A.bV(j,A.aP9(new A.cE(B.aT,j,B.dX,B.I,n,new A.aj(i,t.f3)),B.V3,A.aSn(),B.dE,B.ef,A.aSo()),B.ck,j,new A.b8(B.S5,j,p,o,j,j,B.J),j,j,j,j,j,j,j,j),B.t,j,new A.b8(j,j,j,q,B.a02,B.Yt,B.J),j,a,B.awC,j,B.jg,j,j,1/0)},
 Kz(a,b){var s=null,r=this.d===a,q=r?B.S_:B.PO,p=A.cM(r?B.Sj:B.PS,2),o=A.c2(8)
 r=r?B.a7e:s
 return A.bF(A.hg(s,A.ab_(B.D,A.mz(B.D,A.S(b,s,s,s,s,s,B.atd,s,s),B.d8),s,new A.b8(q,s,p,o,r,s,B.J),B.rn,s,34,s,s),B.an,!1,s,s,s,s,s,s,s,s,s,s,s,s,s,s,new A.aL_(this,a),s,s,s,s,s,s),1)},
@@ -107231,7 +107231,7 @@ $0(){A.aaf()
 this.a.nU()},
 $S:0}
 A.aL0.prototype={
-$2(a,b){var s,r,q,p,o,n,m,l,k,j,i=null,h=b.d,g=h<700,f=B.e.bE(h-68,290,600),e=B.e.bE(h*(g?0.88:0.78),290,f)
+$2(a,b){var s,r,q,p,o,n,m,l,k,j,i=null,h=b.d,g=B.e.bE(h*0.34,166,250),f=B.e.bE(g+279,0,h-80)
 h=A.ajP(1.4,1.4)
 s=A.k2("assets/idle/summon/summon_arena.webp",B.eR,1080,i,B.b0,B.dB,!1,i,i,i,i,i)
 r=this.a
@@ -107248,7 +107248,7 @@ break A}if(1===k){j=r.agK()
 break A}j=r.c
 j.toString
 j=A.bQ(A.b([r.KF(A.a6(A.aa(j),"EVENT SUMMON")),r.ji(u.bd)],m),B.de,B.x,B.z)
-break A}return new A.cE(B.aT,i,B.dX,B.I,A.b([new A.SN(h,s,i),B.Uw,A.nm(new A.ek(B.eQ,i,i,A.bV(i,A.bQ(A.b([n,B.dV,l,B.dV,A.bF(A.tY(j,i),1)],m),B.v,B.x,B.z),B.t,i,new A.b8(B.Sm,i,p,o,B.ZV,i,B.J),i,e,B.aww,B.Vy,B.VH,i,i,1/0),i),q,i,!1),A.fd(i,r.a.d,i,i,0,0,0,i)],m),i)},
+break A}return new A.cE(B.aT,i,B.dX,B.I,A.b([new A.SN(h,s,i),B.Uw,A.nm(new A.ek(B.eQ,i,i,A.bV(i,A.bQ(A.b([n,B.dV,l,B.dV,A.bF(A.tY(j,i),1)],m),B.v,B.x,B.z),B.t,i,new A.b8(B.Sm,i,p,o,B.ZV,i,B.J),i,f,B.aww,B.Vy,B.VH,i,i,1/0),i),q,i,!1),A.fd(i,r.a.d,i,i,0,0,0,i)],m),i)},
 $S:670}
 A.aL_.prototype={
 $0(){var s=this.a
