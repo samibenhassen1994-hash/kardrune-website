@@ -209,14 +209,7 @@ abstract final class KrTranslations {
       KrLanguage.chinese: '你的排名',
       KrLanguage.german: 'DEIN RANG',
     },
-    'YOU': {
-      KrLanguage.italian: 'TU',
-      KrLanguage.spanish: 'TÚ',
-      KrLanguage.japanese: 'あなた',
-      KrLanguage.korean: '나',
-      KrLanguage.chinese: '你',
-      KrLanguage.german: 'DU',
-    },
+
     'NO PLAYERS YET': {
       KrLanguage.italian: 'Nessun giocatore in classifica.',
       KrLanguage.spanish: 'Aún no hay jugadores.',
