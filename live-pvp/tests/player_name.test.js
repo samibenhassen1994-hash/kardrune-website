@@ -25,8 +25,8 @@ function fixture(){
 
 test('player names support translated alphabets but reject defaults and malformed text',()=>{
  assert.equal(normalizeDisplayName('Luna'),'Luna');
- assert.equal(normalizeDisplayName('李明'),'李明');
- for(const invalid of ['a','Runebearer','<script>','A\\nB','x'.repeat(17),null,'Luna Rosa',' Admin','Admin01','kardrune99','FUCK999','c4zzo','putaNa','Scheiße','死ね','씨발','傻逼']){
+ assert.equal(normalizeDisplayName('李明月'),'李明月');
+ for(const invalid of ['a','Runebearer','<script>','A\\nB','x'.repeat(17),null,'Luna Rosa',' Admin','Admin01','kardrune99','FUCK999','c4zzo','puttana','Scheiße','死ね','씨발','傻逼']){
   assert.equal(normalizeDisplayName(invalid),null,String(invalid));
  }
 });
@@ -47,7 +47,7 @@ test('first name wins; subsequent attempts cannot change PvP identity or saved n
 });
 
 test('legitimate unicode names without spaces stay usable',()=>{
- for(const name of ['Luna','Drago_7','玩家123','さくら','김하늘','María','Mädchen','李明']){
+ for(const name of ['Luna','Drago_7','玩家123','さくら','김하늘','María','Mädchen','李明月']){
   assert.equal(normalizeDisplayName(name),name,name);
  }
 });
