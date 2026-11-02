@@ -26,7 +26,8 @@ void main() {
       final quota = tester.getRect(find.byKey(const Key('pvp-rewards-remaining')));
       expect((title.center.dx - button.center.dx).abs(), lessThan(1));
       expect((title.center.dy - button.center.dy).abs(), lessThan(1));
-      expect(button.top, greaterThanOrEqualTo(anchor.top));
+      expect(button.top, lessThan(anchor.top));
+      expect(anchor.top - button.top, greaterThan(30));
       expect(quota.top, greaterThanOrEqualTo(button.bottom - 1));
       expect(quota.bottom, lessThanOrEqualTo(anchor.bottom + 1));
       expect(anchor.bottom, lessThanOrEqualTo(size.height));
