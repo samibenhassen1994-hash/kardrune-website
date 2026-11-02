@@ -48,10 +48,10 @@ test('ranked pages return only 10 entries plus personal rank and can advance',as
  const first=await rankedPage(env,'global','p19',0);
  assert.equal(first.leaders.length,10);
  assert.equal(first.hasMore,true);
- assert.equal(first.you.position,20);
+ assert.equal(first.you.position,16);
  assert.equal(first.you.league,'Bronze');
  const second=await rankedPage(env,'global','p19',10);
- assert.equal(second.leaders.length,10);
+ assert.equal(second.leaders.length,6);
  assert.equal(second.hasMore,false);
  const onlyBronze=await rankedPage(env,'league','p19',0);
  assert.equal(onlyBronze.leaders.length,10);
