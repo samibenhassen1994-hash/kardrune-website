@@ -115,14 +115,14 @@
     if(old && old!==uid) await window.kardrunePushUnsubscribe();
   };
 </script>
-  <script src="flutter_bootstrap.js?v=95c8022" async></script>
+  <script src="flutter_bootstrap.js?v=dee81dc" async></script>
   <script>
     // A version endpoint lets iOS home-screen PWAs detect deploys even without
     // a service-worker updatefound event. Keep all game data in local storage.
     (() => {
       const releaseUrl = new URL('release-id.json', document.baseURI);
       // CI replaces this marker before Flutter builds its service-worker manifest.
-      const bundledRelease = '95c8022';
+      const bundledRelease = 'dee81dc';
       let checking = false, needsUpdate = false, pendingRelease = null;
       let registration = null, requested = false;
       function workerUrl(release) {
