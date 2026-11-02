@@ -570,7 +570,8 @@ void main() {
     await tester.tap(cardArt);
     await tester.pumpAndSettle();
     expect(find.text('회피'), findsWidgets);
-    expect(find.text('효과 보기'), findsOneWidget);
+    expect(find.text('효과 보기'), findsNothing);
+    expect(find.byKey(const ValueKey('card-story-info-sam:1')), findsOneWidget);
     expect(find.text('활성 챔피언'), findsOneWidget);
     expect(find.text('닫기'), findsOneWidget);
     expect(find.textContaining('회당'), findsOneWidget);
