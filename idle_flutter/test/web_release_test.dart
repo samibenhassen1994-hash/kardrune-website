@@ -18,6 +18,8 @@ void main() {
       ),
     );
     expect(index, contains('<title>Idle KardRune</title>'));
+    expect(index, contains('<meta name="apple-mobile-web-app-title" content="Idle KardRune">'));
+    expect(index, contains('<link rel="manifest" href="/idle/manifest.json'));
     // The desktop frame is an actual Flutter host, not CSS-resized canvas.
     expect(index, contains('id="idle-game-frame"'));
     final bootstrap = File('web/flutter_bootstrap.js').readAsStringSync();
@@ -39,9 +41,11 @@ void main() {
     expect(worker, contains('SKIP_WAITING'));
     expect(worker, contains("'./manifest.json'"));
     expect(manifest['name'], 'Idle KardRune');
-    expect(manifest['short_name'], 'KardRune');
-    expect(manifest['start_url'], '.');
-    expect(manifest['scope'], '.');
+    expect(manifest['short_name'], 'Idle KardRune');
+    // Separate from the parent KardRune Android app and the website root.
+    expect(manifest['id'], '/idle/');
+    expect(manifest['start_url'], '/idle/');
+    expect(manifest['scope'], '/idle/');
     expect(manifest['theme_color'], '#090D19');
   });
 
