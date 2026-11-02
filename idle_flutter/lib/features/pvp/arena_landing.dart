@@ -49,8 +49,8 @@ class ArenaLanding extends StatelessWidget {
       );
       final renderedArtHeight = math.max(height, artWidth / sourceRatio);
       // Match the gilded button painted into the original image.
-      final ctaTop = renderedArtHeight * .65;
-      final ctaHeight = renderedArtHeight * .12;
+      final ctaTop = renderedArtHeight * .735;
+      final ctaHeight = renderedArtHeight * .14;
       final quotaHeight = rewardRemaining == null ? 0.0 : renderedArtHeight * .034;
       final titleSize = (artWidth * .060).clamp(17.0, 29.0).toDouble();
       final small = height < 650;
