@@ -2176,7 +2176,7 @@ class _CardsState extends State<_Cards> {
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(storyContext),
-                                      child: Text(context.tr('CLOSE')),
+                                      child: Text(KrTranslations.translate(widget.language, 'CLOSE')),
                                     ),
                                   ],
                                 ),
@@ -2187,7 +2187,7 @@ class _CardsState extends State<_Cards> {
                       ),
                       const SizedBox(height: 8),
                       SizedBox(
-                        height: (availableHeight * .43).clamp(245.0, 360.0),
+                        height: (availableHeight * .43).clamp(245.0, 360.0).toDouble(),
                         child: CharacterCardArt(
                           key: ValueKey('card-detail-frame-$id'),
                           asset: hero.cardAsset(hero.stages[stage - 1]),
