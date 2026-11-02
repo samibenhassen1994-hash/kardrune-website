@@ -13,7 +13,6 @@ import 'game/summon_rules.dart';
 import 'game/skill_catalog.dart';
 import 'features/cards/deck_builder.dart';
 import 'features/cards/card_stat_badges.dart';
-import 'features/cards/skill_preview.dart';
 import 'features/summon/summon_result.dart';
 import 'features/summon/summon_screen.dart';
 import 'features/summon/free_pull_notifications.dart';
@@ -2094,7 +2093,13 @@ class _CardsState extends State<_Cards> {
                   ),
                 ),
             ],
-         void _openCard(BuildContext context, dynamic hero, int stage, bool isOwned) {
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openCard(BuildContext context, dynamic hero, int stage, bool isOwned) {
     final id = '${hero.id}:$stage';
     final skill = SkillCatalog.byId(skills[id])?.localized(context);
     final availableHeight = MediaQuery.sizeOf(context).height;
