@@ -3,6 +3,24 @@ import {LEAGUES,RANK_POINTS_PER_WIN,rankProgress} from './ranked_leagues.js';
 // The authoritative match history is immutable client-side. Exclude forfeit wins.
 // Per UTC day, only the first 3 wins against a given opponent and the first
 // 10 wins total count. Ranking has no dependency on Shards reward claims.
+// Same idempotent schema bootstrap used by existing Idle account endpoints.
+// Enables league rewards on both production and preview without a manual D1 step.
+export async function ensureRankedSchema(env){
+ await env.DB.prepare(`CREATE TABLE IF NOT EXISTS pvp_league_claims (
+  uid TEXT NOT NULL REFERENCES players(uid) ON DELETE CASCADE,
+  league TEXT NOT NULL,
+  points_at_claim INTEGER NOT NULL,
+  expected_revision INTEGER NOT NULL,
+  shards INTEGER NOT NULL CHECK(shards>0),
+  claimed_at INTEGER NOT NULL,
+  PRIMARY KEY(uid,league)
+ )`).run();
+ await env.DB.prepare(`CREATE TRIGGER IF NOT EXISTS pvp_league_revision_guard
+ BEFORE INSERT ON pvp_league_claims
+ WHEN (SELECT revision FROM demo_saves WHERE uid=NEW.uid) IS NOT NEW.expected_revision
+ BEGIN SELECT RAISE(ABORT,'league revision conflict'); END`).run();
+}
+
 const rankedSql=`WITH eligible AS (
  SELECT h.id,h.winner_uid AS uid,
  CASE WHEN h.winner_uid=h.player_a THEN h.player_b ELSE h.player_a END AS opponent,
