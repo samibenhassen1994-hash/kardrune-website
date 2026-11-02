@@ -77,7 +77,10 @@ sealed class PvpEvent {
           reward: (j['reward'] as num?)?.toInt() ?? 0,
         );
       case 'error':
-        return ErrorEvent(j['message'] as String);
+        return ErrorEvent(
+          j['message'] as String? ?? '',
+          code: j['code'] as String?,
+        );
       default:
         throw FormatException('Unknown PvP event ${j['type']}');
     }
@@ -150,8 +153,9 @@ class FinishedEvent extends PvpEvent {
 }
 
 class ErrorEvent extends PvpEvent {
-  const ErrorEvent(this.message);
+  const ErrorEvent(this.message, {this.code});
   final String message;
+  final String? code;
 }
 
 abstract interface class PvpSocketPort {

@@ -66,10 +66,74 @@ abstract final class KrTranslations {
   };
 
   static const _catalog = <String, Map<KrLanguage, String>>{
+    'Local deck · not synchronized': {
+      KrLanguage.italian: 'Mazzo locale · non sincronizzato',
+      KrLanguage.spanish: 'Mazo local · sin sincronizar',
+      KrLanguage.japanese: 'ローカルデッキ · 未同期',
+      KrLanguage.korean: '로컬 덱 · 동기화되지 않음',
+      KrLanguage.chinese: '本地牌组 · 未同步',
+      KrLanguage.german: 'Lokales Deck · nicht synchronisiert',
+    },
+    'LOAD CLOUD DECK': {
+      KrLanguage.italian: 'CARICA MAZZO CLOUD',
+      KrLanguage.spanish: 'CARGAR MAZO EN NUBE',
+      KrLanguage.japanese: 'クラウドのデッキを読み込む',
+      KrLanguage.korean: '클라우드 덱 불러오기',
+      KrLanguage.chinese: '加载云端牌组',
+      KrLanguage.german: 'CLOUD-DECK LADEN',
+    },
+    'Account already in a match or matchmaking on another device.': {
+      KrLanguage.italian:
+          'Account già in partita o in matchmaking su un altro dispositivo.',
+      KrLanguage.spanish: 'La cuenta ya está en una partida o buscando rival en otro dispositivo.',
+      KrLanguage.japanese: 'このアカウントは別の端末で対戦中、またはマッチング中です。',
+      KrLanguage.korean: '이 계정은 다른 기기에서 대전 또는 매칭 중입니다.',
+      KrLanguage.chinese: '此账号已在另一台设备上对战或匹配中。',
+      KrLanguage.german:
+          'Dieses Konto spielt oder sucht bereits auf einem anderen Gerät.',
+    },
+    'Deck saved to cloud.': {
+      KrLanguage.italian: 'Mazzo salvato nel cloud.',
+      KrLanguage.spanish: 'Mazo guardado en la nube.',
+      KrLanguage.japanese: 'デッキをクラウドに保存しました。',
+      KrLanguage.korean: '덱을 클라우드에 저장했습니다.',
+      KrLanguage.chinese: '牌组已保存到云端。',
+      KrLanguage.german: 'Deck in der Cloud gespeichert.',
+    },
+    'Deck changed on another device. Local changes are not synchronized.': {
+      KrLanguage.italian: 'Mazzo modificato su un altro dispositivo. Le modifiche locali non sono sincronizzate.',
+      KrLanguage.spanish: 'Mazo modificado en otro dispositivo. Los cambios locales no están sincronizados.',
+      KrLanguage.japanese: '別の端末でデッキが変更されました。ローカルの変更は未同期です。',
+      KrLanguage.korean: '다른 기기에서 덱이 변경되었습니다. 로컬 변경 사항은 동기화되지 않았습니다.',
+      KrLanguage.chinese: '牌组已在另一台设备上更改。本地更改尚未同步。',
+      KrLanguage.german: 'Deck auf einem anderen Gerät geändert. Lokale Änderungen sind nicht synchronisiert.',
+    },
+    'Deck saved locally. Cloud sync failed.': {
+      KrLanguage.italian:
+          'Mazzo salvato solo in locale. Sincronizzazione cloud non riuscita.',
+      KrLanguage.spanish:
+          'Mazo guardado solo localmente. Falló la sincronización.',
+      KrLanguage.japanese: 'デッキは端末に保存されました。クラウド同期に失敗しました。',
+      KrLanguage.korean: '덱이 기기에만 저장되었습니다. 클라우드 동기화에 실패했습니다.',
+      KrLanguage.chinese: '牌组仅保存在本地。云同步失败。',
+      KrLanguage.german:
+          'Deck nur lokal gespeichert. Cloud-Synchronisierung fehlgeschlagen.',
+    },
+    'Deck cloud unavailable. Changes on this device are not synchronized.': {
+      KrLanguage.italian: 'Mazzo cloud non disponibile. Le modifiche su questo dispositivo non sono sincronizzate.',
+      KrLanguage.spanish: 'Mazo en la nube no disponible. Los cambios de este dispositivo no están sincronizados.',
+      KrLanguage.japanese: 'クラウドのデッキを取得できません。この端末の変更は未同期です。',
+      KrLanguage.korean: '클라우드 덱을 사용할 수 없습니다. 이 기기의 변경 사항은 동기화되지 않았습니다.',
+      KrLanguage.chinese: '云端牌组不可用。此设备上的更改尚未同步。',
+      KrLanguage.german: 'Cloud-Deck nicht verfügbar. Änderungen auf diesem Gerät sind nicht synchronisiert.',
+    },
     'CONFIRM NAME': {
-      KrLanguage.italian: 'CONFERMA NOME', KrLanguage.spanish: 'CONFIRMAR NOMBRE',
-      KrLanguage.japanese: '名前を確定', KrLanguage.korean: '이름 확정',
-      KrLanguage.chinese: '确认名称', KrLanguage.german: 'NAMEN BESTÄTIGEN',
+      KrLanguage.italian: 'CONFERMA NOME',
+      KrLanguage.spanish: 'CONFIRMAR NOMBRE',
+      KrLanguage.japanese: '名前を確定',
+      KrLanguage.korean: '이름 확정',
+      KrLanguage.chinese: '确认名称',
+      KrLanguage.german: 'NAMEN BESTÄTIGEN',
     },
     'Sign in to choose your permanent name.': {
       KrLanguage.italian: 'Accedi per scegliere il tuo nome definitivo.',
@@ -120,23 +184,29 @@ abstract final class KrTranslations {
       KrLanguage.german: 'VERSTANDEN',
     },
     'Attack is the damage your card can deal in battle.': {
-      KrLanguage.italian: 'L\'attacco indica i danni che la carta può infliggere in battaglia.',
+      KrLanguage.italian:
+          'L\'attacco indica i danni che la carta può infliggere in battaglia.',
       KrLanguage.spanish: 'El ataque indica el daño que puede causar tu carta.',
       KrLanguage.japanese: '攻撃力はカードが戦闘で与えられるダメージです。',
       KrLanguage.korean: '공격력은 카드가 전투에서 줄 수 있는 피해입니다.',
       KrLanguage.chinese: '攻击力表示卡牌在战斗中能造成的伤害。',
-      KrLanguage.german: 'Angriff gibt den Schaden an, den deine Karte verursachen kann.',
+      KrLanguage.german:
+          'Angriff gibt den Schaden an, den deine Karte verursachen kann.',
     },
     'Crit is the chance of landing a critical strike.': {
-      KrLanguage.italian: 'Crit indica la probabilità di effettuare un colpo critico.',
-      KrLanguage.spanish: 'Crítico indica la probabilidad de asestar un golpe crítico.',
+      KrLanguage.italian:
+          'Crit indica la probabilità di effettuare un colpo critico.',
+      KrLanguage.spanish:
+          'Crítico indica la probabilidad de asestar un golpe crítico.',
       KrLanguage.japanese: 'クリティカルは会心の一撃が出る確率です。',
       KrLanguage.korean: '치명타는 치명적인 공격을 할 확률입니다.',
       KrLanguage.chinese: '暴击表示打出暴击的概率。',
-      KrLanguage.german: 'Krit ist die Chance, einen kritischen Treffer zu landen.',
+      KrLanguage.german:
+          'Krit ist die Chance, einen kritischen Treffer zu landen.',
     },
     'HP is your card\'s health during a PvP battle.': {
-      KrLanguage.italian: 'HP rappresenta i punti vita della carta in una battaglia PvP.',
+      KrLanguage.italian:
+          'HP rappresenta i punti vita della carta in una battaglia PvP.',
       KrLanguage.spanish: 'PV indica la salud de tu carta en una batalla PvP.',
       KrLanguage.japanese: 'HPはPvPバトル中のカードの体力です。',
       KrLanguage.korean: 'HP는 PvP 전투에서 카드의 체력입니다.',
@@ -149,39 +219,46 @@ abstract final class KrTranslations {
       KrLanguage.japanese: 'スキルはカードの特殊効果です。戦う前に確認しましょう。',
       KrLanguage.korean: '스킬은 카드의 특수 효과입니다. 전투 전에 확인하세요.',
       KrLanguage.chinese: '技能是卡牌的特殊效果。战斗前请查看详情。',
-      KrLanguage.german: 'Skill ist der besondere Karteneffekt. Prüfe ihn vor dem Kampf.',
+      KrLanguage.german:
+          'Skill ist der besondere Karteneffekt. Prüfe ihn vor dem Kampf.',
     },
     'Choose Standard, Featured, or Event to see the available summons.': {
-      KrLanguage.italian: 'Scegli Standard, Featured o Event per consultare le evocazioni.',
-      KrLanguage.spanish: 'Elige Estándar, Destacado o Evento para ver las invocaciones.',
+      KrLanguage.italian:
+          'Scegli Standard, Featured o Event per consultare le evocazioni.',
+      KrLanguage.spanish:
+          'Elige Estándar, Destacado o Evento para ver las invocaciones.',
       KrLanguage.japanese: 'スタンダード・注目・イベントから召喚を選びましょう。',
       KrLanguage.korean: '일반, 픽업 또는 이벤트 소환을 선택하세요.',
       KrLanguage.chinese: '选择标准、精选或活动召唤查看奖励。',
-      KrLanguage.german: 'Wähle Standard, Featured oder Event für die Beschwörungen.',
+      KrLanguage.german:
+          'Wähle Standard, Featured oder Event für die Beschwörungen.',
     },
-    'Standard costs 300 Shards or a free charge. Free charges renew over time.': {
-      KrLanguage.italian: 'Standard costa 300 Shards oppure una carica gratuita, che si rigenera nel tempo.',
-      KrLanguage.spanish: 'Estándar cuesta 300 fragmentos o una carga gratis que se recupera con el tiempo.',
-      KrLanguage.japanese: '通常召喚は300シャードまたは時間で回復する無料チャージを使います。',
-      KrLanguage.korean: '일반 소환은 샤드 300개 또는 시간이 지나면 충전되는 무료 소환을 사용합니다.',
-      KrLanguage.chinese: '标准召唤消耗300碎片或一份随时间恢复的免费次数。',
-      KrLanguage.german: 'Standard kostet 300 Shards oder eine kostenlose, sich erneuernde Ladung.',
-    },
-    'Featured and Event have different rewards and rates. Read INFO before spending.': {
-      KrLanguage.italian: 'Featured ed Event hanno ricompense e probabilità diverse. Leggi INFO prima di spendere.',
-      KrLanguage.spanish: 'Destacado y Evento tienen premios y probabilidades distintas. Consulta INFO.',
-      KrLanguage.japanese: '注目・イベント召喚は報酬と確率が異なります。使う前に情報を確認！',
-      KrLanguage.korean: '픽업과 이벤트 소환은 보상과 확률이 다릅니다. 소환 전 정보를 확인하세요.',
-      KrLanguage.chinese: '精选和活动召唤的奖励与概率不同。消耗前请查看信息。',
-      KrLanguage.german: 'Featured und Event haben andere Belohnungen und Raten. Lies INFO.',
-    },
+    'Standard costs 300 Shards or a free charge. Free charges renew over time.':
+        {
+          KrLanguage.italian: 'Standard costa 300 Shards oppure una carica gratuita, che si rigenera nel tempo.',
+          KrLanguage.spanish: 'Estándar cuesta 300 fragmentos o una carga gratis que se recupera con el tiempo.',
+          KrLanguage.japanese: '通常召喚は300シャードまたは時間で回復する無料チャージを使います。',
+          KrLanguage.korean: '일반 소환은 샤드 300개 또는 시간이 지나면 충전되는 무료 소환을 사용합니다.',
+          KrLanguage.chinese: '标准召唤消耗300碎片或一份随时间恢复的免费次数。',
+          KrLanguage.german: 'Standard kostet 300 Shards oder eine kostenlose, sich erneuernde Ladung.',
+        },
+    'Featured and Event have different rewards and rates. Read INFO before spending.':
+        {
+          KrLanguage.italian: 'Featured ed Event hanno ricompense e probabilità diverse. Leggi INFO prima di spendere.',
+          KrLanguage.spanish: 'Destacado y Evento tienen premios y probabilidades distintas. Consulta INFO.',
+          KrLanguage.japanese: '注目・イベント召喚は報酬と確率が異なります。使う前に情報を確認！',
+          KrLanguage.korean: '픽업과 이벤트 소환은 보상과 확률이 다릅니다. 소환 전 정보를 확인하세요.',
+          KrLanguage.chinese: '精选和活动召唤的奖励与概率不同。消耗前请查看信息。',
+          KrLanguage.german: 'Featured und Event haben andere Belohnungen und Raten. Lies INFO.',
+        },
     'Arena matches have up to three rounds. Win two rounds to win the match.': {
       KrLanguage.italian: 'Le partite Arena durano fino a tre round: vincine due per aggiudicarti lo scontro.',
       KrLanguage.spanish: 'Las partidas de Arena tienen hasta tres rondas. Gana dos para vencer.',
       KrLanguage.japanese: 'アリーナは最大3ラウンド。2ラウンド勝てば勝利です。',
       KrLanguage.korean: '아레나는 최대 3라운드이며 2라운드를 이기면 승리합니다.',
       KrLanguage.chinese: '竞技场最多三回合，赢下两回合即可获胜。',
-      KrLanguage.german: 'Arena-Matches dauern bis zu drei Runden. Gewinne zwei davon.',
+      KrLanguage.german:
+          'Arena-Matches dauern bis zu drei Runden. Gewinne zwei davon.',
     },
     'Drag a card from your hand into YOUR CARD SLOT before the timer ends.': {
       KrLanguage.italian: 'Trascina una carta dalla mano nello slot YOUR CARD SLOT prima che scada il tempo.',
@@ -189,16 +266,18 @@ abstract final class KrTranslations {
       KrLanguage.japanese: '時間切れ前に手札を自分のカード枠へドラッグしましょう。',
       KrLanguage.korean: '시간이 끝나기 전에 손패 카드를 내 카드 슬롯에 끌어 놓으세요.',
       KrLanguage.chinese: '倒计时结束前，将手牌拖入你的卡牌槽。',
-      KrLanguage.german: 'Ziehe vor Ablauf der Zeit eine Handkarte in dein Kartenfeld.',
+      KrLanguage.german:
+          'Ziehe vor Ablauf der Zeit eine Handkarte in dein Kartenfeld.',
     },
-    'Each card can be played only once per match. Plan your next round carefully.': {
-      KrLanguage.italian: 'Ogni carta si può usare una sola volta per partita. Pianifica bene i round.',
-      KrLanguage.spanish: 'Cada carta solo se puede usar una vez por partida. Planifica cada ronda.',
-      KrLanguage.japanese: '各カードは1試合につき1回だけ使えます。次のラウンドを考えましょう。',
-      KrLanguage.korean: '각 카드는 한 경기에서 한 번만 사용할 수 있습니다. 다음 라운드를 계획하세요.',
-      KrLanguage.chinese: '每张卡牌每场比赛只能使用一次，请规划好回合。',
-      KrLanguage.german: 'Jede Karte ist pro Match nur einmal spielbar. Plane deine Runden.',
-    },
+    'Each card can be played only once per match. Plan your next round carefully.':
+        {
+          KrLanguage.italian: 'Ogni carta si può usare una sola volta per partita. Pianifica bene i round.',
+          KrLanguage.spanish: 'Cada carta solo se puede usar una vez por partida. Planifica cada ronda.',
+          KrLanguage.japanese: '各カードは1試合につき1回だけ使えます。次のラウンドを考えましょう。',
+          KrLanguage.korean: '각 카드는 한 경기에서 한 번만 사용할 수 있습니다. 다음 라운드를 계획하세요.',
+          KrLanguage.chinese: '每张卡牌每场比赛只能使用一次，请规划好回合。',
+          KrLanguage.german: 'Jede Karte ist pro Match nur einmal spielbar. Plane deine Runden.',
+        },
     'ARENA': {
       KrLanguage.japanese: 'アリーナ',
       KrLanguage.korean: '아레나',
