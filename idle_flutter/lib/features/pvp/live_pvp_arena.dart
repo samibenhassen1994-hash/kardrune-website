@@ -602,14 +602,10 @@ class _LivePvpArenaState extends State<LivePvpArena> {
             child: LayoutBuilder(
               builder: (context, bounds) => Container(
                 decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xff203959),
-                      Color(0xff091225),
-                      Color(0xff1a1232),
-                    ],
+                  image: DecorationImage(
+                    image: AssetImage('assets/idle/arena/background_fight_idlearena.webp'),
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
                   ),
                 ),
                 child: Column(

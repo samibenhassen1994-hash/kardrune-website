@@ -619,12 +619,28 @@ class _SummonScreenState extends State<SummonScreen>
             border: Border.all(color: const Color(0xffffe4a5)),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xff251607),
-              fontWeight: FontWeight.w900,
-              letterSpacing: .7,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label.split('◆').first.trim(),
+                  style: const TextStyle(
+                    color: Color(0xff251607),
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .7,
+                  ),
+                ),
+                if (label.contains('◆')) ...[
+                  const SizedBox(width: 5),
+                  Image.asset('assets/idle/arena/shard.webp', width: 18, height: 18),
+                  const SizedBox(width: 4),
+                  Text(label.split('◆').last.trim(), style: const TextStyle(
+                    color: Color(0xff251607), fontWeight: FontWeight.w900,
+                  )),
+                ],
+              ],
             ),
           ),
         ),

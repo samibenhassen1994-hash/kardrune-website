@@ -1254,7 +1254,13 @@ class _Header extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('◆', style: TextStyle(color: Color(0xff72d8ff))),
+                Image.asset(
+                  'assets/idle/arena/shard.webp',
+                  width: 22,
+                  height: 22,
+                  fit: BoxFit.contain,
+                  semanticLabel: 'Shards',
+                ),
                 const SizedBox(width: 5),
                 Text(
                   shards.toString().replaceAllMapped(
@@ -1554,9 +1560,20 @@ class _CardsState extends State<_Cards> {
       };
       return result != 0 ? result : ai.compareTo(bi);
     });
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 5),
-      child: Column(
+    return Container(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/idle/arena/background_deck.webp'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+          child: Container(
+            decoration: const BoxDecoration(color: Color(0x99202c47)),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 5),
+            child: Column(
         children: [
           Row(
             children: [
@@ -1766,6 +1783,9 @@ class _CardsState extends State<_Cards> {
                   ),
           ),
         ],
+            ),
+          ),
+        ),
       ),
     );
   }
