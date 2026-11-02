@@ -161,6 +161,22 @@ abstract final class KrTranslations {
       KrLanguage.chinese: '云端牌组不可用。此设备上的更改尚未同步。',
       KrLanguage.german: 'Cloud-Deck nicht verfügbar. Änderungen auf diesem Gerät sind nicht synchronisiert.',
     },
+    '3–16 characters, no spaces. No reserved or offensive names.': {
+      KrLanguage.italian: '3–16 caratteri, senza spazi. Vietati nomi riservati o offensivi.',
+      KrLanguage.spanish: '3–16 caracteres, sin espacios ni nombres reservados u ofensivos.',
+      KrLanguage.japanese: '3～16文字、スペース不可。予約語や不適切な名前は禁止。',
+      KrLanguage.korean: '3~16자, 공백 불가. 예약어와 부적절한 이름은 사용할 수 없습니다.',
+      KrLanguage.chinese: '3–16个字符，不可包含空格、保留词或冒犯性词语。',
+      KrLanguage.german: '3–16 Zeichen, keine Leerzeichen, reservierten oder beleidigenden Namen.',
+    },
+    'Name must be 3–16 characters, with no spaces or inappropriate words.': {
+      KrLanguage.italian: 'Il nome deve avere 3–16 caratteri, senza spazi o parole inappropriate.',
+      KrLanguage.spanish: 'El nombre debe tener de 3 a 16 caracteres, sin espacios ni palabras ofensivas.',
+      KrLanguage.japanese: '名前は3～16文字で、空白や不適切な語句は使用できません。',
+      KrLanguage.korean: '이름은 3~16자여야 하며 공백이나 부적절한 단어를 사용할 수 없습니다.',
+      KrLanguage.chinese: '名称须为3–16个字符，不得含空格或不当词语。',
+      KrLanguage.german: 'Der Name muss 3–16 Zeichen lang sein, ohne Leerzeichen oder unangemessene Wörter.',
+    },
     'CONFIRM NAME': {
       KrLanguage.italian: 'CONFERMA NOME',
       KrLanguage.spanish: 'CONFIRMAR NOMBRE',
