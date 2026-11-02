@@ -56,6 +56,7 @@ jobs:
           RELEASE="$(git rev-parse --short HEAD)"
           sed -i "s/__KARDRUNE_PACKAGED_RELEASE__/$RELEASE/g" idle_flutter/web/index.html
           sed -i "s/__KARDRUNE_PACKAGED_RELEASE__/$RELEASE/g" idle_flutter/web/kardrune_service_worker.js
+          sed -i "s/__KARDRUNE_PACKAGED_RELEASE__/$RELEASE/g" idle_flutter/web/flutter_bootstrap.js
       - name: Build /idle/ release
         working-directory: idle_flutter
         run: flutter build web --release --base-href /idle/

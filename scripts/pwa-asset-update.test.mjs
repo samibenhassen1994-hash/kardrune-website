@@ -8,6 +8,7 @@ import { stampRelease, verifyRelease } from './stamp-idle-release.mjs';
 
 const workerSource = readFileSync(new URL('../idle_flutter/web/kardrune_service_worker.js', import.meta.url), 'utf8');
 const indexSource = readFileSync(new URL('../idle_flutter/web/index.html', import.meta.url), 'utf8');
+const bootstrapSource = readFileSync(new URL('../idle_flutter/web/flutter_bootstrap.js', import.meta.url), 'utf8');
 
 test('a new release preloads current artwork and serves it after an older cache', async () => {
   const requests = [];
@@ -83,6 +84,14 @@ test('release activation waits for the new controller and versioned worker', () 
   assert.equal(indexSource.includes('kardrune_service_worker.js?v=__KARDRUNE_PACKAGED_RELEASE__'), true);
   assert.equal(indexSource.includes('controllerchange'), true);
   assert.equal(indexSource.includes('setTimeout(() => window.location.reload(), 450)'), false);
+  assert.equal(bootstrapSource.includes('main.dart.js?v=__KARDRUNE_PACKAGED_RELEASE__'), true);
+  const build = { mainJsPath: 'main.dart.js' };
+  const bootstrap = bootstrapSource.replace('{{flutter_js}}', '').replace('{{flutter_build_config}}', '');
+  runInContext(bootstrap.replaceAll('__KARDRUNE_PACKAGED_RELEASE__', 'new1234'), createContext({
+    _flutter: { buildConfig: { builds: [build] }, loader: { load: () => {} } },
+    document: { getElementById: () => null },
+  }));
+  assert.equal(build.mainJsPath, 'main.dart.js?v=new1234');
 });
 
 test('release identity proves the bundle and asset contents match', () => {
