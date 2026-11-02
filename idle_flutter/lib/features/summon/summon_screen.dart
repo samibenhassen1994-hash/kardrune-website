@@ -160,8 +160,10 @@ class _SummonScreenState extends State<SummonScreen>
       final bannerHeight = (box.maxHeight * .34)
           .clamp(166.0, 250.0)
           .toDouble();
+      // Leave the first 80px of the arena artwork for the game header:
+      // the summoning panel must never overlap the profile or wallet.
       final panelHeight = (bannerHeight + 279.0)
-          .clamp(0.0, box.maxHeight - 6.0)
+          .clamp(0.0, box.maxHeight - 80.0)
           .toDouble();
       return Stack(
         fit: StackFit.expand,
