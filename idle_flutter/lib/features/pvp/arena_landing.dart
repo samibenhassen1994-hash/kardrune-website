@@ -35,8 +35,24 @@ class ArenaLanding extends StatelessWidget {
       final height = bounds.maxHeight;
       const imageTop = 0.0;
       final imageHeight = height - imageTop;
-      final wide = width / height > .7;
-      final artWidth = wide ? height * 964 / 1632 : width;
+      // Scale controls with the original 964×1632 artwork, not just the
+      // viewport: BoxFit.cover crops vertically in wider browser windows.
+      const sourceRatio = 964 / 1632;
+      const frameBottomInArt = .875;
+      final artWidth = math.min(
+        width,
+        math.min(
+          height * .70,
+          (height - 70).clamp(1.0, double.infinity) *
+              sourceRatio / frameBottomInArt,
+        ),
+      );
+      final renderedArtHeight = math.max(height, artWidth / sourceRatio);
+      // Match the gilded button painted into the original image.
+      final ctaTop = renderedArtHeight * .735;
+      final ctaHeight = renderedArtHeight * .14;
+      final quotaHeight = rewardRemaining == null ? 0.0 : renderedArtHeight * .034;
+      final titleSize = (artWidth * .060).clamp(17.0, 29.0).toDouble();
       final small = height < 650;
       final swordsSize = small ? 76.0 : 106.0;
       return ColoredBox(
@@ -52,7 +68,7 @@ class ArenaLanding extends StatelessWidget {
                   top: imageTop,
                   child: Image.asset(
                     'assets/idle/arena/arena_background.webp',
-                    fit: wide ? BoxFit.fill : BoxFit.cover,
+                    fit: BoxFit.cover,
                     alignment: Alignment.topCenter,
                     filterQuality: FilterQuality.medium,
                     cacheWidth: 1080,
@@ -93,53 +109,84 @@ class ArenaLanding extends StatelessWidget {
                     ),
                   ),
                 Positioned(
-                  top: imageTop + imageHeight * .669,
-                  left: artWidth * .22,
-                  right: artWidth * .22,
-                  height: imageHeight * .073,
-                  child: Semantics(
-                    button: true,
-                    label: searching
-                        ? context.tr('SEARCHING FOR OPPONENT')
-                        : context.tr('START MATCH'),
-                    child: InkWell(
-                      key: const Key('find-live-match'),
-                      onTap: searching ? null : onStart,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Center(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            context.tr('START MATCH'),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            softWrap: false,
-                            style: TextStyle(
-                              color: const Color(0xfffff1c4),
-                              fontFamily: 'Georgia',
-                              fontSize: small ? 22 : 29,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.7,
-                              shadows: const [
-                                Shadow(
-                                  color: Color(0xff170b08),
-                                  offset: Offset(0, 3),
-                                  blurRadius: 2,
+                  key: const Key('arena-painted-cta-anchor'),
+                  top: imageTop + ctaTop,
+                  left: artWidth * .18,
+                  right: artWidth * .18,
+                  height: ctaHeight,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Semantics(
+                          button: true,
+                          label: searching
+                              ? context.tr('SEARCHING FOR OPPONENT')
+                              : context.tr('START MATCH'),
+                          child: InkWell(
+                            key: const Key('find-live-match'),
+                            onTap: searching ? null : onStart,
+                            borderRadius: BorderRadius.circular(20),
+                            child: Center(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  context.tr('START MATCH'),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  style: TextStyle(
+                                    color: const Color(0xfffff1c4),
+                                    fontFamily: 'Georgia',
+                                    fontSize: titleSize,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1.7,
+                                    shadows: const [
+                                      Shadow(
+                                        color: Color(0xff170b08),
+                                        offset: Offset(0, 3),
+                                        blurRadius: 2,
+                                      ),
+                                      Shadow(
+                                        color: Color(0xffffd25b),
+                                        blurRadius: 18,
+                                      ),
+                                      Shadow(
+                                        color: Color(0xfff5a329),
+                                        blurRadius: 28,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                Shadow(
-                                  color: Color(0xffffd25b),
-                                  blurRadius: 18,
-                                ),
-                                Shadow(
-                                  color: Color(0xfff5a329),
-                                  blurRadius: 28,
-                                ),
-                              ],
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
+                      if (rewardRemaining != null)
+                        SizedBox(
+                          height: quotaHeight,
+                          child: Center(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                '${context.tr('PvP rewards left (24h)')}: $rewardRemaining/$rewardLimit',
+                                key: const Key('pvp-rewards-remaining'),
+                                maxLines: 1,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: const Color(0xffffdfa8),
+                                  fontFamily: 'Georgia',
+                                  fontSize: (artWidth * .025).clamp(8.0, 11.0).toDouble(),
+                                  fontWeight: FontWeight.w700,
+                                  shadows: const [
+                                    Shadow(color: Colors.black, blurRadius: 7),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 if (onLeaderboard != null)
@@ -166,24 +213,6 @@ class ArenaLanding extends StatelessWidget {
                               color: Color(0xffffd38a),size: 28),
                           ),
                         ),
-                      ),
-                    ),
-                  ),
-                if (rewardRemaining != null)
-                  Positioned(
-                    top: imageTop + imageHeight * .798,
-                    left: artWidth * .08,
-                    right: artWidth * .08,
-                    child: Center(
-                      child: Text(
-                        '${context.tr('PvP rewards left (24h)')}: $rewardRemaining/$rewardLimit',
-                        key: const Key('pvp-rewards-remaining'),
-                        maxLines: 1,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: const Color(0xffffdfa8),
-                          fontFamily: 'Georgia', fontSize: small ? 9 : 11,
-                          fontWeight: FontWeight.w700,
-                          shadows: const [Shadow(color: Colors.black, blurRadius: 7)]),
                       ),
                     ),
                   ),

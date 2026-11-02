@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - fix/idle-arena-start-label-anchor
       - fix/idle-summon-banner-responsive-height
       - fix/idle-android-toolbar-and-summon-overlay
       - feature/idle-pvp-ranking-tabs-icons
