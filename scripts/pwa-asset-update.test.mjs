@@ -81,7 +81,11 @@ test('release activation waits for the new controller and versioned worker', () 
   for (const [, script] of indexSource.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)) {
     new Function(script);
   }
-  assert.equal(indexSource.includes('kardrune_service_worker.js?v=__KARDRUNE_PACKAGED_RELEASE__'), true);
+  assert.equal(indexSource.includes("url.searchParams.set('v', release)"), true);
+  assert.equal(indexSource.includes('workerUrl(pendingRelease)'), true);
+  assert.equal(indexSource.includes('navigator.serviceWorker.ready;'), true);
+  assert.equal(indexSource.includes('await registration.update();'), false);
+  assert.equal(indexSource.includes('if (!pendingRelease) return;'), true);
   assert.equal(indexSource.includes('controllerchange'), true);
   assert.equal(indexSource.includes('setTimeout(() => window.location.reload(), 450)'), false);
   assert.equal(bootstrapSource.includes('main.dart.js?v=__KARDRUNE_PACKAGED_RELEASE__'), true);
