@@ -27,6 +27,15 @@
 <section id="dashboard" hidden>
   <div class="cards"><article class="card"><p class="eyebrow">PROFILO</p><h2 id="player-name">—</h2><p id="player-email">—</p><p id="player-date">—</p><span id="player-role" class="tag"></span></article>
   <article class="card"><p class="eyebrow">I TUOI GIOCHI</p><h2>Collegamenti verificati</h2><div id="games"></div></article></div>
+  <section class="card player-insights" aria-labelledby="insights-title">
+    <p class="eyebrow">IL TUO REGNO</p><h2 id="insights-title">Riepilogo del giocatore</h2>
+    <div id="player-insight-stats" class="stats" aria-live="polite"></div>
+    <div class="insight-grid">
+      <div><h3>Salvataggio Cloud Idle</h3><p id="cloud-save-detail">Controllo del salvataggio in corso…</p><a href="https://kardrune.com/idle/" target="_blank" rel="noopener noreferrer">Apri Idle originale</a></div>
+      <div><h3>Ultime battaglie PvP</h3><div id="recent-matches"><p>Nessun risultato da mostrare.</p></div></div>
+    </div>
+    <p class="fine">I dati visualizzati provengono dal database D1 dell'account verificato. I dati di KardRune Android richiedono ancora un collegamento sicuro.</p>
+  </section>
   <section id="admin-section" class="card" hidden>
    <p class="eyebrow">AMMINISTRAZIONE</p><h2>Pannello amministratore</h2><p>Consultazione in sola lettura. I ruoli sono verificati dal server.</p>
    <div class="stats" id="stats"></div>
@@ -38,4 +47,4 @@
 </main>
 <footer>© 2026 KardRune · <a href="index.html">Torna al sito</a></footer>
 <script type="module" src="account.js"></script>
-</body></html>
+<script type="module" src="site-account-nav.js"></script></body></html>

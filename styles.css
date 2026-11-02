@@ -3211,3 +3211,14 @@ footer {
 .page-home .home-download-browser .home-download-icon{font-size:22px}
 @media(min-width:768px){.page-home .home-download-actions{max-width:980px}}
 @media(max-width:767px){.page-home .hero-shell-main .home-download-actions,.page-home .download-box .home-download-actions{grid-template-columns:1fr 1fr}.page-home .home-download-browser{grid-column:1 / -1;max-width:360px!important;justify-self:center}}
+
+
+/* Reusable account avatar in all site headers */
+.site-header,.top{position:relative}
+.site-account-link{display:inline-flex;align-items:center;gap:9px;flex:0 0 auto;max-width:170px;padding:5px 11px 5px 5px;border:1px solid rgba(228,187,118,.43);background:#0c1b32;border-radius:40px;text-decoration:none;color:#f2d49a;z-index:3}
+.site-account-link:hover,.site-account-link:focus-visible{border-color:#f5d595;background:#182b46}
+.site-account-avatar{display:grid;place-items:center;overflow:hidden;position:relative;width:34px;height:34px;flex:0 0 34px;border-radius:50%;background:linear-gradient(145deg,#e6c785,#785a2c);border:2px solid #f0ce87;color:#151e2a;font-size:19px;font-weight:800}
+.site-account-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.site-account-label{font-family:Inter,system-ui,sans-serif;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:1120px){.site-header .site-account-link{margin-left:auto}.page-home .site-header .home-top-actions{margin-left:0;margin-right:0}}
+@media(max-width:767px){.site-header .site-account-link{padding:3px;max-width:none}.site-header .site-account-label{display:none}.site-header .site-account-avatar{width:33px;height:33px;flex-basis:33px}}
