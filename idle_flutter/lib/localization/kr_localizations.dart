@@ -177,6 +177,74 @@ abstract final class KrTranslations {
       KrLanguage.chinese: '名称须为3–16个字符，不得含空格或不当词语。',
       KrLanguage.german: 'Der Name muss 3–16 Zeichen lang sein, ohne Leerzeichen oder unangemessene Wörter.',
     },
+    'PVP LEAGUES': {
+      KrLanguage.italian: 'LEGHE PVP', KrLanguage.spanish: 'LIGAS PVP',
+      KrLanguage.japanese: 'PvPリーグ', KrLanguage.korean: 'PvP 리그',
+      KrLanguage.chinese: 'PVP 联赛', KrLanguage.german: 'PVP-LIGEN',
+    },
+    'YOUR LEAGUE': {
+      KrLanguage.italian: 'LA TUA LEGA', KrLanguage.spanish: 'TU LIGA',
+      KrLanguage.japanese: '現在のリーグ', KrLanguage.korean: '나의 리그',
+      KrLanguage.chinese: '你的联赛', KrLanguage.german: 'DEINE LIGA',
+    },
+    'POINTS': {
+      KrLanguage.italian: 'PUNTI', KrLanguage.spanish: 'PUNTOS',
+      KrLanguage.japanese: 'ポイント', KrLanguage.korean: '점수',
+      KrLanguage.chinese: '积分', KrLanguage.german: 'PUNKTE',
+    },
+    'POINTS TO NEXT LEAGUE': {
+      KrLanguage.italian: 'PUNTI ALLA PROSSIMA LEGA', KrLanguage.spanish: 'PUNTOS PARA LA SIGUIENTE LIGA',
+      KrLanguage.japanese: '次のリーグまでのポイント', KrLanguage.korean: '다음 리그까지 남은 점수',
+      KrLanguage.chinese: '距离下一个联赛的积分', KrLanguage.german: 'PUNKTE BIS ZUR NÄCHSTEN LIGA',
+    },
+    'MAX LEAGUE': {
+      KrLanguage.italian: 'LEGA MASSIMA', KrLanguage.spanish: 'LIGA MÁXIMA',
+      KrLanguage.japanese: '最高リーグ', KrLanguage.korean: '최고 리그',
+      KrLanguage.chinese: '最高联赛', KrLanguage.german: 'HÖCHSTE LIGA',
+    },
+    'GLOBAL LEADERBOARD': {
+      KrLanguage.italian: 'CLASSIFICA GLOBALE', KrLanguage.spanish: 'CLASIFICACIÓN GLOBAL',
+      KrLanguage.japanese: '世界ランキング', KrLanguage.korean: '전체 순위',
+      KrLanguage.chinese: '全球排行榜', KrLanguage.german: 'GLOBALE RANGLISTE',
+    },
+    'STARTING LEAGUE': {
+      KrLanguage.italian: 'LEGA INIZIALE', KrLanguage.spanish: 'LIGA INICIAL',
+      KrLanguage.japanese: '初期リーグ', KrLanguage.korean: '시작 리그',
+      KrLanguage.chinese: '初始联赛', KrLanguage.german: 'STARTLIGA',
+    },
+    'CLAIM': {
+      KrLanguage.italian: 'RISCATTA', KrLanguage.spanish: 'RECLAMAR',
+      KrLanguage.japanese: '受け取る', KrLanguage.korean: '받기',
+      KrLanguage.chinese: '领取', KrLanguage.german: 'ABHOLEN',
+    },
+    'CLAIMED': {
+      KrLanguage.italian: 'RISCATTATO', KrLanguage.spanish: 'RECLAMADO',
+      KrLanguage.japanese: '受取済み', KrLanguage.korean: '수령 완료',
+      KrLanguage.chinese: '已领取', KrLanguage.german: 'ABGEHOLT',
+    },
+    'WINS': {
+      KrLanguage.italian: 'VITTORIE', KrLanguage.spanish: 'VICTORIAS',
+      KrLanguage.japanese: '勝利', KrLanguage.korean: '승리',
+      KrLanguage.chinese: '胜场', KrLanguage.german: 'SIEGE',
+    },
+    'League reward claimed!': {
+      KrLanguage.italian: 'Premio lega riscattato!', KrLanguage.spanish: '¡Premio de liga reclamado!',
+      KrLanguage.japanese: 'リーグ報酬を受け取りました！', KrLanguage.korean: '리그 보상을 수령했습니다!',
+      KrLanguage.chinese: '已领取联赛奖励！', KrLanguage.german: 'Liga-Belohnung abgeholt!',
+    },
+    'Reward already claimed.': {
+      KrLanguage.italian: 'Premio già riscattato.', KrLanguage.spanish: 'Premio ya reclamado.',
+      KrLanguage.japanese: '報酬は受取済みです。', KrLanguage.korean: '이미 수령한 보상입니다.',
+      KrLanguage.chinese: '奖励已领取。', KrLanguage.german: 'Belohnung bereits abgeholt.',
+    },
+    'Win PvP matches to earn points. Only completed matches count (max 10 wins/day, 3 per opponent/day).': {
+      KrLanguage.italian: 'Vinci PvP per ottenere punti. Contano solo le partite concluse (massimo 10 vittorie al giorno, 3 per avversario).',
+      KrLanguage.spanish: 'Gana combates PvP para obtener puntos. Solo cuentan partidas completadas (10 victorias/día, 3 por rival).',
+      KrLanguage.japanese: 'PvPで勝利してポイントを獲得。完了した試合のみ対象（1日10勝、同一相手3勝まで）。',
+      KrLanguage.korean: 'PvP 승리로 점수를 획득하세요. 완료된 경기만 반영됩니다(하루 10승, 동일 상대 3승).',
+      KrLanguage.chinese: '赢得PvP对局以获得积分。仅计算已完成比赛（每天最多10胜，同一对手3胜）。',
+      KrLanguage.german: 'Gewinne PvP-Kämpfe für Punkte. Nur abgeschlossene Matches zählen (10 Siege/Tag, 3 je Gegner).',
+    },
     'CONFIRM NAME': {
       KrLanguage.italian: 'CONFERMA NOME',
       KrLanguage.spanish: 'CONFIRMAR NOMBRE',
