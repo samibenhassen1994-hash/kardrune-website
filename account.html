@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><meta name="theme-color" content="#081225">
+<title>Account — KardRune</title>
+<link rel="icon" href="assets/app_icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="account.css">
+</head>
+<body>
+<header class="top"><a href="index.html" class="brand"><img src="assets/app_icon.png" alt=""><span>KARDRUNE</span></a><nav><a href="index.html">Sito</a><a href="idle/">Idle KardRune</a><button type="button" id="logout" hidden>Esci</button></nav></header>
+<main class="wrap">
+<div class="intro"><p class="eyebrow">THE PLAYER REALM</p><h1>Il tuo <em>account KardRune</em></h1><p>Un accesso, il tuo profilo e i giochi che possiamo verificare nel database.</p></div>
+<div id="notice" role="status" aria-live="polite"></div>
+<section id="auth-section" class="auth card">
+  <div><p class="eyebrow">ACCESSO SICURO</p><h2>Entra nel tuo regno</h2><p>Crea un account o accedi con Firebase. Non serve una seconda password per il sito.</p></div>
+  <form id="auth-form">
+    <label for="email">Email</label><input id="email" type="email" autocomplete="email" required maxlength="254">
+    <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" minlength="6" required>
+    <div class="actions"><button type="submit" id="sign-in" class="gold">Accedi</button><button type="button" id="register">Registrati</button></div>
+  </form>
+  <button type="button" id="google" class="google">Continua con Google</button>
+  <button type="button" id="reset" class="quiet">Password dimenticata?</button>
+  <p class="fine">Registrandoti sul sito non vieni registrato automaticamente ai singoli giochi. Le iscrizioni si verificano dal rispettivo database.</p>
+</section>
+<section id="dashboard" hidden>
+  <div class="cards"><article class="card"><p class="eyebrow">PROFILO</p><h2 id="player-name">—</h2><p id="player-email">—</p><p id="player-date">—</p><span id="player-role" class="tag"></span></article>
+  <article class="card"><p class="eyebrow">I TUOI GIOCHI</p><h2>Collegamenti verificati</h2><div id="games"></div></article></div>
+  <section id="admin-section" class="card" hidden>
+   <p class="eyebrow">AMMINISTRAZIONE</p><h2>Pannello amministratore</h2><p>Consultazione in sola lettura. I ruoli sono verificati dal server.</p>
+   <div class="stats" id="stats"></div>
+   <form id="search-form" class="search"><label for="search">Cerca per nome o UID</label><input id="search" maxlength="64" placeholder="Nome giocatore"><button type="submit">Cerca</button></form>
+   <div class="table-wrap"><table><thead><tr><th>Giocatore</th><th>Ruolo</th><th>Sito</th><th>Idle</th><th>Stato</th></tr></thead><tbody id="users"></tbody></table></div>
+   <div class="pages"><button id="prev" type="button">Precedenti</button><span id="page-label"></span><button id="next" type="button">Successivi</button></div>
+  </section>
+</section>
+</main>
+<footer>© 2026 KardRune · <a href="index.html">Torna al sito</a></footer>
+<script type="module" src="account.js"></script>
+</body></html>
