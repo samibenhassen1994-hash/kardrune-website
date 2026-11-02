@@ -2,9 +2,17 @@
  * Never cache /api/ responses, authenticated requests, WebSockets or video.
  * This also supersedes the legacy /idle/sw.js cache on activation.
  */
-const CACHE_NAME = 'idle-kardrune-flutter-v4';
+const RELEASE = '5a788d6';
+const CACHE_NAME = `idle-kardrune-flutter-${RELEASE}`;
 const SCOPE = new URL(self.registration.scope);
-const SHELL = ['./', './index.html', './manifest.json', './flutter_bootstrap.js'];
+const SHELL = ['./', './index.html', './manifest.json', './flutter_bootstrap.js', './main.dart.js'];
+const CORE_ASSETS = [
+  './assets/assets/idle/arena/arena_background.webp',
+  './assets/assets/idle/arena/background_deck.webp',
+  './assets/assets/idle/arena/background_fight_idlearena.webp',
+  './assets/assets/idle/arena/shard.webp',
+  './assets/assets/idle/summon/summon_arena.webp',
+];
 const STATIC_FILES = new Set([
   '', 'index.html', 'manifest.json', 'flutter_bootstrap.js', 'flutter.js',
   'main.dart.js', 'favicon.png', 'kardrune_service_worker.js',
@@ -20,8 +28,26 @@ function cacheable(request) {
       /^(assets|canvaskit|icons)\//.test(relative) ||
       /\.(?:js|wasm|json|png|svg|webp|bin|ttf|otf)$/.test(relative);
 }
+function versionedUrl(request) {
+  const url = new URL(request.url);
+  url.searchParams.set('krv', RELEASE);
+  return url;
+}
+async function fetchFresh(request) {
+  // The release query also bypasses Cloudflare and WebView's HTTP cache for
+  // same-path assets, while the original URL remains the offline cache key.
+  return fetch(versionedUrl(request), { cache: 'reload' });
+}
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL)));
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    await Promise.all([...SHELL, ...CORE_ASSETS].map(async (path) => {
+      const request = new Request(new URL(path, SCOPE));
+      const response = await fetchFresh(request);
+      if (!response.ok) throw Error(`PWA preload failed: ${path}`);
+      await cache.put(request, response);
+    }));
+  })());
 });
 self.addEventListener('message', (event) => {
   if (event.data === 'SKIP_WAITING') self.skipWaiting();
@@ -38,8 +64,8 @@ self.addEventListener('fetch', (event) => {
   if (!cacheable(event.request)) return;
   const request = event.request;
   event.respondWith(
-    fetch(request).then((response) => {
-      if (response.ok && response.type === 'basic' &&
+    fetchFresh(request).then((response) => {
+      if (response.ok &&
           !/no-store|private/i.test(response.headers.get('cache-control') || '')) {
         const copy = response.clone();
         event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => {}));
