@@ -88,7 +88,7 @@
       if(!r.ok) throw Error('Push configuration unavailable');
       const settings=await r.json();
       if(!settings.enabled) throw Error('Web Push keys not configured');
-      const reg=await navigator.serviceWorker.register('kardrune_service_worker.js',{scope:'./'});
+      const reg=await navigator.serviceWorker.register('kardrune_service_worker.js?v=__KARDRUNE_PACKAGED_RELEASE__',{scope:'./'});
       const data=atob(settings.publicKey.replace(/-/g,'+').replace(/_/g,'/').padEnd(Math.ceil(settings.publicKey.length/4)*4,'='));
       const key=Uint8Array.from(data,c=>c.charCodeAt(0));
       let sub=await reg.pushManager.getSubscription();
@@ -115,7 +115,7 @@
     if(old && old!==uid) await window.kardrunePushUnsubscribe();
   };
 </script>
-  <script src="flutter_bootstrap.js" async></script>
+  <script src="flutter_bootstrap.js?v=__KARDRUNE_PACKAGED_RELEASE__" async></script>
   <script>
     // A version endpoint lets iOS home-screen PWAs detect deploys even without
     // a service-worker updatefound event. Keep all game data in local storage.
@@ -170,18 +170,43 @@
         if (!document.hidden) refresh();
       });
       window.setInterval(refresh, 60000);
-      window.addEventListener('kardrune-apply-update', () => {
+      window.addEventListener('kardrune-apply-update', async () => {
+        if (requested) return;
+        if (!pendingRelease) await checkRelease();
+        if (!pendingRelease) { announce(); return; }
         requested = true;
-        if (pendingRelease) {
-          try { localStorage.setItem('idle-kardrune-active-release', pendingRelease); }
-          catch (_) {}
+        try {
+          if (!registration && 'serviceWorker' in navigator)
+            registration = await navigator.serviceWorker.getRegistration('./');
+          if (registration) {
+            await registration.update();
+            const deadline = Date.now() + 12000;
+            while (!registration.waiting && Date.now() < deadline &&
+                   !registration.active?.scriptURL.includes(pendingRelease)) {
+              await new Promise(resolve => window.setTimeout(resolve, 200));
+            }
+            if (registration.waiting) {
+              const controlled = new Promise(resolve => {
+                navigator.serviceWorker.addEventListener('controllerchange', resolve, {once:true});
+                window.setTimeout(() => resolve(false), 12000);
+              });
+              registration.waiting.postMessage('SKIP_WAITING');
+              if (await controlled === false) throw Error('Worker activation timed out');
+            } else if (!registration.active?.scriptURL.includes(pendingRelease)) {
+              throw Error('Updated worker unavailable');
+            }
+          }
+          const url = new URL(window.location.href);
+          if (pendingRelease) url.searchParams.set('krv', pendingRelease);
+          window.location.replace(url);
+        } catch (_) {
+          requested = false;
+          announce();
         }
-        if (registration?.waiting) registration.waiting.postMessage('SKIP_WAITING');
-        window.setTimeout(() => window.location.reload(), 450);
       });
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('kardrune_service_worker.js',
+          navigator.serviceWorker.register('kardrune_service_worker.js?v=__KARDRUNE_PACKAGED_RELEASE__',
             { scope: './', updateViaCache: 'none' }).then((value) => {
             registration = value;
             if (value.waiting) announce();

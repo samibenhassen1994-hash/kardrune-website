@@ -25,13 +25,16 @@ void main() {
       bootstrap,
       contains("hostElement: document.getElementById('idle-game-frame')"),
     );
-    expect(index, contains("register('kardrune_service_worker.js'"));
+    expect(index, contains('kardrune_service_worker.js?v=__KARDRUNE_PACKAGED_RELEASE__'));
     expect(index, contains('kardrune-update-available'));
     expect(index, contains('kardrune-apply-update'));
     expect(index, contains('release-id.json'));
     expect(index, contains('visibilitychange'));
     final worker = File('web/kardrune_service_worker.js').readAsStringSync();
-    expect(worker, contains("idle-kardrune-flutter-v4"));
+    expect(worker, contains('__KARDRUNE_PACKAGED_RELEASE__'));
+    expect(worker, contains('background_deck.webp'));
+    expect(worker, contains('background_fight_idlearena.webp'));
+    expect(worker, contains("'release-id.json'"));
     expect(worker, contains('SKIP_WAITING'));
     expect(worker, contains("'./manifest.json'"));
     expect(manifest['name'], 'Idle KardRune');

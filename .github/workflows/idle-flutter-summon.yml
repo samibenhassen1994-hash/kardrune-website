@@ -40,6 +40,7 @@ jobs:
         run: |
           flutter pub get
           flutter analyze
+          node --test ../scripts/pwa-asset-update.test.mjs
           # Golden screenshot comparisons vary on GitHub's Linux renderer.
           # Keep them available via: flutter test test/golden_test.dart
           # Run every other unit/widget test before packaging the web release.
@@ -54,13 +55,14 @@ jobs:
         run: |
           RELEASE="$(git rev-parse --short HEAD)"
           sed -i "s/__KARDRUNE_PACKAGED_RELEASE__/$RELEASE/g" idle_flutter/web/index.html
+          sed -i "s/__KARDRUNE_PACKAGED_RELEASE__/$RELEASE/g" idle_flutter/web/kardrune_service_worker.js
       - name: Build /idle/ release
         working-directory: idle_flutter
         run: flutter build web --release --base-href /idle/
       - name: Stamp release for PWA version checks
         shell: bash
         run: |
-          printf '{"release":"%s"}\n' "$(git rev-parse --short HEAD)" > idle_flutter/build/web/release-id.json
+          node scripts/stamp-idle-release.mjs "$(git rev-parse --short HEAD)" idle_flutter/build/web
       - name: Verify and commit compiled frontend
         shell: bash
         run: |
