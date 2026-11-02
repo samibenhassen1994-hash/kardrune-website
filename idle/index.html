@@ -88,7 +88,7 @@
       if(!r.ok) throw Error('Push configuration unavailable');
       const settings=await r.json();
       if(!settings.enabled) throw Error('Web Push keys not configured');
-      const reg=await navigator.serviceWorker.register('kardrune_service_worker.js?v=5a788d6',{scope:'./'});
+      const reg=await navigator.serviceWorker.register('kardrune_service_worker.js?v=5f7c490',{scope:'./'});
       const data=atob(settings.publicKey.replace(/-/g,'+').replace(/_/g,'/').padEnd(Math.ceil(settings.publicKey.length/4)*4,'='));
       const key=Uint8Array.from(data,c=>c.charCodeAt(0));
       let sub=await reg.pushManager.getSubscription();
@@ -115,14 +115,14 @@
     if(old && old!==uid) await window.kardrunePushUnsubscribe();
   };
 </script>
-  <script src="flutter_bootstrap.js?v=5a788d6" async></script>
+  <script src="flutter_bootstrap.js?v=5f7c490" async></script>
   <script>
     // A version endpoint lets iOS home-screen PWAs detect deploys even without
     // a service-worker updatefound event. Keep all game data in local storage.
     (() => {
       const releaseUrl = new URL('release-id.json', document.baseURI);
       // CI replaces this marker before Flutter builds its service-worker manifest.
-      const bundledRelease = '5a788d6';
+      const bundledRelease = '5f7c490';
       let checking = false, needsUpdate = false, pendingRelease = null;
       let registration = null, requested = false;
       function announce() {
@@ -206,7 +206,7 @@
       });
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('kardrune_service_worker.js?v=5a788d6',
+          navigator.serviceWorker.register('kardrune_service_worker.js?v=5f7c490',
             { scope: './', updateViaCache: 'none' }).then((value) => {
             registration = value;
             if (value.waiting) announce();
