@@ -38,7 +38,7 @@ class ArenaLanding extends StatelessWidget {
       // Scale controls with the original 964×1632 artwork, not just the
       // viewport: BoxFit.cover crops vertically in wider browser windows.
       const sourceRatio = 964 / 1632;
-      const frameBottomInArt = .77;
+      const frameBottomInArt = .875;
       final artWidth = math.min(
         width,
         math.min(
