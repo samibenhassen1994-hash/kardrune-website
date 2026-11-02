@@ -637,10 +637,12 @@ class _IdleShellState extends State<IdleShell> {
           children: [
             Scaffold(
               backgroundColor: Colors.transparent,
-              extendBody: tab == 0 || tab == 2,
+              // Keep Arena immersive. Summon must reserve the bottom navigation
+              // height so its purchase buttons never sit behind the nav bar.
+              extendBody: tab == 0,
               body: SafeArea(
                 top: tab != 0 && tab != 2,
-                bottom: tab != 0 && tab != 2,
+                bottom: tab != 0,
                 child: DecoratedBox(
                   decoration: const BoxDecoration(
                     color: Color(0xff070e20),
@@ -836,7 +838,7 @@ class _IdleShellState extends State<IdleShell> {
               bottomNavigationBar: _RuneNavigation(
                 current: tab,
                 language: language,
-                arenaOverlay: tab == 0 || tab == 2,
+                arenaOverlay: tab == 0,
                 onTap: _chooseTab,
               ),
             ),
