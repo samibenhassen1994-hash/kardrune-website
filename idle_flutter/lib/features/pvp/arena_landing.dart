@@ -144,15 +144,30 @@ class ArenaLanding extends StatelessWidget {
                 ),
                 if (onLeaderboard != null)
                   Positioned(
-                    top: imageTop + imageHeight * .755,
-                    left: artWidth * .24,
-                    right: artWidth * .24,
-                    child: Center(child: OutlinedButton.icon(
-                      key: const Key('pvp-leaderboard'),
-                      onPressed: onLeaderboard,
-                      icon: const Icon(Icons.emoji_events_outlined,size:16),
-                      label: Text(context.tr('PVP LEAGUES')),
-                    )),
+                    // Trophy in the right-hand arena banner, not under Start Match.
+                    top: imageTop + imageHeight * .415,
+                    right: artWidth * .018,
+                    child: Semantics(
+                      button: true,
+                      label: context.tr('PVP LEAGUES'),
+                      child: Material(
+                        color: const Color(0xe8171830),
+                        shape: const CircleBorder(
+                          side: BorderSide(color: Color(0xffedc27e),width: 2),
+                        ),
+                        elevation: 8,
+                        child: InkWell(
+                          key: const Key('pvp-leaderboard'),
+                          customBorder: const CircleBorder(),
+                          onTap: onLeaderboard,
+                          child: const SizedBox(
+                            width: 48,height: 48,
+                            child: Icon(Icons.emoji_events_rounded,
+                              color: Color(0xffffd38a),size: 28),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 if (rewardRemaining != null)
                   Positioned(

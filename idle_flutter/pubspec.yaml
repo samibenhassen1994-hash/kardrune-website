@@ -79,6 +79,7 @@ flutter:
     - assets/idle/animations/dice_kr_v2/
     - assets/idle/animations/dice_kr_v2_frames/
     - assets/idle/arena/
+    - assets/idle/pvp_leagues/
     - assets/idle/tutorial/
     - assets/idle/summon/
     - assets/idle/summon/banners/
