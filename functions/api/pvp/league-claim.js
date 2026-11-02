@@ -23,8 +23,8 @@ export async function onRequestPost({request,env}){
   const now=Date.now();
   try {
    await env.DB.batch([
-    env.DB.prepare('INSERT INTO pvp_league_claims(uid,league,points_at_claim,shards,claimed_at) VALUES(?,?,?,?,?)')
-     .bind(user.uid,league.name,ranked.mine.points,league.reward,now),
+    env.DB.prepare('INSERT INTO pvp_league_claims(uid,league,points_at_claim,expected_revision,shards,claimed_at) VALUES(?,?,?,?,?,?)')
+     .bind(user.uid,league.name,ranked.mine.points,account.revision,league.reward,now),
     env.DB.prepare('UPDATE demo_saves SET save_json=?,revision=revision+1,updated_at=CURRENT_TIMESTAMP WHERE uid=? AND revision=?')
      .bind(JSON.stringify(updated),user.uid,account.revision),
     env.DB.prepare('UPDATE skill_wallets SET shards=shards+?,updated_at=? WHERE uid=?')
