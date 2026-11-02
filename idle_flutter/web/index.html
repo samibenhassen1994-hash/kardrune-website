@@ -88,7 +88,7 @@
       if(!r.ok) throw Error('Push configuration unavailable');
       const settings=await r.json();
       if(!settings.enabled) throw Error('Web Push keys not configured');
-      const reg=await navigator.serviceWorker.register('kardrune_service_worker.js?v=__KARDRUNE_PACKAGED_RELEASE__',{scope:'./'});
+      const reg=await navigator.serviceWorker.ready;
       const data=atob(settings.publicKey.replace(/-/g,'+').replace(/_/g,'/').padEnd(Math.ceil(settings.publicKey.length/4)*4,'='));
       const key=Uint8Array.from(data,c=>c.charCodeAt(0));
       let sub=await reg.pushManager.getSubscription();
@@ -125,7 +125,13 @@
       const bundledRelease = '__KARDRUNE_PACKAGED_RELEASE__';
       let checking = false, needsUpdate = false, pendingRelease = null;
       let registration = null, requested = false;
+      function workerUrl(release) {
+        const url = new URL('kardrune_service_worker.js', document.baseURI);
+        url.searchParams.set('v', release);
+        return url.href;
+      }
       function announce() {
+        if (!pendingRelease) return;
         needsUpdate = true;
         window.dispatchEvent(new Event('kardrune-update-available'));
       }
@@ -173,14 +179,15 @@
       window.addEventListener('kardrune-apply-update', async () => {
         if (requested) return;
         if (!pendingRelease) await checkRelease();
-        if (!pendingRelease) { announce(); return; }
+        if (!pendingRelease) return;
         requested = true;
         try {
-          if (!registration && 'serviceWorker' in navigator)
-            registration = await navigator.serviceWorker.getRegistration('./');
-          if (registration) {
-            await registration.update();
-            const deadline = Date.now() + 12000;
+          if ('serviceWorker' in navigator) {
+            // Old installed pages recheck the old Worker when calling update().
+            // Register the version advertised by release-id.json instead.
+            registration = await navigator.serviceWorker.register(
+              workerUrl(pendingRelease), { scope: './', updateViaCache: 'none' });
+            const deadline = Date.now() + 30000;
             while (!registration.waiting && Date.now() < deadline &&
                    !registration.active?.scriptURL.includes(pendingRelease)) {
               await new Promise(resolve => window.setTimeout(resolve, 200));
@@ -188,7 +195,7 @@
             if (registration.waiting) {
               const controlled = new Promise(resolve => {
                 navigator.serviceWorker.addEventListener('controllerchange', resolve, {once:true});
-                window.setTimeout(() => resolve(false), 12000);
+                window.setTimeout(() => resolve(false), 30000);
               });
               registration.waiting.postMessage('SKIP_WAITING');
               if (await controlled === false) throw Error('Worker activation timed out');
@@ -206,14 +213,15 @@
       });
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('kardrune_service_worker.js?v=__KARDRUNE_PACKAGED_RELEASE__',
+          navigator.serviceWorker.register(workerUrl(bundledRelease),
             { scope: './', updateViaCache: 'none' }).then((value) => {
             registration = value;
-            if (value.waiting) announce();
+            if (value.waiting) void checkRelease();
             value.addEventListener('updatefound', () => {
               const worker = value.installing;
               worker?.addEventListener('statechange', () => {
-                if (worker.state === 'installed' && navigator.serviceWorker.controller) announce();
+                if (worker.state === 'installed' && navigator.serviceWorker.controller)
+                  void checkRelease();
               });
             });
           }).catch(() => {});
