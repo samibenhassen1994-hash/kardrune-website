@@ -89,6 +89,27 @@ void main() {
     expect(find.text('COMING SOON'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+  for (final size in const [Size(320, 568), Size(375, 620), Size(393, 690)]) {
+    testWidgets('summon controls stay above bottom navigation on compact $size', (
+      tester,
+    ) async {
+      // Simulates Android browser/PWA viewports reduced by a native title bar.
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(const KardRuneApp(enableCloudBootstrap: false));
+      await tester.tap(find.text('SUMMON').last);
+      await tester.pumpAndSettle();
+
+      final panel = tester.getRect(find.byKey(const Key('summon-content-panel')));
+      final navigation = tester.getRect(find.byKey(const Key('idle-navigation-bar')));
+      expect(panel.bottom, lessThanOrEqualTo(navigation.top + 1));
+      expect(find.byKey(const Key('summon-banner-frame')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('summon content panel enters upward when opened', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
