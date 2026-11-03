@@ -22,12 +22,12 @@ void main() {
       )));
       final button = tester.getRect(find.byKey(const Key('find-live-match')));
       final anchor = tester.getRect(find.byKey(const Key('arena-painted-cta-anchor')));
-      final title = tester.getRect(find.text('INIZIA PARTITA'));
+      final image = tester.getRect(find.byKey(const Key('arena-start-image')));
       final quota = tester.getRect(find.byKey(const Key('pvp-rewards-remaining')));
-      expect((title.center.dx - button.center.dx).abs(), lessThan(1));
-      expect((title.center.dy - button.center.dy).abs(), lessThan(1));
-      expect(button.top, lessThan(anchor.top));
-      expect(anchor.top - button.top, greaterThan(30));
+      expect((image.center.dx - button.center.dx).abs(), lessThan(1));
+      expect((image.center.dy - button.center.dy).abs(), lessThan(1));
+      expect((button.top - anchor.top).abs(), lessThan(1));
+      // The rendered artwork and its tap region must share actual bounds.
       expect(quota.top, greaterThanOrEqualTo(button.bottom - 1));
       expect(quota.bottom, lessThanOrEqualTo(anchor.bottom + 1));
       expect(anchor.bottom, lessThanOrEqualTo(size.height));
@@ -55,12 +55,66 @@ void main() {
     // button, with the swords above it on mobile screens.
     final button = tester.getRect(find.byKey(const Key('find-live-match')));
     final swords = tester.getRect(find.byType(DuelingSwords));
-    final title = tester.getRect(find.text('INIZIA PARTITA'));
-    expect((title.center.dx - button.center.dx).abs(), lessThan(1));
-    expect((title.center.dy - button.center.dy).abs(), lessThan(1));
+    final image = tester.getRect(find.byKey(const Key('arena-start-image')));
+    expect((image.center.dx - button.center.dx).abs(), lessThan(1));
+    expect((image.center.dy - button.center.dy).abs(), lessThan(1));
     expect((swords.center.dx - button.center.dx).abs(), lessThan(1));
     expect(swords.bottom, lessThan(button.top));
     expect(find.text('Ricompense PvP rimaste (24 ore): 7/10'), findsOneWidget);
+    expect(find.text('INIZIA PARTITA'), findsNothing);
+    expect(find.byKey(const Key('arena-start-image')), findsOneWidget);
+    expect(find.byKey(const Key('arena-cancel-image')), findsNothing);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('Arena CANCEL art cancels active matchmaking', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    var startCalls = 0;
+    var cancelCalls = 0;
+    await tester.pumpWidget(MaterialApp(home: KrLocaleScope(
+      language: KrLanguage.italian,
+      child: Scaffold(body: ArenaLanding(
+        header: const SizedBox.shrink(),
+        hint: '',
+        searching: true,
+        onStart: () => startCalls++,
+        onCancel: () => cancelCalls++,
+        rewardRemaining: 7,
+      )),
+    )));
+    expect(find.byKey(const Key('arena-cancel-image')), findsOneWidget);
+    expect(find.byKey(const Key('arena-start-image')), findsNothing);
+    expect(find.text('INIZIA PARTITA'), findsNothing);
+    final image = tester.getRect(find.byKey(const Key('arena-cancel-image')));
+    final target = tester.getRect(find.byKey(const Key('find-live-match')));
+    expect((image.center.dx - target.center.dx).abs(), lessThan(1));
+    expect((image.center.dy - target.center.dy).abs(), lessThan(1));
+    await tester.tap(find.byKey(const Key('find-live-match')));
+    expect(cancelCalls, 1);
+    expect(startCalls, 0);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Arena START art launches matchmaking', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    var startCalls = 0;
+    await tester.pumpWidget(MaterialApp(home: KrLocaleScope(
+      language: KrLanguage.italian,
+      child: Scaffold(body: ArenaLanding(
+        header: const SizedBox.shrink(),
+        hint: '',
+        searching: false,
+        onStart: () => startCalls++,
+      )),
+    )));
+    await tester.tap(find.byKey(const Key('find-live-match')));
+    expect(startCalls, 1);
+    expect(tester.takeException(), isNull);
+  });
+
 }
