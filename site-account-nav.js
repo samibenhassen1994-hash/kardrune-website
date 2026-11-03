@@ -21,7 +21,11 @@ if (header) {
   label.className = 'site-account-label';
   label.textContent = 'Accedi';
   host.append(avatar, label);
-  header.append(host);
+  // Keep the account avatar together with the site's install actions.
+  // When it is a separate flex child, long signed-in names can squeeze
+  // the brand into the GAMEPLAY navigation label at laptop widths.
+  const actions = header.querySelector('.home-top-actions');
+  (actions || header).append(host);
   oldAccountLink?.remove();
 
   function renderUser(user) {
