@@ -3222,3 +3222,82 @@ footer {
 .site-account-label{font-family:Inter,system-ui,sans-serif;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:1120px){.site-header .site-account-link{margin-left:auto}.page-home .site-header .home-top-actions{margin-left:0;margin-right:0}}
 @media(max-width:767px){.site-header .site-account-link{padding:3px;max-width:none}.site-header .site-account-label{display:none}.site-header .site-account-avatar{width:33px;height:33px;flex-basis:33px}}
+
+/* Signed-in desktop header: protect the brand and keep account/actions together.
+   The original 24px nav gaps + separate avatar flex child caused collisions. */
+.site-header > .brand {
+  flex: 0 0 auto;
+  min-width: max-content;
+}
+.site-header > .nav-links {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.page-home .site-header > .home-top-actions {
+  min-width: 0;
+  margin-left: auto;
+}
+.page-home .home-top-actions .site-account-link {
+  margin-left: 0;
+  max-width: 150px;
+}
+@media (min-width: 1121px) and (max-width: 1700px) {
+  .site-header {
+    gap: clamp(8px, .8vw, 13px);
+    padding-inline: clamp(12px, 1.3vw, 20px);
+  }
+  .site-header .brand {
+    gap: 8px;
+    font-size: 13px;
+    letter-spacing: .12em;
+  }
+  .site-header .nav-links {
+    gap: clamp(8px, .9vw, 14px);
+    font-size: 11px;
+    letter-spacing: .06em;
+    white-space: nowrap;
+  }
+  .page-home .home-top-actions {
+    gap: 6px;
+  }
+  .page-home .home-top-actions .home-top-link {
+    min-height: 40px;
+    padding-inline: 10px;
+    font-size: 10px;
+  }
+  .page-home .home-top-actions .site-account-link {
+    padding-right: 9px;
+    max-width: 145px;
+  }
+  .page-home .home-top-actions .site-account-label {
+    max-width: 90px;
+  }
+}
+@media (min-width: 1121px) and (max-width: 1350px) {
+  .page-home .home-top-actions .site-account-label {
+    display: none;
+  }
+  .page-home .home-top-actions .site-account-link {
+    padding: 4px;
+    max-width: none;
+  }
+}
+@media (max-width: 1120px) {
+  .site-header > .brand { margin-right: auto; }
+  .page-home .site-header > .home-top-actions {
+    flex: 0 1 auto;
+    margin: 0;
+    gap: 7px;
+  }
+  .page-home .home-top-actions .site-account-link {
+    margin-left: 0;
+  }
+}
+@media (max-width: 767px) {
+  .page-home .home-top-actions .site-account-link {
+    padding: 3px;
+  }
+  .page-home .home-top-actions .site-account-label {
+    display: none;
+  }
+}
