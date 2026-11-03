@@ -21,10 +21,20 @@ if (header) {
   label.className = 'site-account-label';
   label.textContent = 'Accedi';
   host.append(avatar, label);
-  // Keep the account avatar together with the site's install actions.
-  // When it is a separate flex child, long signed-in names can squeeze
-  // the brand into the GAMEPLAY navigation label at laptop widths.
-  const actions = header.querySelector('.home-top-actions');
+  // One action group on every page. Subpages previously appended the
+  // signed-in account as a *fourth* independent header flex item, letting
+  // their long CTA overlap the last navigation link.
+  let actions = header.querySelector(':scope > .home-top-actions');
+  if (!actions && header.classList.contains('site-header')) {
+    actions = header.querySelector(':scope > .site-header-actions');
+    if (!actions) {
+      actions = document.createElement('div');
+      actions.className = 'site-header-actions';
+      const cta = header.querySelector(':scope > .nav-cta');
+      if (cta) actions.append(cta);
+      header.append(actions);
+    }
+  }
   (actions || header).append(host);
   oldAccountLink?.remove();
 

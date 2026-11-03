@@ -1,0 +1,34 @@
+name: Website Header Layout Regression
+on:
+  push:
+    branches:
+      - fix/site-header-unified-responsive-layout
+    paths:
+      - 'styles.css'
+      - 'site-account-nav.js'
+      - 'scripts/site-header-layout.browser.mjs'
+      - '.github/workflows/site-header-layout.yml'
+  pull_request:
+    paths:
+      - 'styles.css'
+      - 'site-account-nav.js'
+      - 'scripts/site-header-layout.browser.mjs'
+      - '.github/workflows/site-header-layout.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  header-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium and browser test runner
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Test logged-in and logged-out layouts across 13 viewport widths
+        run: node scripts/site-header-layout.browser.mjs
