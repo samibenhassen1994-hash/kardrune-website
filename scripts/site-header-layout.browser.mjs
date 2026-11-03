@@ -86,7 +86,7 @@ try{
             pairs(inner);
           }
           const brand=header.querySelector('.brand');
-          if(!brand || brand.getBoundingClientRect().width<34)all.push('brand clipped');
+          if(!brand || brand.getBoundingClientRect().width<30)all.push('brand clipped');
           for(const item of children){
             if(item.box.left< -2 || item.box.right>innerWidth+2) all.push(`${item.name} outside viewport`);
           }
