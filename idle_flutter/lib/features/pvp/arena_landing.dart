@@ -113,68 +113,74 @@ class ArenaLanding extends StatelessWidget {
                   ),
                 Positioned(
                   key: const Key('arena-painted-cta-anchor'),
-                  top: imageTop + ctaTop,
+                  // Shift the actual tap area, not just the image rendering:
+                  // a Transform outside its parent's bounds cannot hit-test.
+                  top: imageTop + ctaTop - titleRise,
                   left: artWidth * .18,
                   right: artWidth * .18,
-                  height: ctaHeight,
+                  height: ctaHeight + titleRise,
                   child: Column(
                     children: [
                       Expanded(
-                        child: Transform.translate(
-                          // Match the exact spot occupied by the previous
-                          // START MATCH label in the illustrated Arena.
-                          offset: Offset(0, -titleRise),
-                          child: Semantics(
-                            button: true,
-                            label: searching
-                                ? context.tr('CANCEL')
-                                : context.tr('START MATCH'),
-                            child: InkWell(
-                              key: const Key('find-live-match'),
-                              onTap: searching ? onCancel : onStart,
-                              borderRadius: BorderRadius.circular(20),
-                              child: Center(
-                                child: Image.asset(
-                                  searching
-                                      ? 'assets/idle/arena/cancel.webp'
-                                      : 'assets/idle/arena/start.webp',
-                                  key: Key(searching
-                                      ? 'arena-cancel-image'
-                                      : 'arena-start-image'),
-                                  width: artWidth * .64,
-                                  fit: BoxFit.contain,
-                                  filterQuality: FilterQuality.high,
-                                  excludeFromSemantics: true,
-                                ),
+                        child: Semantics(
+                          button: true,
+                          label: searching
+                              ? context.tr('CANCEL')
+                              : context.tr('START MATCH'),
+                          child: InkWell(
+                            key: const Key('find-live-match'),
+                            onTap: searching ? onCancel : onStart,
+                            borderRadius: BorderRadius.circular(20),
+                            child: Center(
+                              child: Image.asset(
+                                searching
+                                    ? 'assets/idle/arena/cancel.webp'
+                                    : 'assets/idle/arena/start.webp',
+                                key: Key(searching
+                                    ? 'arena-cancel-image'
+                                    : 'arena-start-image'),
+                                width: artWidth * .64,
+                                fit: BoxFit.contain,
+                                filterQuality: FilterQuality.high,
+                                excludeFromSemantics: true,
                               ),
                             ),
                           ),
                         ),
                       ),
-                      if (rewardRemaining != null)
-                        SizedBox(
-                          height: quotaHeight,
-                          child: Center(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                '${context.tr('PvP rewards left (24h)')}: $rewardRemaining/$rewardLimit',
-                                key: const Key('pvp-rewards-remaining'),
-                                maxLines: 1,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: const Color(0xffffdfa8),
-                                  fontFamily: 'Georgia',
-                                  fontSize: (artWidth * .025).clamp(8.0, 11.0).toDouble(),
-                                  fontWeight: FontWeight.w700,
-                                  shadows: const [
-                                    Shadow(color: Colors.black, blurRadius: 7),
-                                  ],
+                      // The spacer retains the original PvP counter position,
+                      // while both image variants share the exact same tap area.
+                      SizedBox(
+                        height: titleRise + quotaHeight,
+                        child: rewardRemaining == null
+                            ? const SizedBox.shrink()
+                            : Align(
+                                alignment: Alignment.bottomCenter,
+                                child: SizedBox(
+                                  height: quotaHeight,
+                                  child: Center(
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        '${context.tr('PvP rewards left (24h)')}: $rewardRemaining/$rewardLimit',
+                                        key: const Key('pvp-rewards-remaining'),
+                                        maxLines: 1,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: const Color(0xffffdfa8),
+                                          fontFamily: 'Georgia',
+                                          fontSize: (artWidth * .025).clamp(8.0, 11.0).toDouble(),
+                                          fontWeight: FontWeight.w700,
+                                          shadows: const [
+                                            Shadow(color: Colors.black, blurRadius: 7),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                        ),
+                      ),
                     ],
                   ),
                 ),
