@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - fix/idle-arena-stable-cta-size-on-load
       - feature/idle-arena-start-cancel-assets
       - fix/idle-arena-title-up-15mm
       - fix/idle-arena-start-label-anchor
