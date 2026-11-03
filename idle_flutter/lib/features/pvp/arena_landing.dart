@@ -59,6 +59,13 @@ class ArenaLanding extends StatelessWidget {
 // Otherwise the START/CANCEL image abruptly shrinks when rewardRemaining
 // changes from null to a number on app startup.
 final quotaHeight = renderedArtHeight * .034;
+      // START/CANCEL art is 2:1. The old image was height-limited by the
+      // button row, so changing only width did not make it visually bigger.
+      // Double the visible graphic height and its tap area while preserving
+      // their center and the PvP reward row's original position.
+      final oldButtonHeight = ctaHeight - quotaHeight;
+      final buttonGrowth = oldButtonHeight / 2;
+      final graphicWidth = math.min(artWidth * .95, oldButtonHeight * 4);
       final small = height < 650;
       final swordsSize = small ? 76.0 : 106.0;
       return ColoredBox(
@@ -118,10 +125,10 @@ final quotaHeight = renderedArtHeight * .034;
                   key: const Key('arena-painted-cta-anchor'),
                   // Shift the actual tap area, not just the image rendering:
                   // a Transform outside its parent's bounds cannot hit-test.
-                  top: imageTop + ctaTop - titleRise,
-                  left: artWidth * .18,
-                  right: artWidth * .18,
-                  height: ctaHeight + titleRise,
+                  top: imageTop + ctaTop - titleRise - buttonGrowth,
+                  left: artWidth * .025,
+                  right: artWidth * .025,
+                  height: ctaHeight + titleRise + buttonGrowth,
                   child: Column(
                     children: [
                       Expanded(
@@ -135,17 +142,20 @@ final quotaHeight = renderedArtHeight * .034;
                             onTap: searching ? onCancel : onStart,
                             borderRadius: BorderRadius.circular(20),
                             child: Center(
-                              child: Image.asset(
-                                searching
-                                    ? 'assets/idle/arena/cancel.webp'
-                                    : 'assets/idle/arena/start.webp',
-                                key: Key(searching
-                                    ? 'arena-cancel-image'
-                                    : 'arena-start-image'),
-                                width: artWidth * .64,
-                                fit: BoxFit.contain,
-                                filterQuality: FilterQuality.high,
-                                excludeFromSemantics: true,
+                              child: SizedBox(
+                                width: graphicWidth,
+                                height: graphicWidth / 2,
+                                child: Image.asset(
+                                  searching
+                                      ? 'assets/idle/arena/cancel.webp'
+                                      : 'assets/idle/arena/start.webp',
+                                  key: Key(searching
+                                      ? 'arena-cancel-image'
+                                      : 'arena-start-image'),
+                                  fit: BoxFit.contain,
+                                  filterQuality: FilterQuality.high,
+                                  excludeFromSemantics: true,
+                                ),
                               ),
                             ),
                           ),
@@ -154,7 +164,7 @@ final quotaHeight = renderedArtHeight * .034;
                       // The spacer retains the original PvP counter position,
                       // while both image variants share the exact same tap area.
                       SizedBox(
-                        height: titleRise + quotaHeight,
+                        height: titleRise + quotaHeight - buttonGrowth,
                         child: rewardRemaining == null
                             ? const SizedBox.shrink()
                             : Align(

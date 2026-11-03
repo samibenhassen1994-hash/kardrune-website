@@ -26,6 +26,14 @@ void main() {
       final quota = tester.getRect(find.byKey(const Key('pvp-rewards-remaining')));
       expect((image.center.dx - button.center.dx).abs(), lessThan(1));
       expect((image.center.dy - button.center.dy).abs(), lessThan(1));
+      // WebP buttons are 2:1 and are displayed at twice the original
+      // height-limited size. Test at each viewport so a compact phone cannot
+      // silently shrink or distort either asset.
+      final imageRatio = image.width / image.height;
+      expect(imageRatio, closeTo(2.0, .02));
+      final originalSize = (size.height * .14) - (size.height * .034);
+      expect(image.height, greaterThanOrEqualTo(originalSize * 1.85));
+      expect(button.width, greaterThanOrEqualTo(image.width - 1));
       expect((button.top - anchor.top).abs(), lessThan(1));
       // The rendered artwork and its tap region must share actual bounds.
       expect(quota.top, greaterThanOrEqualTo(button.bottom - 1));
