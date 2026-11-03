@@ -44,7 +44,7 @@ _flutter.buildConfig = {"engineRevision":"89c39edfdfae2949f6806e4a315c0c08522238
 // deploy. Version the entrypoint itself so it cannot reuse a four-hour-old JS.
 for (const build of _flutter.buildConfig.builds) {
   if (build.mainJsPath === 'main.dart.js') {
-    build.mainJsPath = 'main.dart.js?v=c79dd7e';
+    build.mainJsPath = 'main.dart.js?v=1fdf870';
   }
 }
 // The custom Idle KardRune PWA owns all updates; Flutter must not register
