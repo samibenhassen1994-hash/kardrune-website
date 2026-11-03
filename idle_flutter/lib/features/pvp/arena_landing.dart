@@ -56,7 +56,6 @@ class ArenaLanding extends StatelessWidget {
       // Limit the offset on shorter viewports so the title remains visible.
       final titleRise = math.min(56.0, renderedArtHeight * .08);
       final quotaHeight = rewardRemaining == null ? 0.0 : renderedArtHeight * .034;
-      final titleSize = (artWidth * .060).clamp(17.0, 29.0).toDouble();
       final small = height < 650;
       final swordsSize = small ? 76.0 : 106.0;
       return ColoredBox(
@@ -122,51 +121,34 @@ class ArenaLanding extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Transform.translate(
+                          // Match the exact spot occupied by the previous
+                          // START MATCH label in the illustrated Arena.
                           offset: Offset(0, -titleRise),
                           child: Semantics(
-                          button: true,
-                          label: searching
-                              ? context.tr('SEARCHING FOR OPPONENT')
-                              : context.tr('START MATCH'),
-                          child: InkWell(
-                            key: const Key('find-live-match'),
-                            onTap: searching ? null : onStart,
-                            borderRadius: BorderRadius.circular(20),
-                            child: Center(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  context.tr('START MATCH'),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  style: TextStyle(
-                                    color: const Color(0xfffff1c4),
-                                    fontFamily: 'Georgia',
-                                    fontSize: titleSize,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 1.7,
-                                    shadows: const [
-                                      Shadow(
-                                        color: Color(0xff170b08),
-                                        offset: Offset(0, 3),
-                                        blurRadius: 2,
-                                      ),
-                                      Shadow(
-                                        color: Color(0xffffd25b),
-                                        blurRadius: 18,
-                                      ),
-                                      Shadow(
-                                        color: Color(0xfff5a329),
-                                        blurRadius: 28,
-                                      ),
-                                    ],
-                                  ),
+                            button: true,
+                            label: searching
+                                ? context.tr('CANCEL')
+                                : context.tr('START MATCH'),
+                            child: InkWell(
+                              key: const Key('find-live-match'),
+                              onTap: searching ? onCancel : onStart,
+                              borderRadius: BorderRadius.circular(20),
+                              child: Center(
+                                child: Image.asset(
+                                  searching
+                                      ? 'assets/idle/arena/cancel.webp'
+                                      : 'assets/idle/arena/start.webp',
+                                  key: Key(searching
+                                      ? 'arena-cancel-image'
+                                      : 'arena-start-image'),
+                                  width: artWidth * .64,
+                                  fit: BoxFit.contain,
+                                  filterQuality: FilterQuality.high,
+                                  excludeFromSemantics: true,
                                 ),
                               ),
                             ),
                           ),
-                        ),
                         ),
                       ),
                       if (rewardRemaining != null)
@@ -223,19 +205,7 @@ class ArenaLanding extends StatelessWidget {
                       ),
                     ),
                   ),
-                Positioned(
-                  left: 12,
-                  right: 12,
-                  bottom: small ? 72 : 82,
-                  child: searching && onCancel != null
-                      ? Center(
-                          child: _SecondaryAction(
-                            label: context.tr('CANCEL'),
-                            onTap: onCancel!,
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-                ),
+
               ],
             ),
           ),
@@ -245,38 +215,6 @@ class ArenaLanding extends StatelessWidget {
   );
 }
 
-class _SecondaryAction extends StatelessWidget {
-  const _SecondaryAction({required this.label, required this.onTap});
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Material(
-    color: const Color(0xb8170d15),
-    borderRadius: BorderRadius.circular(7),
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(7),
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 36, minWidth: 90),
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xc5e5b66b)),
-          borderRadius: BorderRadius.circular(7),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xffffe4ae),
-            fontSize: 9,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      ),
-    ),
-  );
-}
 
 class DuelingSwords extends StatefulWidget {
   const DuelingSwords({super.key, required this.size, required this.fighting});
