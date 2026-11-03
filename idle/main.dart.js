@@ -105237,22 +105237,23 @@ $S:7}
 A.O5.prototype={
 N(a){return A.oS(new A.abc(this))}}
 A.abc.prototype={
-$2(a0,a1){var s,r,q,p=null,o=a1.d,n=Math.min(a1.b,Math.min(o*0.7,B.e.bB(o-70,1,1/0)*0.5906862745098039/0.875)),m=Math.max(o,n/0.5906862745098039),l=Math.min(56,m*0.08),k=this.a,j=k.x,i=j==null,h=i?0:m*0.034,g=o<650,f=g?76:106,e=A.lz(0,A.ja("assets/idle/arena/arena_background.webp",B.eQ,1080,p,!1,B.b0,B.dB,!1,p,p,p,p,p),0),d=A.fI(p,k.d,p,p,0,0,0,p),c=g?0.455:0.49,b=k.w,a=t.p
-c=A.b([e,d,A.fI(p,A.dc(new A.h0(new A.Cl(f,b,p),p),p,p),p,p,0,0,0+o*c,p)],a)
-e=k.r
-if(e.length!==0){d=n*0.09
-c.push(A.fI(p,A.T(e,p,2,p,p,p,A.d2(p,p,B.P1,p,p,p,p,p,"Georgia",p,p,g?10:12,p,p,B.aw,p,p,!0,p,p,p,p,p,B.xf,p,p),B.aq,p),p,p,d,d,0+o*0.425,p))}e=n*0.18
-d=b?A.a6(A.aa(a0),"CANCEL"):A.a6(A.aa(a0),"START MATCH")
-s=b?k.e:k.c
+$2(a,b){var s,r,q,p=null,o=b.d,n=Math.min(b.b,Math.min(o*0.7,B.e.bB(o-70,1,1/0)*0.5906862745098039/0.875)),m=Math.max(o,n/0.5906862745098039),l=Math.min(56,m*0.08),k=m*0.034,j=o<650,i=j?76:106,h=A.lz(0,A.ja("assets/idle/arena/arena_background.webp",B.eQ,1080,p,!1,B.b0,B.dB,!1,p,p,p,p,p),0),g=this.a,f=A.fI(p,g.d,p,p,0,0,0,p),e=j?0.455:0.49,d=g.w,c=t.p
+e=A.b([h,f,A.fI(p,A.dc(new A.h0(new A.Cl(i,d,p),p),p,p),p,p,0,0,0+o*e,p)],c)
+h=g.r
+if(h.length!==0){f=n*0.09
+e.push(A.fI(p,A.T(h,p,2,p,p,p,A.d2(p,p,B.P1,p,p,p,p,p,"Georgia",p,p,j?10:12,p,p,B.aw,p,p,!0,p,p,p,p,p,B.xf,p,p),B.aq,p),p,p,f,f,0+o*0.425,p))}h=n*0.18
+f=d?A.a6(A.aa(a),"CANCEL"):A.a6(A.aa(a),"START MATCH")
+s=d?g.e:g.c
 r=A.ca(20)
-q=b?"assets/idle/arena/cancel.webp":"assets/idle/arena/start.webp"
-b=b?"arena-cancel-image":"arena-start-image"
-d=A.bE(A.bJ(!0,p,A.lh(!1,r,!0,A.dc(A.ja(q,B.D,p,p,!0,B.jq,B.cQ,!1,p,new A.ai(b,t.O),p,p,n*0.64),p,p),p,!0,p,p,p,p,B.awP,p,p,p,p,p,s,p,p,p,p,p,p,p),!1,p,p,p,!1,p,p,p,p,p,p,p,d,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p),1)
-j=i?B.aI:new A.e4(B.e6,p,p,new A.aZ(p,h,A.dc(A.mz(B.D,A.T(A.a6(A.aa(a0),"PvP rewards left (24h)")+": "+A.k(j)+"/"+k.y,B.awo,1,p,p,p,A.d2(p,p,B.qt,p,p,p,p,p,"Georgia",p,p,B.e.bB(n*0.025,8,11),p,p,B.aw,p,p,!0,p,p,p,p,p,B.xf,p,p),B.aq,p),B.cR),p,p),p),p)
-c.push(A.fI(p,A.bL(A.b([d,new A.aZ(p,l+h,j,p)],a),B.v,B.x,B.z),m*0.14+l,B.awk,e,e,0+m*0.735-l,p))
-k=k.f
-if(k!=null){j=A.a6(A.aa(a0),"PVP LEAGUES")
-c.push(A.fI(p,A.bJ(!0,p,A.hj(B.a2,!0,p,A.lh(!1,p,!0,B.amT,B.iG,!0,p,p,p,p,B.aw0,p,p,p,p,p,k,p,p,p,p,p,p,p),B.u,B.Tx,8,p,p,B.OH,p,p,B.cr),!1,p,p,p,!1,p,p,p,p,p,p,p,j,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p),p,p,p,n*0.018,0+o*0.415,p))}return A.vU(A.dc(new A.aZ(n,o,new A.cE(B.aT,p,B.dX,B.I,c,p),p),p,p),B.SA,!0)},
+q=d?"assets/idle/arena/cancel.webp":"assets/idle/arena/start.webp"
+d=d?"arena-cancel-image":"arena-start-image"
+f=A.bE(A.bJ(!0,p,A.lh(!1,r,!0,A.dc(A.ja(q,B.D,p,p,!0,B.jq,B.cQ,!1,p,new A.ai(d,t.O),p,p,n*0.64),p,p),p,!0,p,p,p,p,B.awP,p,p,p,p,p,s,p,p,p,p,p,p,p),!1,p,p,p,!1,p,p,p,p,p,p,p,f,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p),1)
+d=g.x
+d=d==null?B.aI:new A.e4(B.e6,p,p,new A.aZ(p,k,A.dc(A.mz(B.D,A.T(A.a6(A.aa(a),"PvP rewards left (24h)")+": "+A.k(d)+"/"+g.y,B.awo,1,p,p,p,A.d2(p,p,B.qt,p,p,p,p,p,"Georgia",p,p,B.e.bB(n*0.025,8,11),p,p,B.aw,p,p,!0,p,p,p,p,p,B.xf,p,p),B.aq,p),B.cR),p,p),p),p)
+e.push(A.fI(p,A.bL(A.b([f,new A.aZ(p,l+k,d,p)],c),B.v,B.x,B.z),m*0.14+l,B.awk,h,h,0+m*0.735-l,p))
+h=g.f
+if(h!=null){g=A.a6(A.aa(a),"PVP LEAGUES")
+e.push(A.fI(p,A.bJ(!0,p,A.hj(B.a2,!0,p,A.lh(!1,p,!0,B.amT,B.iG,!0,p,p,p,p,B.aw0,p,p,p,p,p,h,p,p,p,p,p,p,p),B.u,B.Tx,8,p,p,B.OH,p,p,B.cr),!1,p,p,p,!1,p,p,p,p,p,p,p,g,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p),p,p,p,n*0.018,0+o*0.415,p))}return A.vU(A.dc(new A.aZ(n,o,new A.cE(B.aT,p,B.dX,B.I,e,p),p),p,p),B.SA,!0)},
 $S:653}
 A.Cl.prototype={
 ap(){return new A.a2u(null,null)}}
