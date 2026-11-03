@@ -117,4 +117,49 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  for (final searching in [false, true]) {
+    testWidgets('Arena button remains the same size while PvP quota loads (searching: $searching)', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      Widget screen(int? remaining) => MaterialApp(
+        home: KrLocaleScope(
+          language: KrLanguage.italian,
+          child: Scaffold(
+            body: ArenaLanding(
+              header: const SizedBox.shrink(),
+              hint: '',
+              searching: searching,
+              onStart: () {},
+              onCancel: () {},
+              rewardRemaining: remaining,
+              rewardLimit: 10,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(screen(null));
+      final key = Key(searching ? 'arena-cancel-image' : 'arena-start-image');
+      final firstImage = tester.getRect(find.byKey(key));
+      final firstTap = tester.getRect(find.byKey(const Key('find-live-match')));
+      expect(find.byKey(const Key('pvp-rewards-remaining')), findsNothing);
+
+      await tester.pumpWidget(screen(7));
+      final loadedImage = tester.getRect(find.byKey(key));
+      final loadedTap = tester.getRect(find.byKey(const Key('find-live-match')));
+      expect(loadedImage, firstImage);
+      expect(loadedTap, firstTap);
+      expect(find.byKey(const Key('pvp-rewards-remaining')), findsOneWidget);
+
+      await tester.pumpWidget(screen(null));
+      expect(tester.getRect(find.byKey(key)), firstImage);
+      expect(tester.getRect(find.byKey(const Key('find-live-match'))), firstTap);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+
 }
