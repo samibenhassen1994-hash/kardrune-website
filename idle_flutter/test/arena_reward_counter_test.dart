@@ -26,8 +26,8 @@ void main() {
       final quota = tester.getRect(find.byKey(const Key('pvp-rewards-remaining')));
       expect((image.center.dx - button.center.dx).abs(), lessThan(1));
       expect((image.center.dy - button.center.dy).abs(), lessThan(1));
-      expect(button.top, lessThan(anchor.top));
-      expect(anchor.top - button.top, greaterThan(30));
+      expect((button.top - anchor.top).abs(), lessThan(1));
+      // The rendered artwork and its tap region must share actual bounds.
       expect(quota.top, greaterThanOrEqualTo(button.bottom - 1));
       expect(quota.bottom, lessThanOrEqualTo(anchor.bottom + 1));
       expect(anchor.bottom, lessThanOrEqualTo(size.height));
