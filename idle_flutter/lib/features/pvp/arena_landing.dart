@@ -55,7 +55,10 @@ class ArenaLanding extends StatelessWidget {
       // while keeping the painted frame and PvP quota in place.
       // Limit the offset on shorter viewports so the title remains visible.
       final titleRise = math.min(56.0, renderedArtHeight * .08);
-      final quotaHeight = rewardRemaining == null ? 0.0 : renderedArtHeight * .034;
+      // Reserve the reward-row height even while the server quota is loading.
+// Otherwise the START/CANCEL image abruptly shrinks when rewardRemaining
+// changes from null to a number on app startup.
+final quotaHeight = renderedArtHeight * .034;
       final small = height < 650;
       final swordsSize = small ? 76.0 : 106.0;
       return ColoredBox(
