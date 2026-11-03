@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - feature/idle-arena-start-cancel-assets
       - fix/idle-arena-title-up-15mm
       - fix/idle-arena-start-label-anchor
       - fix/idle-summon-banner-responsive-height
