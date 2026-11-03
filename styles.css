@@ -3408,3 +3408,15 @@ footer {
   }
   .site-header > .brand { flex-shrink: 0; }
 }
+
+/* A full desktop menu has more room than the 1280px page-content grid. */
+@media (min-width: 1901px) {
+  .site-header {
+    padding-inline: max(24px, calc((100vw - 1720px) / 2));
+  }
+  .site-header > .nav-links { gap: clamp(13px, 1.1vw, 22px); }
+}
+@media (max-width: 350px) {
+  .site-header > .brand span { display: none; }
+  .site-header > .brand { gap: 0; }
+}
