@@ -5,6 +5,10 @@ import {leagueFor} from '../../functions/api/_lib/ranked_leagues.js';
 const heroes=['sam','lira','rhea','dren','tor','aria','kael','neris','nyra'];
 const ranges=[[[8,9],[0,1],[0,0]],[[6,8],[1,3],[0,0]],[[2,4],[5,7],[0,0]],[[0,2],[4,6],[2,4]],[[0,0],[1,3],[6,8]],[[0,0],[0,1],[8,9]]];
 const leagues=['Bronze','Silver','Gold','Platinum','Diamond','Legend'];
+// Pregame stat quantiles only: preserve legal bounds, skill odds and combat RNG.
+// Keep weak/balanced/strong variety while making entry leagues more forgiving.
+const statQuantileScale=[.82,.8,.93,.94,1,1.05];
+const randomChoiceChance=[.9,.7,.45,.3,.15,.08];
 const syllables=['vael','mor','zyr','eld','thal','kael','drav','nyr','ael','vor','ryn','sha','tor','vel','lys','nar'];
 const pick=(items,rng)=>items[Math.floor(rng()*items.length)];
 
@@ -31,7 +35,7 @@ export function cardPower(card,style='strategic'){
 export function chooseBotCard({hand,remaining=[],points=0,style='strategic',score=[0,0]},rng){
  if(!hand.length)throw new RangeError('Empty bot hand');
  const level=leagues.indexOf(leagueFor(points).name);
- if(rng()<[.85,.6,.35,.25,.15,.1][level])return pick(hand,rng).id;
+ if(rng()<randomChoiceChance[level])return pick(hand,rng).id;
  const behind=score[0]<score[1],urgent=score[1]===1;
  const remainingPower=remaining.length?remaining.reduce((n,c)=>n+cardPower(c,style),0)/remaining.length:0;
  const ranked=hand.map(card=>{
@@ -64,7 +68,7 @@ export function generateBotDeck(points,rng){
   const pool=[...heroes];
   for(let i=0;i<counts[stage-1];i++){
    const hero=pool.splice(Math.floor(rng()*pool.length),1)[0];
-   const roll=([lo,hi])=>Math.min(hi,lo+Math.floor((band[0]+rng()*(band[1]-band[0]))*(hi-lo+1)));
+   const roll=([lo,hi])=>Math.min(hi,lo+Math.floor((band[0]+rng()*(band[1]-band[0]))*statQuantileScale[index]*(hi-lo+1)));
    let ticket=Math.floor(rng()*1000),rarity=0;
    while(rarity<5&&ticket>=SKILL_WEIGHTS[stage][rarity])ticket-=SKILL_WEIGHTS[stage][rarity++];
    const skill=pick(SKILLS.filter(s=>s.rarity===RARITIES[rarity]),rng);
