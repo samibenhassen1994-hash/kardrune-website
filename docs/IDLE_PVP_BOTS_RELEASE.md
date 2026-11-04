@@ -1,6 +1,8 @@
 # Intelligent PvP bots — release checklist
 
-The Worker defaults to `PVP_BOTS_ENABLED="false"`. A true flag alone is insufficient: the D1 `bot_results_v1=ready` marker is also required. No Firebase bot accounts, wallets, inventories or leaderboard rows are created.
+Production activation configuration: `PVP_BOTS_ENABLED="true"` after verified backup, migration 0013 and 50 passing automated tests including a full two-human simulated match. A true flag alone is insufficient: the D1 `bot_results_v1=ready` marker is also required. No Firebase bot accounts, wallets, inventories or leaderboard rows are created. Activation is global; no per-account allowlist exists.
+
+Quick disable: set `PVP_BOTS_ENABLED="false"` in `live-pvp/wrangler.jsonc` and deploy this Worker with `wrangler deploy --config live-pvp/wrangler.jsonc`. Keep that change in Git so later deployments do not re-enable the flag accidentally. Preserve database tables and existing results. Real-account gameplay remains a manual validation step.
 
 ## Activation (not performed by this change)
 

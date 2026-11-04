@@ -45,6 +45,30 @@ test('human arrival during bot allocation wins race; cancelled queue never start
  assert.equal(writes.filter(w=>w.sql.includes('pvp_bot_history')).length,0);
  lobby.drop(a);await lobby.matchBot(a);assert.equal(lobby.matches.size,0);
 });
+test('two human participants complete D20, alternating rounds, replay acknowledgements and one result',async t=>{
+ const {lobby,a,human,writes,jobs}=setup(t);
+ const b=human('b');lobby.sockets.set('b',b);lobby.waiting=null;
+ await lobby.startMatch(a,b);
+ const match=a.match;
+ const diceA=a.ws.messages.find(m=>m.type==='dice'),diceB=b.ws.messages.find(m=>m.type==='dice');
+ assert.deepEqual(diceA.rolls,[...diceB.rolls].reverse());
+ assert.equal(diceA.starter,1-diceB.starter);
+ for(let n=0;n<3&&lobby.matches.has(match.id);n++){
+  lobby.play(a,buildHand(a.deck,a.used)[0].id);
+  lobby.play(b,buildHand(b.deck,b.used)[0].id);
+  const replay=a.ws.messages.filter(m=>m.type==='round_result').at(-1);
+  assert.equal(replay.starter,(diceA.starter+n)%2);
+  assert.ok(replay.log.length>0);
+  assert.equal(match.awaiting.size,2);lobby.ready(a);
+  assert.equal(match.awaiting.size,1);lobby.ready(b);
+ }
+ await Promise.all(jobs);
+ assert.equal(lobby.matches.size,0);
+ assert.ok(match.round<=3);
+ for(const p of [a,b])assert.equal(p.ws.messages.filter(m=>m.type==='finished').length,1);
+ assert.equal(writes.filter(w=>w.sql.includes('INSERT INTO pvp_live_history')).length,1);
+ assert.equal(writes.filter(w=>w.sql.includes('INSERT INTO pvp_bot_history')).length,0);
+});
 test('missing migration disables bot creation; disconnection clears bot timers and creates no reward',async t=>{
  const {lobby,a,writes,jobs,setReady}=setup(t,false);await lobby.matchBot(a);assert.equal(lobby.matches.size,0);
  setReady(true);
