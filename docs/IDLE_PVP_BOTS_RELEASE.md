@@ -1,0 +1,29 @@
+# Intelligent PvP bots — release checklist
+
+The Worker defaults to `PVP_BOTS_ENABLED="false"`. A true flag alone is insufficient: the D1 `bot_results_v1=ready` marker is also required. No Firebase bot accounts, wallets, inventories or leaderboard rows are created.
+
+## Activation (not performed by this change)
+
+1. Back up D1 using the established operational procedure. Confirm migrations 0001–0012 and the existing ranked schema/backfill are installed (`pvp_ranked_meta.backfill_v1=done`). Migration 0013 deliberately requires that existing schema instead of recalculating historical scores.
+2. Release the Pages API and Worker code with bots still disabled. They support the old schema; the reward API detects schema capabilities before accessing bot tables.
+3. Apply `migrations/0013_idle_bot_history.sql` through the D1 migrations workflow once. Check `PRAGMA foreign_key_check`, historical ranking totals and `pvp_ranked_meta.bot_results_v1=ready`.
+4. Verify human matchmaking and rewards, then enable `PVP_BOTS_ENABLED="true"` on the Worker. Preserve the existing global lobby Durable Object namespace/storage: its per-user monotonic name counter provides uniqueness across restarts.
+5. Smoke-test two real accounts and one bot fallback. Disabling the flag stops new bot matchmaking; existing pending rewards remain claimable. Never drop the new tables to disable bots.
+
+## Behavior
+
+Humans have priority; an unmatched player receives a bot after 20–40 seconds. Server-only card decisions take up to 15 seconds, use the bot's own hand and reuse the existing D20/skill/replay combat. Names have no BOT suffix. Round readiness is automatic for the virtual participant.
+
+Historical human ranked wins seed the shared ledger without changing existing scores. New eligible wins add 25 points with the existing three-per-human-opponent restriction and a shared ten-win UTC-day quota. Loss penalties use the match-start league (0/5/10/15/20/20), allow demotions and floor at zero. Disconnect/replay forfeits incur a loss; cancelled initialization does not. Historical losses are not recalculated.
+
+Rewards retain the separate rolling-24-hour ten-claim quota shared across opponents. Bot completed wins pay 100 Shards; losses, draws and aborted bot matches pay zero. SQLite triggers and D1 transactional batches enforce revision checks, quotas, foreign keys and single credit. Bots never receive rewards. Human disconnect reward eligibility remains unchanged.
+
+## Verification
+
+Run `node --test live-pvp/tests/*.test.js scripts/*pvp*.test.mjs`.
+
+Coverage includes authenticated API requests with locally generated signing keys (not real Firebase login), pre-migration operation, all migrations on in-memory SQLite, concurrent claim/retry, wallet/ledger consistency, shared quotas, FK checks, demotions, forfeits, human-priority races, cancellation, full bot replay flow and persistent name allocation.
+
+Seed 117: 200 matches per league, repeated identically (2,400 executions total), using low/mid/high representative player stats and the actual skill combat engine. Bot wins out of 200: Bronze 102, Silver 115, Gold 107, Platinum 123, Diamond 127, Legend 102; no draws. These are reproducibility/balance observations, not production win-rate guarantees. No probabilities or outcomes were adjusted to force those rates.
+
+No remote migration, Cloudflare deploy, real-account login or mobile online smoke test was performed. Flutter source and compiled assets are unchanged.

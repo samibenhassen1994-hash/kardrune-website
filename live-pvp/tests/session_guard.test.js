@@ -18,7 +18,7 @@ test('same UID is rejected while first search or match remains active',async()=>
   globalThis.WebSocketPair=class {constructor(){const client=new Socket(),server=new Socket();client.messages=server.messages;return {0:client,1:server}}};
   globalThis.Response=class {constructor(body,options){this.body=body;Object.assign(this,options)}};
   const writes=[];
-  const db={prepare:sql=>({bind:(...args)=>({run:async()=>{writes.push({sql,args})}})})};
+  const db={prepare:sql=>({first:async()=>null,bind:(...args)=>({run:async()=>{writes.push({sql,args})}})})};
   const lobby=new PvpLobby({waitUntil:()=>{}},{DB:db});
   const deck=Array.from({length:3},(_,i)=>({id:`hero:${i}`,stage:1,attack:1,crit:0}));
   const join=uid=>lobby.fetch(new Request('https://lobby/connect',{headers:{Upgrade:'websocket','X-Player':uid,'X-Name':uid,'X-Deck':JSON.stringify(deck)}}));

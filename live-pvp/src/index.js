@@ -1,6 +1,8 @@
 import {buildHand,resolveDuelFromStarter,pickWinner,rollInitiative,starterForRound} from './rules.js';
 import {validSkillForStage,SKILL_BY_ID,SKILL_VERSION} from '../../shared/skill_catalog.js';
 import {effectiveCardStats} from '../../shared/card_stat_limits.js';
+import {allocateBotName,botWaitMs,generateBotDeck,chooseBotCard} from './bot_policy.js';
+import {botResultsReady} from '../../functions/api/_lib/bot_results.js';
 const CHOOSE_MS=30000;
 const MAX_ROUNDS=3;
 const WINS_TO_WIN=2;
@@ -76,17 +78,64 @@ export class PvpLobby {
   server.addEventListener('error',()=>this.drop(player));
   const waiting=this.waiting;this.waiting=null;
   if(waiting&&waiting.uid!==uid&&this.sockets.get(waiting.uid)===waiting){
+   this.startMatch(waiting,player);
+  }else{this.waiting=player;send(server,{type:'waiting'});
+   // Enable only after the bot history/ranking migration is installed.
+   if(this.env.PVP_BOTS_ENABLED==='true')player.botTimer=setTimeout(()=>{
+    const job=this.matchBot(player);this.state.waitUntil?.(job);
+   },botWaitMs(secureRandom));
+  }
+  return new Response(null,{status:101,webSocket:client});
+ }
+ startMatch(waiting,player){
+   clearTimeout(waiting.botTimer);clearTimeout(player.botTimer);
    const initiative=rollInitiative(secureRandom);
-   const match={id:crypto.randomUUID(),players:[waiting,player],round:0,scores:[0,0],selectTimer:null,readyTimer:null,awaiting:null,initiative};
+   const match={id:crypto.randomUUID(),players:[waiting,player],round:0,scores:[0,0],selectTimer:null,readyTimer:null,awaiting:null,initiative,initializing:true};
    waiting.match=match;player.match=match;this.matches.set(match.id,match);
+   const launch=()=>{
+   if(!this.matches.has(match.id))return;
+   match.initializing=false;
    send(waiting.ws,{type:'dice',rolls:initiative.rolls,attempts:initiative.attempts,
     starter:initiative.starter,matchId:match.id});
    send(player.ws,{type:'dice',rolls:[...initiative.rolls].reverse(),
     attempts:initiative.attempts.map(rolls=>[...rolls].reverse()),
     starter:1-initiative.starter,matchId:match.id});
    this.next(match);
-  }else{this.waiting=player;send(server,{type:'waiting'})}
-  return new Response(null,{status:101,webSocket:client});
+   };
+   // Reserve both sessions synchronously, then snapshot starting leagues.
+   // Old databases keep the original path; migration enables only snapshots,
+   // not bot matchmaking (which additionally requires the explicit flag).
+   const job=(async()=>{
+    if(await botResultsReady(this.env.DB)){
+     await this.env.DB.batch(match.players.filter(p=>!p.isBot).map(p=>this.env.DB.prepare(
+      'INSERT INTO pvp_match_starts(match_id,uid,points) SELECT ?,?,COALESCE((SELECT points FROM pvp_rankings WHERE uid=?),0)'
+     ).bind(match.id,p.uid,p.uid)));
+    }
+    launch();
+   })().catch(error=>{console.error('Match initialization failed',error);this.finish(match,'initialization_failed');});
+   this.state.waitUntil?.(job);
+   return job;
+ }
+ async matchBot(player){
+  const eligible=()=>this.waiting===player&&!player.match&&this.sockets.get(player.uid)===player;
+  if(!eligible())return;
+  try{
+   // Fail closed until the bot result writer and schema are installed.
+   const schema=await this.env.DB.prepare("SELECT value FROM pvp_ranked_meta WHERE key='bot_results_v1'").first();
+   if(schema?.value!=='ready')return;
+   const rank=await this.env.DB.prepare('SELECT points FROM pvp_rankings WHERE uid=?').bind(player.uid).first();
+   const name=await allocateBotName(this.state.storage,player.uid);
+   // Storage awaits allow real matchmaking/cancellation to run first.
+   if(!eligible())return;
+   const points=Number(rank?.points)||0;
+   const bot={uid:`virtual:${crypto.randomUUID()}`,isBot:true,name,
+    avatar:['player','guard','vassal','king'][Math.floor(secureRandom()*4)],
+    deck:generateBotDeck(points,secureRandom),points,
+    style:['aggressive','defensive','strategic'][Math.floor(secureRandom()*3)],
+    used:[],chosen:null,match:null};
+   player.startPoints=points;
+   this.waiting=null;await this.startMatch(player,bot);
+  }catch(error){console.error('Bot matchmaking unavailable',error);}
  }
  checkConnections(){
   const now=Date.now();
@@ -96,10 +145,11 @@ export class PvpLobby {
    }else send(player.ws,{type:'ping'});
   }
  }
- clearTimers(match){clearTimeout(match.selectTimer);clearTimeout(match.readyTimer);match.selectTimer=null;match.readyTimer=null}
+ clearTimers(match){clearTimeout(match.selectTimer);clearTimeout(match.readyTimer);clearTimeout(match.botTimer);match.selectTimer=null;match.readyTimer=null;match.botTimer=null}
  drop(player){
   if(this.sockets.get(player.uid)!==player)return;
   this.sockets.delete(player.uid);
+  clearTimeout(player.botTimer);
   if(this.waiting===player)this.waiting=null;
   const match=player.match;if(!match||!this.matches.has(match.id))return;
   this.finish(match,'opponent_disconnected',player.uid);
@@ -127,10 +177,17 @@ export class PvpLobby {
     if(options.length)this.play(p,options[Math.floor(Math.random()*options.length)].id,true);
    }
   },CHOOSE_MS);
+  const bot=match.players.find(p=>p.isBot);
+  if(bot){
+   const index=match.players.indexOf(bot),hand=buildHand(bot.deck,bot.used);
+   const id=chooseBotCard({hand,remaining:bot.deck.filter(c=>!bot.used.includes(c.id)),
+    points:bot.points,style:bot.style,score:[match.scores[index],match.scores[1-index]]},secureRandom);
+   match.botTimer=setTimeout(()=>this.play(bot,id),Math.floor(secureRandom()*15001));
+  }
  }
  play(player,id,automatic=false){
   const match=player.match;
-  if(!match||!this.matches.has(match.id)||match.awaiting||player.chosen)return;
+  if(!match||match.initializing||!this.matches.has(match.id)||match.awaiting||player.chosen)return;
   const card=buildHand(player.deck,player.used).find(c=>c.id===id);
   if(!card){send(player.ws,{type:'error',message:'Card not in your hand'});return}
   player.chosen=card;
@@ -157,6 +214,7 @@ export class PvpLobby {
    const late=[...match.awaiting];this.finish(match,'replay_timeout',late.length===1?late[0]:null)
   },180000);
   a.chosen=null;b.chosen=null;
+  for(const p of match.players)if(p.isBot)this.ready(p);
  }
  ready(player){
   const match=player.match;
@@ -166,6 +224,7 @@ export class PvpLobby {
  }
  finish(match,reason,leaverUid=null){
   if(!this.matches.has(match.id))return;
+  if(match.initializing){reason='initialization_cancelled';leaverUid=null;}
   this.clearTimers(match);this.matches.delete(match.id);
   const winner=leaverUid?match.players.find(p=>p.uid!==leaverUid)?.uid:null;
   const winning=winner||(reason==='completed'&&pickWinner(match.scores)!=='draw'?match.players[pickWinner(match.scores)].uid:null);
@@ -185,7 +244,17 @@ export class PvpLobby {
  async persistResult(match,a,b,winning,reason){
   for(let attempt=0;attempt<4;attempt++){
    try{
-    await this.env.DB.prepare('INSERT INTO pvp_live_history(id,player_a,player_b,score_a,score_b,winner_uid,completed_at,reason) VALUES(?,?,?,?,?,?,?,?)')
+    if(a.isBot||b.isBot){
+     const human=a.isBot?b:a,bot=a.isBot?a:b,index=match.players.indexOf(human);
+     const forfeited=['opponent_disconnected','replay_timeout'].includes(reason)&&winning===bot.uid&&!match.initializing;
+     const outcome=forfeited?'loss':reason!=='completed'?'void':winning===null?'draw':winning===human.uid?'win':'loss';
+     await this.env.DB.prepare(`INSERT INTO pvp_bot_history
+      (id,uid,bot_id,bot_name,player_score,bot_score,outcome,reason,start_points,completed_at)
+      VALUES(?,?,?,?,?,?,?,?,COALESCE((SELECT points FROM pvp_match_starts WHERE match_id=? AND uid=?),?),?) ON CONFLICT(id) DO NOTHING`)
+      .bind(match.id,human.uid,bot.uid,bot.name,match.scores[index],match.scores[1-index],outcome,reason,match.id,human.uid,human.startPoints,Date.now()).run();
+     return true;
+    }
+    await this.env.DB.prepare('INSERT INTO pvp_live_history(id,player_a,player_b,score_a,score_b,winner_uid,completed_at,reason) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO NOTHING')
      .bind(match.id,a.uid,b.uid,match.scores[0],match.scores[1],winning,Date.now(),reason).run();
     return true;
    }catch(error){
