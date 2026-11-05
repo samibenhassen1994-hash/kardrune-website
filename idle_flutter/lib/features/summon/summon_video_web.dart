@@ -11,6 +11,8 @@ class SummonVideo extends StatefulWidget {
 }
 class _SummonVideoState extends State<SummonVideo> {
   web.HTMLVideoElement? _video;
+  bool get _ios => RegExp(r'iPhone|iPad|iPod').hasMatch(web.window.navigator.userAgent);
+  Timer? _attachTimer;
   bool _finished = false;
   bool _needsTap = false;
   void _finish() {
@@ -20,9 +22,9 @@ class _SummonVideoState extends State<SummonVideo> {
     widget.onComplete();
   }
   @override
-  void dispose() { _video?.pause(); _video?.src = ''; super.dispose(); }
+  void dispose() { _attachTimer?.cancel(); _video?.pause(); _video?.src = ''; super.dispose(); }
   @override
-  Widget build(BuildContext context) => Stack(children: [
+  Widget build(BuildContext context) => _ios ? _nativeVideo() : Stack(children: [
     Positioned.fill(child: HtmlElementView.fromTagName(tagName: 'video', onElementCreated: (element) {
       final video = element as web.HTMLVideoElement;
       _video = video;
@@ -46,4 +48,37 @@ class _SummonVideoState extends State<SummonVideo> {
     }, child: const Text('▶ PLAY'))),
     Positioned(top: MediaQuery.paddingOf(context).top + 12, right: 12, child: FilledButton(onPressed: _finish, child: const Text('SKIP'))),
   ]);
+
+  Widget _nativeVideo() => HtmlElementView.fromTagName(tagName: 'div', onElementCreated: (element) {
+    final root = element as web.HTMLDivElement;
+    root.style..position = 'relative'..width = '100%'..height = '100%'..backgroundColor = 'black';
+    final video = _video = web.HTMLVideoElement();
+    video..src = 'assets/assets/idle/summon/pull_animation_1.mp4'
+      ..playsInline = true..muted = false..preload = 'metadata';
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+    video.style..width = '100%'..height = '100%'..objectFit = 'contain';
+    final play = web.HTMLButtonElement()..textContent = 'PLAY';
+    play.style..position = 'absolute'..top = '45%'..left = '35%'..width = '30%'
+      ..padding = '18px'..fontSize = '20px'..zIndex = '2';
+    final skip = web.HTMLButtonElement()..textContent = 'SKIP';
+    skip.style..position = 'absolute'..top = 'max(16px, env(safe-area-inset-top))'
+      ..right = '16px'..padding = '14px 22px'..zIndex = '3';
+    root.appendChild(video); root.appendChild(play); root.appendChild(skip);
+    void start() {
+      if (!mounted || _finished) return;
+      if (video.error != null) video.load();
+      video.play().toDart.then((_) { play.style.display = 'none'; }).catchError((Object _) {
+        play.style.display = 'block'; return null;
+      });
+    }
+    play.addEventListener('click', ((web.Event _) => start()).toJS);
+    skip.addEventListener('click', ((web.Event _) => _finish()).toJS);
+    video.addEventListener('ended', ((web.Event _) => _finish()).toJS);
+    video.addEventListener('error', ((web.Event _) { play.textContent = 'RETRY'; play.style.display = 'block'; }).toJS);
+    _attachTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (!mounted || _finished) { timer.cancel(); return; }
+      if (video.isConnected) { timer.cancel(); video.load(); start(); }
+    });
+  });
 }

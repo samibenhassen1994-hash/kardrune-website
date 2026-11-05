@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:js_interop';
 import 'package:flutter/foundation.dart';
 import 'package:web/web.dart' as web;
@@ -23,6 +24,8 @@ class GameAudio extends ChangeNotifier {
     if (context == null) return;
     context.createMediaElementSource(player).connect(music ? _musicGain! : _sfxGain!);
   }
+  bool get _ios => RegExp(r'iPhone|iPad|iPod').hasMatch(web.window.navigator.userAgent);
+  Timer? _musicSwitch;
   bool _unlocked = false;
   bool _suspended = false;
   void suspendMusic(bool value) {
@@ -66,9 +69,15 @@ class GameAudio extends ChangeNotifier {
   void music(String track) {
     if (!musicTracks.contains(track) || _track == track) return;
     _track = track;
-    _music?.pause();
-    if (_music != null) _music!.src = 'assets/assets/audio/music/$track.mp3';
-    if (_unlocked) _resume();
+    void change() {
+      _music?.pause();
+      if (_music != null) _music!.src = 'assets/assets/audio/music/$track.mp3';
+      if (_unlocked) _resume();
+    }
+    if (_ios) {
+      _musicSwitch?.cancel();
+      _musicSwitch = Timer(const Duration(milliseconds: 120), change);
+    } else { change(); }
   }
 
   void _resume() {
@@ -125,6 +134,7 @@ class GameAudio extends ChangeNotifier {
 
   @override
   void dispose() {
+    _musicSwitch?.cancel();
     web.document.removeEventListener('visibilitychange', _visibilityListener);
     _music?.pause(); _music?.src = '';
     for (final player in _sfx.values) { player.pause(); player.src = ''; }
