@@ -48,6 +48,7 @@ class _SummonScreenState extends State<SummonScreen>
     super.initState();
     _entranceController = AnimationController(
       vsync: this,
+      animationBehavior: AnimationBehavior.preserve,
       duration: const Duration(milliseconds: 420),
     );
     _entranceOffset =
@@ -191,7 +192,8 @@ class _SummonScreenState extends State<SummonScreen>
             ),
           ),
           SlideTransition(
-            position: _entranceOffset,
+            position: MediaQuery.disableAnimationsOf(context)
+                ? const AlwaysStoppedAnimation(Offset.zero) : _entranceOffset,
             transformHitTests: false,
             child: Align(
               alignment: Alignment.bottomCenter,

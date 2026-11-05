@@ -126,6 +126,7 @@ class _IdleShellState extends State<IdleShell> {
   }
 
   void _chooseTab(int value) {
+    if (value == tab && Theme.of(context).platform == TargetPlatform.iOS) return;
     _gameAudio.music(value == 2 ? 'summon_music' : 'home_music');
     _gameAudio.unlock();
     _gameAudio.effect('button_click');

@@ -26,6 +26,36 @@ class GameAudio extends ChangeNotifier {
   }
   bool get _ios => RegExp(r'iPhone|iPad|iPod').hasMatch(web.window.navigator.userAgent);
   Timer? _musicSwitch;
+  bool _disposed = false;
+  final Map<String, web.AudioBuffer> _clickBuffers = {};
+  final Map<String, web.HTMLAudioElement> _iosMusic = {};
+  web.AudioBufferSourceNode? _clickSource;
+
+  void _createContext() {
+    if (_context != null) return;
+    final context = _context = web.AudioContext();
+    _musicGain = context.createGain()..gain.value = musicVolume;
+    _sfxGain = context.createGain()..gain.value = sfxVolume;
+    _musicGain!.connect(context.destination);
+    _sfxGain!.connect(context.destination);
+  }
+
+  Future<void> _prepareClick(String name) async {
+    try {
+      final response = await web.window.fetch('assets/assets/audio/sfx/$name.mp3'.toJS).toDart;
+      if (!response.ok || _disposed) return;
+      final bytes = await response.arrayBuffer().toDart;
+      if (_disposed) return;
+      final buffer = await _context!.decodeAudioData(bytes).toDart;
+      if (!_disposed) _clickBuffers[name] = buffer;
+    } catch (_) { /* Never queue a late click after a failed load. */ }
+  }
+
+  void _stopClick() {
+    final source = _clickSource;
+    _clickSource = null;
+    if (source != null) { source.stop(); source.disconnect(); }
+  }
   bool _unlocked = false;
   bool _suspended = false;
   void suspendMusic(bool value) {
@@ -40,6 +70,7 @@ class GameAudio extends ChangeNotifier {
   GameAudio() {
     _visibilityListener = ((web.Event _) {
       if (web.document.visibilityState == 'visible') { _resume(); } else {
+        _stopClick();
         _music?.pause();
         for (final player in _sfx.values) { player.pause(); }
       }
@@ -50,17 +81,16 @@ class GameAudio extends ChangeNotifier {
     sfxEnabled = store.getItem('${_prefix}sfx') != 'false';
     musicVolume = (double.tryParse(store.getItem('${_prefix}musicVolume') ?? '') ?? .35).clamp(0,1);
     sfxVolume = (double.tryParse(store.getItem('${_prefix}sfxVolume') ?? '') ?? .70).clamp(0,1);
+    if (_ios) {
+      _createContext();
+      unawaited(_prepareClick('button_click'));
+      unawaited(_prepareClick('button_click_2'));
+    }
   }
 
   void unlock() {
-    if (_context == null) {
-      final context = _context = web.AudioContext();
-      _musicGain = context.createGain()..gain.value = musicVolume;
-      _sfxGain = context.createGain()..gain.value = sfxVolume;
-      _musicGain!.connect(context.destination);
-      _sfxGain!.connect(context.destination);
-    }
-    _context!.resume().toDart.ignore();
+    _createContext();
+    if (_context!.state != 'running') _context!.resume().toDart.ignore();
     if (_unlocked) return;
     _unlocked = true;
     _resume();
@@ -71,16 +101,27 @@ class GameAudio extends ChangeNotifier {
     _track = track;
     void change() {
       _music?.pause();
-      if (_music != null) _music!.src = 'assets/assets/audio/music/$track.mp3';
+      if (_ios) {
+        _music = _iosMusic.putIfAbsent(track, () {
+          final player = web.HTMLAudioElement()
+            ..src = 'assets/assets/audio/music/$track.mp3';
+          _connect(player, true);
+          return player;
+        });
+      } else if (_music != null) {
+        _music!.src = 'assets/assets/audio/music/$track.mp3';
+      }
       if (_unlocked) _resume();
     }
     if (_ios) {
       _musicSwitch?.cancel();
-      _musicSwitch = Timer(const Duration(milliseconds: 120), change);
+      _music?.pause();
+      _musicSwitch = Timer(Duration.zero, change);
     } else { change(); }
   }
 
   void _resume() {
+    if (_ios && (_musicSwitch?.isActive ?? false)) return;
     if (_suspended || !_unlocked || !musicEnabled || _track == null || web.document.visibilityState != 'visible') return;
     if (_music == null) {
       _music = web.HTMLAudioElement();
@@ -96,6 +137,19 @@ class GameAudio extends ChangeNotifier {
 
   void effect(String effect) {
     if (!_unlocked || !sfxEnabled || !effects.contains(effect)) return;
+    if (_ios && (effect == 'button_click' || effect == 'button_click_2')) {
+      _stopClick();
+      final buffer = _clickBuffers[effect];
+      if (buffer == null || web.document.visibilityState != 'visible') return;
+      final source = _clickSource = _context!.createBufferSource()..buffer = buffer;
+      source.connect(_sfxGain!);
+      source.addEventListener('ended', ((web.Event _) {
+        source.disconnect();
+        if (identical(_clickSource, source)) _clickSource = null;
+      }).toJS);
+      source.start();
+      return;
+    }
     final player = _sfx.putIfAbsent(effect, () {
       final audio = web.HTMLAudioElement()
         ..src = 'assets/assets/audio/sfx/$effect.mp3'..preload = 'auto';
@@ -115,7 +169,7 @@ class GameAudio extends ChangeNotifier {
   }
   void setSfxEnabled(bool value) {
     sfxEnabled = value;
-    if (!value) { for (final player in _sfx.values) { player.pause(); } }
+    if (!value) { _stopClick(); for (final player in _sfx.values) { player.pause(); } }
     web.window.localStorage.setItem('${_prefix}sfx', '$value');
     notifyListeners();
   }
@@ -134,7 +188,12 @@ class GameAudio extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _musicSwitch?.cancel();
+    _stopClick();
+    for (final player in _iosMusic.values) { player.pause(); player.src = ''; }
+    _iosMusic.clear();
+    _clickBuffers.clear();
     web.document.removeEventListener('visibilitychange', _visibilityListener);
     _music?.pause(); _music?.src = '';
     for (final player in _sfx.values) { player.pause(); player.src = ''; }
