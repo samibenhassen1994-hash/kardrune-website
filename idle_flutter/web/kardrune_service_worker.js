@@ -26,7 +26,7 @@ function cacheable(request) {
   if (relative === 'release-id.json' || relative.startsWith('api/') || /\.(mp4|webm)$/i.test(relative)) return false;
   return STATIC_FILES.has(relative) ||
       /^(assets|canvaskit|icons)\//.test(relative) ||
-      /\.(?:js|wasm|json|png|svg|webp|bin|ttf|otf)$/.test(relative);
+      /\.(?:js|wasm|json|png|svg|webp|mp3|bin|ttf|otf)$/.test(relative);
 }
 function versionedUrl(request) {
   const url = new URL(request.url);

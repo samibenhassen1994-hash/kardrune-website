@@ -31,6 +31,7 @@ import 'services/cloud_factory.dart';
 import 'services/app_update_controller.dart';
 import 'services/update_factory.dart';
 import 'services/storage_factory.dart';
+import 'services/game_audio.dart';
 import 'theme/kardrune_theme.dart';
 import 'localization/kr_localizations.dart';
 import 'localization/skill_localizations.dart';
@@ -125,6 +126,9 @@ class _IdleShellState extends State<IdleShell> {
   }
 
   void _chooseTab(int value) {
+    _gameAudio.music(value == 2 ? 'summon_music' : 'home_music');
+    _gameAudio.unlock();
+    _gameAudio.effect('button_click');
     setState(() => tab = value);
     if (value == 1) unawaited(_loadCloudDeck());
     final section = switch (value) {
@@ -169,6 +173,9 @@ class _IdleShellState extends State<IdleShell> {
   String? _introMatchId;
   bool _showOpponentIntro = false;
   late final FlameBattleAudio _flameAudio = createFlameBattleAudio();
+  late final GameAudio _gameAudio = GameAudio();
+  String? _audioDiceMatchId;
+  String? _audioFinishedMatchId;
   bool _ownsCloud = false;
   String? _quotaUid;
   int? _quotaRemaining;
@@ -181,6 +188,7 @@ class _IdleShellState extends State<IdleShell> {
   @override
   void initState() {
     super.initState();
+    _gameAudio.music('home_music');
     _saveService = widget.saveService ?? createDefaultLocalSave();
     _tutorialProgress = IdleTutorialProgress(_saveService?.storage);
     final save =
@@ -380,6 +388,12 @@ class _IdleShellState extends State<IdleShell> {
   }
 
   void _pvpFinished(String matchId, String reason, int reward) {
+    if (_audioFinishedMatchId != matchId) {
+      _audioFinishedMatchId = matchId;
+      final winner = _pvp?.arena.matchWinner;
+      if (winner == 'you') _gameAudio.effect('victory');
+      if (winner == 'opponent') _gameAudio.effect('defeat');
+    }
     if (reward == 100 && _cloud?.identity != null) {
       unawaited(_claimPvpReward(matchId));
     }
@@ -389,6 +403,7 @@ class _IdleShellState extends State<IdleShell> {
     final cloud = _cloud;
     if (cloud == null) return;
     final outcome = await cloud.claimPvpRewardOutcome(matchId);
+    if (outcome == PvpRewardClaimOutcome.credited) _gameAudio.effect('chest_reward');
     unawaited(_refreshQuota());
     if (mounted && _cloud?.identity?.uid == cloud.identity?.uid && outcome != PvpRewardClaimOutcome.alreadyClaimed) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -417,6 +432,17 @@ class _IdleShellState extends State<IdleShell> {
   }
 
   void _pvpChanged() {
+    if (_pvp?.state == LiveMatchState.arena) {
+      _gameAudio.music('battle_music');
+      final diceId = _pvp?.arena.dice?.matchId;
+      if (diceId != null && diceId != _audioDiceMatchId) {
+        _audioDiceMatchId = diceId;
+        _gameAudio.effect('dice_roll');
+      }
+    } else {
+      _gameAudio.music(_pvp?.state == LiveMatchState.connecting || _pvp?.state == LiveMatchState.waiting
+          ? 'battle_music' : tab == 2 ? 'summon_music' : 'home_music');
+    }
     _updates?.setMatchActive(_pvp?.state == LiveMatchState.arena);
     final hand = _pvp?.arena.hand;
     if (_pvp?.state == LiveMatchState.arena &&
@@ -572,6 +598,7 @@ class _IdleShellState extends State<IdleShell> {
     if (_ownsUpdates) _updates?.dispose();
     if (_ownsCloud) _cloud?.dispose();
     _flameAudio.dispose();
+    _gameAudio.dispose();
     super.dispose();
   }
 
@@ -706,7 +733,7 @@ class _IdleShellState extends State<IdleShell> {
                                           LiveMatchState.connecting ||
                                       _pvp?.state == LiveMatchState.waiting,
                                   onStart: _pvp != null && deck.length >= 3
-                                      ? _pvp!.findMatch
+                                      ? () { _gameAudio.music('battle_music'); _gameAudio.unlock(); _gameAudio.effect('button_click_2'); _pvp!.findMatch(); }
                                       : () => setState(
                                           () => tab = _cloud?.identity == null
                                               ? 3
@@ -822,6 +849,8 @@ class _IdleShellState extends State<IdleShell> {
                                       value.name,
                                     );
                                   },
+                                  audio: _gameAudio,
+                                  onAudioChanged: () => setState(() {}),
                                   cloud: _cloud,
                                   cloudMessage: _cloudInitializationMessage,
                                   onCloudRetry: _initializeCloud,
@@ -1139,6 +1168,7 @@ class _IdleShellState extends State<IdleShell> {
       Navigator.of(dialogContext).pop();
     }
 
+    _gameAudio.effect('card_reveal');
     showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -2326,6 +2356,8 @@ class _Profile extends StatelessWidget {
     required this.onLanguage,
     required this.motion,
     required this.onMotion,
+    required this.audio,
+    required this.onAudioChanged,
     required this.cloud,
     required this.cloudMessage,
     required this.onCloudRetry,
@@ -2337,6 +2369,8 @@ class _Profile extends StatelessWidget {
   final VoidCallback onLanguage;
   final MotionPreference motion;
   final ValueChanged<MotionPreference> onMotion;
+  final GameAudio audio;
+  final VoidCallback onAudioChanged;
   final CloudAccountController? cloud;
   final String cloudMessage;
   final VoidCallback onCloudRetry;
@@ -2678,14 +2712,37 @@ class _Profile extends StatelessWidget {
                 ],
               ],
             ),
-            TextButton(
+            Row(children: [
+              Expanded(child: TextButton(
               style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
               onPressed: onLanguage,
               child: Text(
                 '${context.tr('LANGUAGE')} · ${language.flag} ${language.label}',
                 style: const TextStyle(color: Color(0xffa6b9d0), fontSize: 9),
               ),
+              )),
+            IconButton(
+              key: const Key('audio-settings'),
+              onPressed: () {
+                audio.unlock();
+                showDialog<void>(context: context, builder: (dialogContext) => StatefulBuilder(
+                  builder: (context, update) => AlertDialog(
+                    title: const Text('Audio'),
+                    content: Column(mainAxisSize: MainAxisSize.min, children: [
+                      SwitchListTile(title: const Text('Music'), value: audio.musicEnabled,
+                        onChanged: (v) { audio.setMusicEnabled(v); update(() {}); onAudioChanged(); }),
+                      Slider(value: audio.musicVolume, label: 'Music volume', onChanged: (v) { audio.setMusicVolume(v); update(() {}); }),
+                      SwitchListTile(title: const Text('Sound effects'), value: audio.sfxEnabled,
+                        onChanged: (v) { audio.setSfxEnabled(v); update(() {}); onAudioChanged(); }),
+                      Slider(value: audio.sfxVolume, label: 'Effects volume', onChanged: (v) { audio.setSfxVolume(v); update(() {}); }),
+                    ]),
+                  ),
+                ));
+              },
+              tooltip: 'Audio settings',
+              icon: const Icon(Icons.volume_up, size: 16),
             ),
+            ]),
           ],
         ),
       );

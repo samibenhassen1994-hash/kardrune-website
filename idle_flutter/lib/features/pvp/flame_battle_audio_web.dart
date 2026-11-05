@@ -63,6 +63,9 @@ class _WebBattleAudio implements FlameBattleAudio {
   ) {
     final context = _context;
     if (context == null || context.state != 'running') return;
+    if (web.window.localStorage.getItem('idle-audio-v1-sfx') == 'false') return;
+    final scale = (double.tryParse(web.window.localStorage.getItem('idle-audio-v1-sfxVolume') ?? '') ?? .70).clamp(0, 1);
+    if (scale == 0) return;
     try {
       final when = context.currentTime;
       final oscillator = context.createOscillator()..type = wave;
@@ -72,7 +75,7 @@ class _WebBattleAudio implements FlameBattleAudio {
         ..exponentialRampToValueAtTime(to, when + duration);
       gain.gain
         ..setValueAtTime(.0001, when)
-        ..linearRampToValueAtTime(volume, when + .012)
+        ..linearRampToValueAtTime(volume * scale / .70, when + .012)
         ..exponentialRampToValueAtTime(.0001, when + duration);
       oscillator.connect(gain);
       gain.connect(context.destination);

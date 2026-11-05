@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -6,7 +7,7 @@ import '../../localization/kr_localizations.dart';
 
 /// Illustrated entrance to the existing live matchmaking flow.
 /// The artwork includes the frame; the button hit area and title are Flutter.
-class ArenaLanding extends StatelessWidget {
+class ArenaLanding extends StatefulWidget {
   const ArenaLanding({
     super.key,
     required this.header,
@@ -17,6 +18,7 @@ class ArenaLanding extends StatelessWidget {
     this.onLeaderboard,
     this.rewardRemaining,
     this.rewardLimit = 10,
+    this.now,
   });
 
   final VoidCallback onStart;
@@ -27,10 +29,54 @@ class ArenaLanding extends StatelessWidget {
   final bool searching;
   final int? rewardRemaining;
   final int rewardLimit;
+  final DateTime Function()? now;
+
+  @override
+  State<ArenaLanding> createState() => _ArenaLandingState();
+}
+
+class _ArenaLandingState extends State<ArenaLanding> {
+  DateTime? _startedAt;
+  Duration _elapsed = Duration.zero;
+  Timer? _tick;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.searching) _start();
+  }
+
+  void _start() {
+    _startedAt = (widget.now ?? DateTime.now)();
+    _elapsed = Duration.zero;
+    _tick?.cancel();
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _elapsed = (widget.now ?? DateTime.now)().difference(_startedAt!));
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant ArenaLanding oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.searching && !oldWidget.searching) _start();
+    if (!widget.searching && oldWidget.searching) {
+      _startedAt = null;
+      _tick?.cancel();
+      _tick = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, bounds) {
+      final seconds = _elapsed.inSeconds;
+      final elapsedText = '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}';
       final width = bounds.maxWidth;
       final height = bounds.maxHeight;
       const imageTop = 0.0;
@@ -87,7 +133,19 @@ final quotaHeight = renderedArtHeight * .034;
                     cacheWidth: 1080,
                   ),
                 ),
-                Positioned(top: 0, left: 0, right: 0, child: header),
+                Positioned(top: 0, left: 0, right: 0, child: widget.header),
+                if (widget.searching)
+                  Positioned(
+                    top: imageHeight * .36,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Text(elapsedText, key: const Key('pvp-search-elapsed'),
+                        style: const TextStyle(color: Color(0xffffdc83), fontFamily: 'Georgia',
+                          fontSize: 26, fontWeight: FontWeight.bold,
+                          shadows: [Shadow(color: Colors.black, blurRadius: 8)])),
+                    ),
+                  ),
                 Positioned(
                   top: imageTop + imageHeight * (small ? .455 : .49),
                   left: 0,
@@ -96,18 +154,18 @@ final quotaHeight = renderedArtHeight * .034;
                     child: RepaintBoundary(
                       child: DuelingSwords(
                         size: swordsSize,
-                        fighting: searching,
+                        fighting: widget.searching,
                       ),
                     ),
                   ),
                 ),
-                if (hint.isNotEmpty)
+                if (widget.hint.isNotEmpty)
                   Positioned(
                     top: imageTop + imageHeight * .425,
                     left: artWidth * .09,
                     right: artWidth * .09,
                     child: Text(
-                      hint,
+                      widget.hint,
                       maxLines: 2,
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -134,22 +192,22 @@ final quotaHeight = renderedArtHeight * .034;
                       Expanded(
                         child: Semantics(
                           button: true,
-                          label: searching
+                          label: widget.searching
                               ? context.tr('CANCEL')
                               : context.tr('START MATCH'),
                           child: InkWell(
                             key: const Key('find-live-match'),
-                            onTap: searching ? onCancel : onStart,
+                            onTap: widget.searching ? widget.onCancel : widget.onStart,
                             borderRadius: BorderRadius.circular(20),
                             child: Center(
                               child: SizedBox(
                                 width: graphicWidth,
                                 height: graphicWidth / 2,
                                 child: Image.asset(
-                                  searching
+                                  widget.searching
                                       ? 'assets/idle/arena/cancel.webp'
                                       : 'assets/idle/arena/start.webp',
-                                  key: Key(searching
+                                  key: Key(widget.searching
                                       ? 'arena-cancel-image'
                                       : 'arena-start-image'),
                                   fit: BoxFit.contain,
@@ -165,7 +223,7 @@ final quotaHeight = renderedArtHeight * .034;
                       // while both image variants share the exact same tap area.
                       SizedBox(
                         height: titleRise + quotaHeight - buttonGrowth,
-                        child: rewardRemaining == null
+                        child: widget.rewardRemaining == null
                             ? const SizedBox.shrink()
                             : Align(
                                 alignment: Alignment.bottomCenter,
@@ -175,7 +233,7 @@ final quotaHeight = renderedArtHeight * .034;
                                     child: FittedBox(
                                       fit: BoxFit.scaleDown,
                                       child: Text(
-                                        '${context.tr('PvP rewards left (24h)')}: $rewardRemaining/$rewardLimit',
+                                        '${context.tr('PvP rewards left (24h)')}: ${widget.rewardRemaining}/${widget.rewardLimit}',
                                         key: const Key('pvp-rewards-remaining'),
                                         maxLines: 1,
                                         textAlign: TextAlign.center,
@@ -197,7 +255,7 @@ final quotaHeight = renderedArtHeight * .034;
                     ],
                   ),
                 ),
-                if (onLeaderboard != null)
+                if (widget.onLeaderboard != null)
                   Positioned(
                     // Trophy in the right-hand arena banner, not under Start Match.
                     top: imageTop + imageHeight * .415,
@@ -214,7 +272,7 @@ final quotaHeight = renderedArtHeight * .034;
                         child: InkWell(
                           key: const Key('pvp-leaderboard'),
                           customBorder: const CircleBorder(),
-                          onTap: onLeaderboard,
+                          onTap: widget.onLeaderboard,
                           child: const SizedBox(
                             width: 48,height: 48,
                             child: Icon(Icons.emoji_events_rounded,

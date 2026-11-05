@@ -84,6 +84,8 @@ flutter:
     - assets/idle/summon/
     - assets/idle/summon/banners/
     - assets/idle/avatars/
+    - assets/audio/music/
+    - assets/audio/sfx/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
