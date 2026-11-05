@@ -23,7 +23,7 @@ function cacheable(request) {
   const url = new URL(request.url);
   if (url.origin !== SCOPE.origin || !url.pathname.startsWith(SCOPE.pathname)) return false;
   const relative = url.pathname.slice(SCOPE.pathname.length);
-  if (relative === 'release-id.json' || relative.startsWith('api/') || /\.(mp4|webm)$/i.test(relative)) return false;
+  if (relative === 'release-id.json' || relative.startsWith('api/') || /\.(mp3|mp4|webm)$/i.test(relative)) return false;
   return STATIC_FILES.has(relative) ||
       /^(assets|canvaskit|icons)\//.test(relative) ||
       /\.(?:js|wasm|json|png|svg|webp|mp3|bin|ttf|otf)$/.test(relative);

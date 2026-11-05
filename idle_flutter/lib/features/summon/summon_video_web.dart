@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:js_interop';
 import 'package:flutter/material.dart';
 import 'package:web/web.dart' as web;
@@ -25,14 +26,19 @@ class _SummonVideoState extends State<SummonVideo> {
     Positioned.fill(child: HtmlElementView.fromTagName(tagName: 'video', onElementCreated: (element) {
       final video = element as web.HTMLVideoElement;
       _video = video;
+      video.setAttribute('playsinline', '');
+      video.setAttribute('webkit-playsinline', '');
       video..src = 'assets/assets/idle/summon/pull_animation_1.mp4'
         ..muted = false..autoplay = true..playsInline = true;
-      video.style..width = '100%'..height = '100%'..objectFit = 'contain';
+      video.style..width = '100%'..height = '100%'..objectFit = 'contain'..pointerEvents = 'none';
       video.addEventListener('ended', ((web.Event _) => _finish()).toJS);
       video.addEventListener('error', ((web.Event _) => _finish()).toJS);
+      Timer.run(() {
+      if (!mounted || _finished) return;
       video.play().toDart.catchError((Object _) {
         if (mounted) setState(() => _needsTap = true);
         return null;
+      });
       });
     })),
     if (_needsTap) Center(child: FilledButton(onPressed: () {
