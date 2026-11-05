@@ -1175,11 +1175,16 @@ class _IdleShellState extends State<IdleShell> {
       Navigator.of(dialogContext).pop();
     }
 
-    _gameAudio.effect('card_reveal');
+    _gameAudio.suspendMusic(true);
     showDialog<void>(
       context: context,
+      useSafeArea: false,
       barrierDismissible: false,
       builder: (dialogContext) => SummonResult(
+        onVideoComplete: () {
+          _gameAudio.suspendMusic(false);
+          _gameAudio.effect('card_reveal');
+        },
         heroName: hero.name,
         stage: stage,
         asset: hero.cardAsset(hero.stages[stage - 1]),
@@ -1201,6 +1206,7 @@ class _IdleShellState extends State<IdleShell> {
             : null,
       ),
     ).whenComplete(() {
+      _gameAudio.suspendMusic(false);
       _summonOpen = false;
       if (mounted && _pendingDuplicate != null && !_snoozeDuplicate) {
         WidgetsBinding.instance.addPostFrameCallback((_) {

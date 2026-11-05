@@ -21,6 +21,7 @@ class SummonResult extends StatefulWidget {
     required this.onReplace,
     required this.onContinue,
     this.onLater,
+    this.onVideoComplete,
     this.oldAttack,
     this.oldCrit,
     this.oldSkillId,
@@ -32,6 +33,7 @@ class SummonResult extends StatefulWidget {
   final String? oldSkillId, newSkillId;
   final VoidCallback onKeep, onReplace, onContinue;
   final VoidCallback? onLater;
+  final VoidCallback? onVideoComplete;
   bool get duplicate => oldAttack != null && oldCrit != null;
   @override
   State<SummonResult> createState() => _SummonResultState();
@@ -51,6 +53,9 @@ class _SummonResultState extends State<SummonResult>
       started = true;
       if (MediaQuery.of(context).disableAnimations) {
         animation.value = 1;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) widget.onVideoComplete?.call();
+        });
       } else {
         // The original video completes or is skipped before showing the card.
       }
@@ -66,24 +71,22 @@ class _SummonResultState extends State<SummonResult>
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: false,
-    child: Dialog(
-      insetPadding: const EdgeInsets.all(10),
-      backgroundColor: const Color(0xff101c32),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xffd6b16a)),
-      ),
-      child: SizedBox(
-        width: 430,
-        height: math.min(630, MediaQuery.sizeOf(context).height * .9),
-        child: AnimatedBuilder(
-          animation: animation,
-          builder: (context, child) =>
-              animation.value < .99 ? SummonVideo(onComplete: () {
-                if (mounted) animation.value = 1;
-              }) : _result(),
-        ),
-      ),
+    child: AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) => animation.value < .99
+          ? SizedBox.expand(child: ColoredBox(color: Colors.black,
+              child: SummonVideo(onComplete: () {
+                if (!mounted) return;
+                animation.value = 1;
+                widget.onVideoComplete?.call();
+              })))
+          : Dialog(
+              insetPadding: const EdgeInsets.all(10),
+              backgroundColor: const Color(0xff101c32),
+              child: SizedBox(width: 430,
+                height: math.min(630, MediaQuery.sizeOf(context).height * .9),
+                child: _result()),
+            ),
     ),
   );
   Widget _result() => Column(

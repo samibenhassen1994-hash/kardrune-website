@@ -17,6 +17,11 @@ class GameAudio extends ChangeNotifier {
   bool musicEnabled = true, sfxEnabled = true;
   double musicVolume = .35, sfxVolume = .70;
   bool _unlocked = false;
+  bool _suspended = false;
+  void suspendMusic(bool value) {
+    _suspended = value;
+    if (value) { _music?.pause(); } else { _resume(); }
+  }
   String? _track;
   web.HTMLAudioElement? _music;
   final Map<String, web.HTMLAudioElement> _sfx = {};
@@ -53,7 +58,7 @@ class GameAudio extends ChangeNotifier {
   }
 
   void _resume() {
-    if (!_unlocked || !musicEnabled || _track == null || web.document.visibilityState != 'visible') return;
+    if (_suspended || !_unlocked || !musicEnabled || _track == null || web.document.visibilityState != 'visible') return;
     final player = _music ??= web.HTMLAudioElement();
     if (player.src.isEmpty) player.src = 'assets/assets/audio/music/$_track.mp3';
     player.loop = true;

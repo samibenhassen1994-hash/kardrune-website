@@ -11,6 +11,7 @@ class SummonVideo extends StatefulWidget {
 class _SummonVideoState extends State<SummonVideo> {
   web.HTMLVideoElement? _video;
   bool _finished = false;
+  bool _needsTap = false;
   void _finish() {
     if (_finished || !mounted) return;
     _finished = true;
@@ -25,12 +26,18 @@ class _SummonVideoState extends State<SummonVideo> {
       final video = element as web.HTMLVideoElement;
       _video = video;
       video..src = 'assets/assets/idle/summon/pull_animation_1.mp4'
-        ..muted = true..autoplay = true..playsInline = true;
+        ..muted = false..autoplay = true..playsInline = true;
       video.style..width = '100%'..height = '100%'..objectFit = 'contain';
       video.addEventListener('ended', ((web.Event _) => _finish()).toJS);
       video.addEventListener('error', ((web.Event _) => _finish()).toJS);
-      video.play().toDart.catchError((Object _) { _finish(); return null; });
+      video.play().toDart.catchError((Object _) {
+        if (mounted) setState(() => _needsTap = true);
+        return null;
+      });
     })),
-    Positioned(top: 12, right: 12, child: FilledButton(onPressed: _finish, child: const Text('SKIP'))),
+    if (_needsTap) Center(child: FilledButton(onPressed: () {
+      _video?.play().toDart.then((_) { if (mounted) setState(() => _needsTap = false); }).ignore();
+    }, child: const Text('▶ PLAY'))),
+    Positioned(top: MediaQuery.paddingOf(context).top + 12, right: 12, child: FilledButton(onPressed: _finish, child: const Text('SKIP'))),
   ]);
 }

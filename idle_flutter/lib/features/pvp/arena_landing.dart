@@ -134,18 +134,6 @@ final quotaHeight = renderedArtHeight * .034;
                   ),
                 ),
                 Positioned(top: 0, left: 0, right: 0, child: widget.header),
-                if (widget.searching)
-                  Positioned(
-                    top: imageHeight * .61,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Text(elapsedText, key: const Key('pvp-search-elapsed'),
-                        style: const TextStyle(color: Color(0xffffdc83), fontFamily: 'Georgia',
-                          fontSize: 18, fontWeight: FontWeight.bold,
-                          shadows: [Shadow(color: Colors.black, blurRadius: 8)])),
-                    ),
-                  ),
                 Positioned(
                   top: imageTop + imageHeight * (small ? .455 : .49),
                   left: 0,
@@ -219,6 +207,11 @@ final quotaHeight = renderedArtHeight * .034;
                           ),
                         ),
                       ),
+                      if (widget.searching)
+                        Padding(padding: const EdgeInsets.only(top: 6, bottom: 2),
+                          child: Text(elapsedText, key: const Key('pvp-search-elapsed'),
+                            style: const TextStyle(color: Color(0xffffdc83),
+                              fontSize: 12, fontWeight: FontWeight.bold))),
                       // The spacer retains the original PvP counter position,
                       // while both image variants share the exact same tap area.
                       SizedBox(
