@@ -175,6 +175,8 @@ class _IdleShellState extends State<IdleShell> {
   late final FlameBattleAudio _flameAudio = createFlameBattleAudio();
   late final GameAudio _gameAudio = GameAudio();
   String? _audioDiceMatchId;
+  String? _battleMusicMatchId;
+  bool _nextBossMusic = false;
   String? _audioFinishedMatchId;
   bool _ownsCloud = false;
   String? _quotaUid;
@@ -433,7 +435,12 @@ class _IdleShellState extends State<IdleShell> {
 
   void _pvpChanged() {
     if (_pvp?.state == LiveMatchState.arena) {
-      _gameAudio.music('battle_music');
+      final matchId = _pvp?.arena.dice?.matchId ?? _pvp?.arena.hand?.matchId;
+      if (matchId != null && matchId != _battleMusicMatchId) {
+        _battleMusicMatchId = matchId;
+        _gameAudio.music(_nextBossMusic ? 'boss_battle_music' : 'battle_music');
+        _nextBossMusic = !_nextBossMusic;
+      }
       final diceId = _pvp?.arena.dice?.matchId;
       if (diceId != null && diceId != _audioDiceMatchId) {
         _audioDiceMatchId = diceId;
@@ -441,7 +448,7 @@ class _IdleShellState extends State<IdleShell> {
       }
     } else {
       _gameAudio.music(_pvp?.state == LiveMatchState.connecting || _pvp?.state == LiveMatchState.waiting
-          ? 'battle_music' : tab == 2 ? 'summon_music' : 'home_music');
+          ? 'suspance_story_music' : tab == 2 ? 'summon_music' : 'home_music');
     }
     _updates?.setMatchActive(_pvp?.state == LiveMatchState.arena);
     final hand = _pvp?.arena.hand;
@@ -733,7 +740,7 @@ class _IdleShellState extends State<IdleShell> {
                                           LiveMatchState.connecting ||
                                       _pvp?.state == LiveMatchState.waiting,
                                   onStart: _pvp != null && deck.length >= 3
-                                      ? () { _gameAudio.music('battle_music'); _gameAudio.unlock(); _gameAudio.effect('button_click_2'); _pvp!.findMatch(); }
+                                      ? () { _gameAudio.music('suspance_story_music'); _gameAudio.unlock(); _gameAudio.effect('button_click_2'); _pvp!.findMatch(); }
                                       : () => setState(
                                           () => tab = _cloud?.identity == null
                                               ? 3

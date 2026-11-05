@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'summon_video.dart';
 
 import 'package:flutter/material.dart';
 
@@ -51,7 +52,7 @@ class _SummonResultState extends State<SummonResult>
       if (MediaQuery.of(context).disableAnimations) {
         animation.value = 1;
       } else {
-        animation.forward();
+        // The original video completes or is skipped before showing the card.
       }
     }
   }
@@ -78,81 +79,12 @@ class _SummonResultState extends State<SummonResult>
         child: AnimatedBuilder(
           animation: animation,
           builder: (context, child) =>
-              animation.value < .99 ? _portal(animation.value) : _result(),
+              animation.value < .99 ? SummonVideo(onComplete: () {
+                if (mounted) animation.value = 1;
+              }) : _result(),
         ),
       ),
     ),
-  );
-  Widget _portal(double t) => Stack(
-    alignment: Alignment.center,
-    children: [
-      Positioned.fill(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              colors: [
-                Color.lerp(
-                  const Color(0xff6a4387),
-                  const Color(0xffbd9bed),
-                  t,
-                )!,
-                const Color(0xff34265b),
-                const Color(0xff071124),
-              ],
-            ),
-          ),
-        ),
-      ),
-      for (var i = 0; i < 12; i++)
-        Transform.translate(
-          offset: Offset(
-            math.cos(i * math.pi / 6 + t * 3) * 108,
-            math.sin(i * math.pi / 6 + t * 3) * 108,
-          ),
-          child: Text(
-            i.isEven ? '✦' : '✧',
-            style: TextStyle(
-              fontSize: 18 + (i % 3) * 5,
-              color: const Color(0xfff8da95).withValues(alpha: .5 + t * .5),
-            ),
-          ),
-        ),
-      Transform.rotate(
-        angle: t * math.pi * 1.7,
-        child: Container(
-          width: 145,
-          height: 145,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xfff9db9c), width: 3),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x77cfabfb),
-                blurRadius: 42,
-                spreadRadius: 7,
-              ),
-            ],
-          ),
-          child: const Text(
-            '✦',
-            style: TextStyle(fontSize: 75, color: Color(0xffffdf9b)),
-          ),
-        ),
-      ),
-      const Positioned(
-        bottom: 32,
-        child: Text(
-          'SUMMONING…',
-          style: TextStyle(
-            color: Color(0xffffe3a1),
-            fontSize: 16,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 3,
-          ),
-        ),
-      ),
-    ],
   );
   Widget _result() => Column(
     children: [

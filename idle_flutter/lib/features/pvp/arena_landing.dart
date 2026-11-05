@@ -136,13 +136,13 @@ final quotaHeight = renderedArtHeight * .034;
                 Positioned(top: 0, left: 0, right: 0, child: widget.header),
                 if (widget.searching)
                   Positioned(
-                    top: imageHeight * .36,
+                    top: imageHeight * .61,
                     left: 0,
                     right: 0,
                     child: Center(
                       child: Text(elapsedText, key: const Key('pvp-search-elapsed'),
                         style: const TextStyle(color: Color(0xffffdc83), fontFamily: 'Georgia',
-                          fontSize: 26, fontWeight: FontWeight.bold,
+                          fontSize: 18, fontWeight: FontWeight.bold,
                           shadows: [Shadow(color: Colors.black, blurRadius: 8)])),
                     ),
                   ),

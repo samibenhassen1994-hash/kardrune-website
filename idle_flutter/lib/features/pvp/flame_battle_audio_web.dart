@@ -75,7 +75,7 @@ class _WebBattleAudio implements FlameBattleAudio {
         ..exponentialRampToValueAtTime(to, when + duration);
       gain.gain
         ..setValueAtTime(.0001, when)
-        ..linearRampToValueAtTime(volume * scale / .70, when + .012)
+        ..linearRampToValueAtTime(volume * 2.5 * scale / .70, when + .012)
         ..exponentialRampToValueAtTime(.0001, when + duration);
       oscillator.connect(gain);
       gain.connect(context.destination);
