@@ -785,6 +785,14 @@ abstract final class KrTranslations {
       KrLanguage.chinese: '自动',
       KrLanguage.german: 'AUTOMATISCH',
     },
+    'FULL ANIMATIONS': {
+      KrLanguage.italian: 'ANIMAZIONI COMPLETE',
+      KrLanguage.spanish: 'ANIMACIONES COMPLETAS',
+      KrLanguage.japanese: '全アニメーション',
+      KrLanguage.korean: '전체 애니메이션',
+      KrLanguage.chinese: '完整动画',
+      KrLanguage.german: 'VOLLE ANIMATIONEN',
+    },
     'FULL': {
       KrLanguage.italian: 'COMPLETE',
       KrLanguage.spanish: 'COMPLETAS',

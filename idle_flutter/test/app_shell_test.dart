@@ -560,6 +560,14 @@ void main() {
     await tester.tap(find.text('PROFILE').last);
     await tester.pump();
     expect(find.byKey(const Key('motion-reduced-selected')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('motion-full')));
+    await tester.pump();
+    expect(storage.values['idle-motion-preference-v1'], 'full');
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(KardRuneApp(saveService: service));
+    await tester.tap(find.text('PROFILE').last);
+    await tester.pump();
+    expect(find.byKey(const Key('motion-full-selected')), findsOneWidget);
   });
 
   testWidgets('selected language persists outside the game save', (

@@ -1181,6 +1181,9 @@ class _IdleShellState extends State<IdleShell> {
       useSafeArea: false,
       barrierDismissible: false,
       builder: (dialogContext) => SummonResult(
+        // iOS accessibility must not silently discard the requested video.
+        allowVideoWithReducedMotion: Theme.of(context).platform == TargetPlatform.iOS
+            && motion != MotionPreference.reduced,
         onVideoComplete: () {
           _gameAudio.suspendMusic(false);
           _gameAudio.effect('card_reveal');
@@ -2706,7 +2709,7 @@ class _Profile extends StatelessWidget {
                         child: Text(
                           context.tr(switch (value) {
                             MotionPreference.automatic => 'AUTOMATIC',
-                            MotionPreference.full => 'FULL',
+                            MotionPreference.full => 'FULL ANIMATIONS',
                             MotionPreference.reduced => 'REDUCED',
                           }),
                           style: TextStyle(

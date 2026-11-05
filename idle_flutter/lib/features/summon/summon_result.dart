@@ -22,11 +22,13 @@ class SummonResult extends StatefulWidget {
     required this.onContinue,
     this.onLater,
     this.onVideoComplete,
+    this.allowVideoWithReducedMotion = false,
     this.oldAttack,
     this.oldCrit,
     this.oldSkillId,
     this.newSkillId,
   });
+  final bool allowVideoWithReducedMotion;
   final String heroName, asset;
   final int stage, hp, newAttack, newCrit;
   final int? oldAttack, oldCrit;
@@ -51,7 +53,7 @@ class _SummonResultState extends State<SummonResult>
     super.didChangeDependencies();
     if (!started) {
       started = true;
-      if (MediaQuery.of(context).disableAnimations) {
+      if (MediaQuery.of(context).disableAnimations && !widget.allowVideoWithReducedMotion) {
         animation.value = 1;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) widget.onVideoComplete?.call();
