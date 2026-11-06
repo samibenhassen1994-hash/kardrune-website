@@ -20,7 +20,6 @@ class SummonResult extends StatefulWidget {
     required this.onKeep,
     required this.onReplace,
     required this.onContinue,
-    this.onLater,
     this.onVideoComplete,
     this.allowVideoWithReducedMotion = false,
     this.oldAttack,
@@ -34,7 +33,6 @@ class SummonResult extends StatefulWidget {
   final int? oldAttack, oldCrit;
   final String? oldSkillId, newSkillId;
   final VoidCallback onKeep, onReplace, onContinue;
-  final VoidCallback? onLater;
   final VoidCallback? onVideoComplete;
   bool get duplicate => oldAttack != null && oldCrit != null;
   @override
@@ -160,11 +158,6 @@ class _SummonResultState extends State<SummonResult>
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Color(0xffacbdd5), fontSize: 8),
                   ),
-                  if (widget.onLater != null)
-                    TextButton(
-                      onPressed: widget.onLater,
-                      child: Text(context.tr('LATER')),
-                    ),
                 ],
               )
             : _button(

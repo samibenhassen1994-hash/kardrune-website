@@ -66,6 +66,10 @@ abstract final class KrTranslations {
   };
 
   static const _catalog = <String, Map<KrLanguage, String>>{
+"{name} uses {skill}": {KrLanguage.italian:"{name} usa {skill}",KrLanguage.spanish:"{name} usa {skill}",KrLanguage.japanese:"{name}が{skill}を使用",KrLanguage.korean:"{name}: {skill} 사용",KrLanguage.chinese:"{name}使用{skill}",KrLanguage.german:"{name} setzt {skill} ein"},
+"{name} deals {damage} damage": {KrLanguage.italian:"{name} infligge {damage} danni",KrLanguage.spanish:"{name} inflige {damage} de daño",KrLanguage.japanese:"{name}が{damage}ダメージを与えた",KrLanguage.korean:"{name}: 피해 {damage}",KrLanguage.chinese:"{name}造成{damage}点伤害",KrLanguage.german:"{name} verursacht {damage} Schaden"},
+"{name} restores {hp} HP": {KrLanguage.italian:"{name} recupera {hp} HP",KrLanguage.spanish:"{name} recupera {hp} HP",KrLanguage.japanese:"{name}のHPが{hp}回復",KrLanguage.korean:"{name}: HP {hp} 회복",KrLanguage.chinese:"{name}恢复{hp}点HP",KrLanguage.german:"{name} regeneriert {hp} HP"},
+
 "Prepare for combat": {KrLanguage.italian:"Preparati al combattimento",KrLanguage.spanish:"Prepárate para el combate",KrLanguage.japanese:"戦闘に備えよう",KrLanguage.korean:"전투를 준비하세요",KrLanguage.chinese:"准备战斗",KrLanguage.german:"Mach dich kampfbereit"},
 "ROUND COMPLETE": {KrLanguage.italian:"ROUND COMPLETATO",KrLanguage.spanish:"RONDA COMPLETADA",KrLanguage.japanese:"ラウンド終了",KrLanguage.korean:"라운드 종료",KrLanguage.chinese:"回合结束",KrLanguage.german:"RUNDE ABGESCHLOSSEN"},
 "MATCH ENDED": {KrLanguage.italian:"PARTITA TERMINATA",KrLanguage.spanish:"PARTIDA TERMINADA",KrLanguage.japanese:"対戦終了",KrLanguage.korean:"경기 종료",KrLanguage.chinese:"对局结束",KrLanguage.german:"PARTIE BEENDET"},

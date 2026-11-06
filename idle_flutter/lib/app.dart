@@ -181,7 +181,6 @@ class _IdleShellState extends State<IdleShell> {
   List<String> deck = [];
   Map<String, Object?>? _pendingDuplicate;
   bool _summonOpen = false;
-  bool _snoozeDuplicate = false;
   bool _summonRequestPending = false;
   String? _pendingOnlineRollId;
   MotionPreference motion = MotionPreference.automatic;
@@ -1226,22 +1225,15 @@ class _IdleShellState extends State<IdleShell> {
         onKeep: () => decide(dialogContext, false),
         onReplace: () => decide(dialogContext, true),
         onContinue: () => Navigator.of(dialogContext).pop(),
-        onLater: duplicate
-            ? () {
-                _snoozeDuplicate = true;
-                Navigator.of(dialogContext).pop();
-              }
-            : null,
       ),
     ).whenComplete(() {
       _gameAudio.suspendMusic(false);
       _summonOpen = false;
-      if (mounted && _pendingDuplicate != null && !_snoozeDuplicate) {
+      if (mounted && _pendingDuplicate != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _resumeDuplicate();
         });
       }
-      _snoozeDuplicate = false;
     });
   }
 

@@ -31,3 +31,21 @@ test('slow or failed startup offers retry without exposing a blank game',()=>{
  b.events['flutter-first-frame']();assert.equal(root.style.opacity,'0');
  b.window.kardruneLoadingError();assert.equal(root.style.opacity,'0');
 });
+
+test('installed legacy landing redirects before content while browsers keep install page',()=>{
+ const html=readFileSync(new URL('../idle.html',import.meta.url),'utf8');
+ const script=html.match(/<script>([\s\S]*?)<\/script>/)[1];
+ for(const standalone of [false,true]) {
+  let redirected=null;const style={};
+  runInNewContext(script,{navigator:{standalone},matchMedia:()=>({matches:false}),document:{documentElement:{style}},location:{replace:url=>redirected=url}});
+  assert.equal(redirected,standalone?'/idle/':null);
+  assert.equal(style.visibility,standalone?'hidden':undefined);
+ }
+ assert.ok(html.indexOf('location.replace')<html.indexOf('<body'));
+});
+test('desktop loading has same dimensions as game frame',()=>{
+ const html=readFileSync(new URL('../idle_flutter/web/index.html',import.meta.url),'utf8');
+ assert.match(html,/@media \(min-width:900px\) \{ #kr-loading/);
+ assert.match(html,/width:430px; height:min\(100dvh,780px\)/);
+ assert.equal((html.match(/id="idle-game-frame"/g)||[]).length,1);
+});

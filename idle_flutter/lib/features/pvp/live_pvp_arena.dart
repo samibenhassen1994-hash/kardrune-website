@@ -37,6 +37,11 @@ class ArenaViewController extends ChangeNotifier {
   int lastDamage = 0;
   bool lastCritical = false;
   String actionText = '';
+  final List<Map<String, dynamic>> battleLog = [];
+  void _recordLog(Map<String, dynamic> event) {
+    battleLog.add(event);
+    if (battleLog.length > 2) battleLog.removeAt(0);
+  }
   bool attackWindup = false;
   bool matchFinished = false;
   int skillSerial = 0, skillActor = -1, skillTarget = -1;
@@ -97,6 +102,7 @@ class ArenaViewController extends ChangeNotifier {
     lastDamage = 0;
     lastCritical = false;
     actionText = '';
+    battleLog.clear();
     attackWindup = false;
     _replaying = false;
     _replaySequence++;
@@ -148,6 +154,7 @@ class ArenaViewController extends ChangeNotifier {
     battleStarted = true;
     popup = 'BATTLE START';
     actionText = 'Prepare for combat';
+    battleLog.clear();
     effect = null;
     notifyListeners();
     final token = generation;
@@ -219,6 +226,7 @@ class ArenaViewController extends ChangeNotifier {
             ? 'SKILL ACTIVATED'
             : skill.name.toUpperCase();
         effect = actionText;
+        _recordLog({'actor': skillActor, 'skillId': lastSkillId, 'kind': 'skill'});
         notifyListeners();
         if (hitDuration > Duration.zero) {
           await Future<void>.delayed(const Duration(milliseconds: 310));
@@ -243,6 +251,8 @@ class ArenaViewController extends ChangeNotifier {
         actionText =
             SkillCatalog.byId(log['skillId'] as String?)?.name.toUpperCase() ??
             kind.toUpperCase();
+        _recordLog({'actor': localIndex(log['source'] as int? ?? log['actor'] as int? ?? 0),
+          'skillId': effectSkillId, 'kind': kind, 'amount': log['heal'] ?? log['damage'] ?? 0});
         effect = kind == 'heal'
             ? '+${log['heal'] ?? 0} HP'
             : kind == 'dodge'
@@ -273,6 +283,7 @@ class ArenaViewController extends ChangeNotifier {
           : '-${log['damage']} HP';
       lastDamage = log['damage'] as int;
       lastCritical = log['critical'] == true;
+      _recordLog({'actor': attackActor, 'kind': 'hit', 'amount': lastDamage, 'critical': lastCritical});
       notifyListeners();
       if (hitDuration > Duration.zero) {
         await Future<void>.delayed(const Duration(milliseconds: 390));
@@ -366,6 +377,7 @@ class ArenaViewController extends ChangeNotifier {
     diceVisible = diceSettled = diceResultVisible = false;
     attackWindup = false;
     actionText = '';
+    battleLog.clear();
     _replaying = false;
     lastDamage = 0;
     lastCritical = false;
@@ -875,7 +887,9 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                   ),
                                   const SizedBox(height: 5),
                                   Text(
-                                    _localizedAction(context, c.actionText),
+                                    battleLogText(context, c, widget.playerName),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
                                     key: const Key('pvp-attack-direction'),
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(
@@ -969,7 +983,9 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                     ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    _localizedAction(context, c.actionText),
+                                    battleLogText(context, c, widget.playerName),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
                                       color: Color(0xffffd993),
                                       fontSize: 13,
@@ -1808,4 +1824,26 @@ String _localizedAction(BuildContext context, String text) {
     if (text == skill.name.toUpperCase()) return skill.localized(context).name.toUpperCase();
   }
   return context.tr(text);
+}
+
+String battleLogText(BuildContext context, ArenaViewController controller, String playerName) {
+  if (controller.battleLog.isEmpty) {
+    return _localizedAction(context, controller.attackWindup ? 'Prepare for combat' : controller.actionText);
+  }
+  return controller.battleLog.map((event) {
+    final actor = event['actor'] == 0
+        ? controller.hand?.playerName ?? playerName
+        : controller.hand?.opponent ?? context.tr('OPPONENT');
+    final skill = SkillCatalog.byId(event['skillId'] as String?)?.localized(context);
+    final amount = event['amount'] ?? 0;
+    if (event['kind'] == 'hit' || event['kind'] == 'dot') {
+      final damage = context.tr('{name} deals {damage} damage').replaceAll('{name}', actor).replaceAll('{damage}', '$amount');
+      return '$damage${event['critical'] == true ? ' · ${context.tr('CRITICAL!')}' : ''}';
+    }
+    if (event['kind'] == 'heal') {
+      return context.tr('{name} restores {hp} HP').replaceAll('{name}', actor).replaceAll('{hp}', '$amount');
+    }
+    return context.tr('{name} uses {skill}').replaceAll('{name}', actor)
+        .replaceAll('{skill}', skill?.name ?? context.tr('SKILL ACTIVATED'));
+  }).join('\n');
 }

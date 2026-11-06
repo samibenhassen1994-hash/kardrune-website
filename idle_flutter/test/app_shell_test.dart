@@ -42,7 +42,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(KrTranslations.translate(language, 'DUPLICATE CARD')), findsOneWidget);
       expect(find.text(KrTranslations.translate(language, 'KEEP CURRENT · +100')), findsOneWidget);
-      expect(find.text(KrTranslations.translate(language, 'LATER')), findsOneWidget);
+      expect(find.text(KrTranslations.translate(language, 'LATER')), findsNothing);
       expect(tester.takeException(), isNull);
     });
   }
