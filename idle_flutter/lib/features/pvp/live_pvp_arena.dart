@@ -40,7 +40,7 @@ class ArenaViewController extends ChangeNotifier {
   final List<Map<String, dynamic>> battleLog = [];
   void _recordLog(Map<String, dynamic> event) {
     battleLog.add(event);
-    if (battleLog.length > 2) battleLog.removeAt(0);
+    if (battleLog.length > 5) battleLog.removeAt(0);
   }
   bool attackWindup = false;
   bool matchFinished = false;
@@ -886,18 +886,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                     ),
                                   ),
                                   const SizedBox(height: 5),
-                                  Text(
-                                    battleLogText(context, c, widget.playerName),
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
-                                    key: const Key('pvp-attack-direction'),
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      color: Color(0xffffe2a4),
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
+                                  BattleEventLog(controller: c, playerName: widget.playerName),
                                   const SizedBox(height: 5),
                                   SizedBox(
                                     height: bounds.maxHeight < 620 ? 165 : 250,
@@ -982,15 +971,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                       ),
                                     ),
                                   const SizedBox(height: 8),
-                                  Text(
-                                    battleLogText(context, c, widget.playerName),
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Color(0xffffd993),
-                                      fontSize: 13,
-                                    ),
-                                  ),
+                                  BattleEventLog(controller: c, playerName: widget.playerName),
                                   const SizedBox(height: 24),
                                   ElevatedButton(
                                     key: const Key('pvp-complete'),
@@ -1830,7 +1811,10 @@ String battleLogText(BuildContext context, ArenaViewController controller, Strin
   if (controller.battleLog.isEmpty) {
     return _localizedAction(context, controller.attackWindup ? 'Prepare for combat' : controller.actionText);
   }
-  return controller.battleLog.map((event) {
+  return controller.battleLog.map((event) => _battleEventText(context, controller, playerName, event)).join('\n');
+}
+
+String _battleEventText(BuildContext context, ArenaViewController controller, String playerName, Map<String, dynamic> event) {
     final actor = event['actor'] == 0
         ? controller.hand?.playerName ?? playerName
         : controller.hand?.opponent ?? context.tr('OPPONENT');
@@ -1845,5 +1829,30 @@ String battleLogText(BuildContext context, ArenaViewController controller, Strin
     }
     return context.tr('{name} uses {skill}').replaceAll('{name}', actor)
         .replaceAll('{skill}', skill?.name ?? context.tr('SKILL ACTIVATED'));
-  }).join('\n');
+}
+
+
+class BattleEventLog extends StatelessWidget {
+  const BattleEventLog({super.key, required this.controller, required this.playerName});
+  final ArenaViewController controller;
+  final String playerName;
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: 80,
+    width: double.infinity,
+    child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+      if (controller.battleLog.isEmpty)
+        Text(battleLogText(context, controller, playerName), style: const TextStyle(fontSize: 11)),
+      for (final event in controller.battleLog)
+        SizedBox(height: 16, width: double.infinity, child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(_battleEventText(context, controller, playerName, event),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+              color: event['kind'] == 'hit' || event['kind'] == 'dot'
+                ? (event['actor'] == 0 ? const Color(0xff79ffae) : const Color(0xffff7777))
+                : SkillCatalog.byId(event['skillId'] as String?)?.color ?? const Color(0xffffe2a4)),
+          ),
+        )),
+    ]),
+  );
 }

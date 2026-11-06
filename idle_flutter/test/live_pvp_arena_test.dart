@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:idle_kardrune/game/skill_catalog.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_kardrune/features/pvp/live_pvp_arena.dart';
 import 'package:idle_kardrune/services/live_pvp_socket.dart';
@@ -9,6 +10,26 @@ const cards = [
   PvpCard(id: 'dren:1', hero: 'dren', stage: 1, attack: 65, crit: 7),
 ];
 void main() {
+  testWidgets('five battle events fit 320px with damage and skill colors', (tester) async {
+    final controller = ArenaViewController();
+    controller.battleLog.addAll([
+      {'actor': 0, 'kind': 'hit', 'amount': 20},
+      {'actor': 1, 'kind': 'hit', 'amount': 30},
+      {'actor': 0, 'kind': 'skill', 'skillId': 'C1'},
+      {'actor': 0, 'kind': 'hit', 'amount': 40},
+      {'actor': 1, 'kind': 'hit', 'amount': 50},
+    ]);
+    await tester.pumpWidget(MaterialApp(home: Center(child: SizedBox(width: 296,
+      child: BattleEventLog(controller: controller, playerName: 'Sam')))));
+    final labels = tester.widgetList<Text>(find.descendant(of: find.byType(BattleEventLog), matching: find.byType(Text))).toList();
+    expect(labels.length, 5);
+    expect(labels[0].style!.color, const Color(0xff79ffae));
+    expect(labels[1].style!.color, const Color(0xffff7777));
+    expect(labels[2].style!.color, SkillCatalog.byId('C1')!.color);
+    expect(tester.takeException(), isNull);
+    controller.dispose();
+  });
+
   testWidgets('authoritative dice intro shows both rolls before card choice', (
     tester,
   ) async {
