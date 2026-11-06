@@ -49,7 +49,16 @@
     #idle-side-art::before { left: -24px; background-position: 50% 40%; background-image: linear-gradient(100deg,rgba(6,14,31,.35),rgba(6,14,31,.65)),url("assets/assets/idle/cards/young_sam/Sam_Last_Guardian_stage_3.webp"); }
     #idle-side-art::after { right: -24px; background-position: 50% 40%; background-image: linear-gradient(260deg,rgba(6,14,31,.35),rgba(6,14,31,.65)),url("assets/assets/idle/cards/aria/Aria_Fallen_Arcanist_stage_3.webp"); }
   }
+  #kr-loading { position:fixed; inset:0; z-index:2147483647; background:#070e20; display:flex; align-items:center; justify-content:center; opacity:1; transition:opacity .2s; }
+  #kr-loading img { width:100%; height:100%; object-fit:contain; }
+  #kr-loading-status { position:absolute; bottom:max(20px,env(safe-area-inset-bottom)); left:0; right:0; text-align:center; color:#ffe1a0; font:16px Georgia,serif; background:#070e20df; padding:12px; }
+  #kr-loading-status::before { content:''; display:inline-block; width:16px; height:16px; border:2px solid #765c34; border-top-color:#ffe1a0; border-radius:50%; margin-right:10px; vertical-align:middle; animation:kr-spin 1s linear infinite; }
+  #kr-retry { display:block; margin:12px auto 0; padding:10px 24px; color:#ffe1a0; background:#15233c; border:1px solid #d3a859; border-radius:8px; }
+  #kr-retry[hidden] { display:none; }
+  @keyframes kr-spin { to { transform:rotate(360deg); } }
+  @media(prefers-reduced-motion:reduce) { #kr-loading-status::before { animation:none; } #kr-loading { transition:none; } }
 </style>
+<link rel="preload" as="image" href="arena_loading.webp">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -68,6 +77,11 @@
   <link rel="manifest" href="/idle/manifest.json?v=kr-icon-2">
 </head>
 <body>
+  <div id="kr-loading" role="status" aria-live="polite">
+    <img src="arena_loading.webp" alt="KardRune Arena" fetchpriority="high">
+    <div id="kr-loading-status"><span id="kr-loading-text">Loading...</span><button id="kr-retry" hidden>Retry</button></div>
+  </div>
+  <script src="boot-loading.js?v=987539d"></script>
   <div id="idle-side-art" aria-hidden="true"></div>
   <div id="idle-game-frame" aria-label="Idle KardRune"></div>
   <!--
@@ -115,14 +129,14 @@
     if(old && old!==uid) await window.kardrunePushUnsubscribe();
   };
 </script>
-  <script src="flutter_bootstrap.js?v=c40c949" async></script>
+  <script src="flutter_bootstrap.js?v=987539d" onerror="window.kardruneLoadingError?.()" async></script>
   <script>
     // A version endpoint lets iOS home-screen PWAs detect deploys even without
     // a service-worker updatefound event. Keep all game data in local storage.
     (() => {
       const releaseUrl = new URL('release-id.json', document.baseURI);
       // CI replaces this marker before Flutter builds its service-worker manifest.
-      const bundledRelease = 'c40c949';
+      const bundledRelease = '987539d';
       let checking = false, needsUpdate = false, pendingRelease = null;
       let registration = null, requested = false;
       function workerUrl(release) {
