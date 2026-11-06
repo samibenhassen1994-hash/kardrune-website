@@ -2,7 +2,7 @@
  * Never cache /api/ responses, authenticated requests, WebSockets or video.
  * This also supersedes the legacy /idle/sw.js cache on activation.
  */
-const RELEASE = 'a1d0ba4';
+const RELEASE = 'b5ace12';
 const CACHE_NAME = `idle-kardrune-flutter-${RELEASE}`;
 const SCOPE = new URL(self.registration.scope);
 const SHELL = ['./', './index.html', './manifest.json', './flutter_bootstrap.js', './main.dart.js'];
