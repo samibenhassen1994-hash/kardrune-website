@@ -55,6 +55,7 @@
   #kr-loading-status::before { content:''; display:inline-block; width:16px; height:16px; border:2px solid #765c34; border-top-color:#ffe1a0; border-radius:50%; margin-right:10px; vertical-align:middle; animation:kr-spin 1s linear infinite; }
   #kr-retry { display:block; margin:12px auto 0; padding:10px 24px; color:#ffe1a0; background:#15233c; border:1px solid #d3a859; border-radius:8px; }
   #kr-retry[hidden] { display:none; }
+  @media (min-width:900px) { #kr-loading { inset:auto; width:430px; height:min(100dvh,780px); left:50%; top:50%; transform:translate(-50%,-50%); } }
   @keyframes kr-spin { to { transform:rotate(360deg); } }
   @media(prefers-reduced-motion:reduce) { #kr-loading-status::before { animation:none; } #kr-loading { transition:none; } }
 </style>
@@ -81,9 +82,10 @@
     <img src="arena_loading.webp" alt="KardRune Arena" fetchpriority="high">
     <div id="kr-loading-status"><span id="kr-loading-text">Loading...</span><button id="kr-retry" hidden>Retry</button></div>
   </div>
-  <script src="boot-loading.js?v=f1cda24"></script>
+  <script src="boot-loading.js?v=bdd13b6"></script>
   <div id="idle-side-art" aria-hidden="true"></div>
   <div id="idle-game-frame" aria-label="Idle KardRune"></div>
+
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
@@ -129,14 +131,14 @@
     if(old && old!==uid) await window.kardrunePushUnsubscribe();
   };
 </script>
-  <script src="flutter_bootstrap.js?v=f1cda24" onerror="window.kardruneLoadingError?.()" async></script>
+  <script src="flutter_bootstrap.js?v=bdd13b6" onerror="window.kardruneLoadingError?.()" async></script>
   <script>
     // A version endpoint lets iOS home-screen PWAs detect deploys even without
     // a service-worker updatefound event. Keep all game data in local storage.
     (() => {
       const releaseUrl = new URL('release-id.json', document.baseURI);
       // CI replaces this marker before Flutter builds its service-worker manifest.
-      const bundledRelease = 'f1cda24';
+      const bundledRelease = 'bdd13b6';
       let checking = false, needsUpdate = false, pendingRelease = null;
       let registration = null, requested = false;
       function workerUrl(release) {
