@@ -116,7 +116,7 @@ class _SummonScreenState extends State<SummonScreen>
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Summon unavailable: $error')));
+        ).showSnackBar(SnackBar(content: Text(context.tr('Summon unavailable. Try again later.'))));
       }
     } finally {
       if (mounted) {

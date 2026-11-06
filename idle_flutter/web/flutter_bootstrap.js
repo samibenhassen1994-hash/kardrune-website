@@ -12,5 +12,11 @@ for (const build of _flutter.buildConfig.builds) {
 _flutter.loader.load({
   // Embed Flutter inside an actual phone-width element rather than resizing
   // the flutter-view canvas after engine initialization.
-  config: { hostElement: document.getElementById('idle-game-frame') }
+  config: { hostElement: document.getElementById('idle-game-frame') },
+  onEntrypointLoaded: async (initializer) => {
+    try {
+      const runner = await initializer.initializeEngine({hostElement: document.getElementById('idle-game-frame')});
+      await runner.runApp();
+    } catch (_) { window.kardruneLoadingError?.(); }
+  }
 });

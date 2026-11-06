@@ -32,6 +32,11 @@ void main() {
     'important UI sections are translated in every non-English language',
     () {
       const keys = [
+        'DUPLICATE CARD', 'NEW HERO UNLOCKED', 'Compare both cards, then choose which one to keep.',
+        'KEEP CURRENT · +100', 'REPLACE', 'KEEP = +100 SHARDS  ·  REPLACE = NEW STATS',
+        '▲ GREEN: BETTER    ▼ RED: WORSE', 'YOUR CARD', 'NEW CARD', 'ADDED TO YOUR COLLECTION',
+        'ENTERING THE ARENA', 'YOUR OPPONENT', 'Music', 'Sound effects',
+
         'VIEW EFFECT',
         'RUNE ADVENTURER',
         'UPLOAD LOCAL',

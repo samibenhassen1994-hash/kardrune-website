@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../localization/kr_localizations.dart';
 import 'dart:js_interop';
 import 'package:flutter/material.dart';
 import 'package:web/web.dart' as web;
@@ -45,8 +46,8 @@ class _SummonVideoState extends State<SummonVideo> {
     })),
     if (_needsTap) Center(child: FilledButton(onPressed: () {
       _video?.play().toDart.then((_) { if (mounted) setState(() => _needsTap = false); }).ignore();
-    }, child: const Text('▶ PLAY'))),
-    Positioned(top: MediaQuery.paddingOf(context).top + 12, right: 12, child: FilledButton(onPressed: _finish, child: const Text('SKIP'))),
+    }, child: Text('▶ ${context.tr('PLAY')}'))),
+    Positioned(top: MediaQuery.paddingOf(context).top + 12, right: 12, child: FilledButton(onPressed: _finish, child: Text(context.tr('SKIP')))),
   ]);
 
   Widget _nativeVideo() => HtmlElementView.fromTagName(tagName: 'div', onElementCreated: (element) {
@@ -58,10 +59,10 @@ class _SummonVideoState extends State<SummonVideo> {
     video.setAttribute('playsinline', '');
     video.setAttribute('webkit-playsinline', '');
     video.style..width = '100%'..height = '100%'..objectFit = 'contain';
-    final play = web.HTMLButtonElement()..textContent = 'PLAY';
+    final play = web.HTMLButtonElement()..textContent = context.tr('PLAY');
     play.style..position = 'absolute'..top = '45%'..left = '35%'..width = '30%'
       ..padding = '18px'..fontSize = '20px'..zIndex = '2';
-    final skip = web.HTMLButtonElement()..textContent = 'SKIP';
+    final skip = web.HTMLButtonElement()..textContent = context.tr('SKIP');
     skip.style..position = 'absolute'..top = 'max(16px, env(safe-area-inset-top))'
       ..right = '16px'..padding = '14px 22px'..zIndex = '3';
     root.appendChild(video); root.appendChild(play); root.appendChild(skip);
@@ -75,7 +76,7 @@ class _SummonVideoState extends State<SummonVideo> {
     play.addEventListener('click', ((web.Event _) => start()).toJS);
     skip.addEventListener('click', ((web.Event _) => _finish()).toJS);
     video.addEventListener('ended', ((web.Event _) => _finish()).toJS);
-    video.addEventListener('error', ((web.Event _) { play.textContent = 'RETRY'; play.style.display = 'block'; }).toJS);
+    video.addEventListener('error', ((web.Event _) { play.textContent = context.tr('RETRY'); play.style.display = 'block'; }).toJS);
     _attachTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
       if (!mounted || _finished) { timer.cancel(); return; }
       if (video.isConnected) { timer.cancel(); video.load(); start(); }

@@ -397,6 +397,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 570));
     await tester.pump(const Duration(milliseconds: 130));
     expect(c.effect, contains('CRITICAL!'));
+    expect(find.textContaining('REPLAY'), findsNothing);
     await tester.pump(const Duration(seconds: 2));
     expect(find.textContaining('ROUND WON'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));

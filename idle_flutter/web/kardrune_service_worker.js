@@ -7,6 +7,8 @@ const CACHE_NAME = `idle-kardrune-flutter-${RELEASE}`;
 const SCOPE = new URL(self.registration.scope);
 const SHELL = ['./', './index.html', './manifest.json', './flutter_bootstrap.js', './main.dart.js'];
 const CORE_ASSETS = [
+  './arena_loading.webp',
+  './boot-loading.js',
   './assets/assets/idle/arena/arena_background.webp',
   './assets/assets/idle/arena/background_deck.webp',
   './assets/assets/idle/arena/background_fight_idlearena.webp',

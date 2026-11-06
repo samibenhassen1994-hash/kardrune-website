@@ -95,7 +95,7 @@ class _SummonResultState extends State<SummonResult>
     children: [
       const SizedBox(height: 14),
       Text(
-        widget.duplicate ? 'DUPLICATE CARD' : 'NEW HERO UNLOCKED',
+        context.tr(widget.duplicate ? 'DUPLICATE CARD' : 'NEW HERO UNLOCKED'),
         style: const TextStyle(
           fontFamily: 'Georgia',
           fontSize: 20,
@@ -105,7 +105,7 @@ class _SummonResultState extends State<SummonResult>
       ),
       const SizedBox(height: 4),
       Text(
-        '${widget.heroName.toUpperCase()} · STAGE ${widget.stage}',
+        '${widget.heroName.toUpperCase()} · ${context.tr('STAGE')} ${widget.stage}',
         style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w800,
@@ -115,9 +115,9 @@ class _SummonResultState extends State<SummonResult>
       Padding(
         padding: const EdgeInsets.all(8),
         child: Text(
-          widget.duplicate
+          context.tr(widget.duplicate
               ? 'Compare both cards, then choose which one to keep.'
-              : 'A new champion joins your collection!',
+              : 'A new champion joins your collection!'),
           textAlign: TextAlign.center,
           style: const TextStyle(color: Color(0xffb4c2d6), fontSize: 10),
         ),
@@ -155,8 +155,8 @@ class _SummonResultState extends State<SummonResult>
                     ],
                   ),
                   const SizedBox(height: 7),
-                  const Text(
-                    'KEEP = +100 SHARDS  ·  REPLACE = NEW STATS',
+                  Text(
+                    context.tr('KEEP = +100 SHARDS  ·  REPLACE = NEW STATS'),
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Color(0xffacbdd5), fontSize: 8),
                   ),
@@ -214,8 +214,8 @@ class _SummonResultState extends State<SummonResult>
         ],
       ),
       const SizedBox(height: 10),
-      const Text(
-        '▲ GREEN: BETTER    ▼ RED: WORSE',
+      Text(
+        context.tr('▲ GREEN: BETTER    ▼ RED: WORSE'),
         style: TextStyle(
           color: Color(0xffd2dfef),
           fontSize: 11,
@@ -228,7 +228,7 @@ class _SummonResultState extends State<SummonResult>
   Widget _card(String label, int atk, int crit, bool old) => Column(
     children: [
       Text(
-        label,
+        context.tr(label),
         style: TextStyle(
           color: old ? const Color(0xffd9e3ee) : const Color(0xffffd88b),
           fontSize: 12,
@@ -308,9 +308,9 @@ class _SummonResultState extends State<SummonResult>
     return Semantics(
       label:
           '$label $value${better
-              ? ' improved'
+              ? ' ${context.tr('BETTER')}'
               : worse
-              ? ' worse'
+              ? ' ${context.tr('WORSE')}'
               : ''}',
       child: Container(
         height: 43,
@@ -334,7 +334,7 @@ class _SummonResultState extends State<SummonResult>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              label,
+              context.tr(label),
               maxLines: 1,
               style: const TextStyle(
                 color: Color(0xffeff5ff),
@@ -385,7 +385,7 @@ class _SummonResultState extends State<SummonResult>
           SizedBox(
             width: 47,
             child: Text(
-              label,
+              context.tr(label),
               style: const TextStyle(
                 color: Color(0xffffd88b),
                 fontWeight: FontWeight.w900,
@@ -449,8 +449,8 @@ class _SummonResultState extends State<SummonResult>
         ),
       ),
       const SizedBox(height: 12),
-      const Text(
-        'ADDED TO YOUR COLLECTION',
+      Text(
+        context.tr('ADDED TO YOUR COLLECTION'),
         style: TextStyle(
           color: Color(0xff85e4b0),
           fontSize: 11,
@@ -497,7 +497,7 @@ class _SummonResultState extends State<SummonResult>
     child: FittedBox(
       fit: BoxFit.scaleDown,
       child: Text(
-        label,
+        context.tr(label),
         maxLines: 1,
         style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
       ),

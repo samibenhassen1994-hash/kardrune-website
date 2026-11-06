@@ -61,7 +61,9 @@ class KardRuneApp extends StatelessWidget {
   final bool enableCloudBootstrap;
   final int Function()? nowMs;
   @override
-  Widget build(BuildContext context) => MaterialApp(
+  Widget build(BuildContext context) => _AppLocaleHost(builder: (language, changeLanguage) => MaterialApp(
+    locale: language.locale,
+    builder: (context, child) => KrLocaleScope(language: language, child: child!),
     debugShowCheckedModeBanner: false,
     title: 'Idle KardRune',
     theme: KardRuneTheme.data,
@@ -72,6 +74,7 @@ class KardRuneApp extends StatelessWidget {
     ],
     supportedLocales: KrLanguage.values.map((value) => value.locale).toList(),
     home: IdleShell(
+      onLanguageChanged: changeLanguage,
       random: random ?? math.Random().nextDouble,
       saveService: saveService,
       cloudController: cloudController,
@@ -80,13 +83,29 @@ class KardRuneApp extends StatelessWidget {
       enableCloudBootstrap: enableCloudBootstrap,
       nowMs: nowMs ?? (() => DateTime.now().millisecondsSinceEpoch),
     ),
-  );
+  ));
+}
+
+class _AppLocaleHost extends StatefulWidget {
+  const _AppLocaleHost({required this.builder});
+  final Widget Function(KrLanguage, ValueChanged<KrLanguage>) builder;
+  @override
+  State<_AppLocaleHost> createState() => _AppLocaleHostState();
+}
+
+class _AppLocaleHostState extends State<_AppLocaleHost> {
+  KrLanguage language = KrLanguage.fromCode(ui.PlatformDispatcher.instance.locale.languageCode);
+  @override
+  Widget build(BuildContext context) => widget.builder(language, (value) {
+    if (mounted && value != language) setState(() => language = value);
+  });
 }
 
 class IdleShell extends StatefulWidget {
   const IdleShell({
     super.key,
     required this.random,
+    this.onLanguageChanged,
     this.saveService,
     this.cloudController,
     this.liveMatchCoordinator,
@@ -94,6 +113,7 @@ class IdleShell extends StatefulWidget {
     required this.enableCloudBootstrap,
     required this.nowMs,
   });
+  final ValueChanged<KrLanguage>? onLanguageChanged;
   final RandomRoll random;
   final LocalSaveService? saveService;
   final CloudAccountController? cloudController;
@@ -240,7 +260,10 @@ class _IdleShellState extends State<IdleShell> {
           ui.PlatformDispatcher.instance.locale.languageCode,
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _openTutorial(IdleTutorialSection.arena);
+      if (mounted) {
+        widget.onLanguageChanged?.call(language);
+        _openTutorial(IdleTutorialSection.arena);
+      }
     });
     final daily = GameRules.dailyRewardState(
       DailyRewardState(day: practiceDay, count: practiceCount),
@@ -939,6 +962,7 @@ class _IdleShellState extends State<IdleShell> {
     );
     if (selected == null || selected == language || !mounted) return;
     setState(() => language = selected);
+    widget.onLanguageChanged?.call(selected);
     _saveService?.storage.write(_languageKey, selected.code);
   }
 
@@ -1272,8 +1296,8 @@ class _OpponentIntro extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'YOUR OPPONENT',
+            Text(
+              context.tr('YOUR OPPONENT'),
               style: TextStyle(
                 color: Color(0xffffd78c),
                 fontSize: 13,
@@ -1321,8 +1345,8 @@ class _OpponentIntro extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'ENTERING THE ARENA',
+            Text(
+              context.tr('ENTERING THE ARENA'),
               style: TextStyle(
                 color: Color(0xffb7c9df),
                 fontSize: 11,
@@ -1562,7 +1586,7 @@ class _Eyebrow extends StatelessWidget {
       const SizedBox(width: 27, child: Divider(color: Color(0x5ce8bd66))),
       const SizedBox(width: 10),
       Text(
-        'ARENA OF THE RUNES',
+        context.tr('ARENA OF THE RUNES'),
         style: TextStyle(
           color: const Color(0xffe7bf68),
           fontSize: compact ? 8 : 9,
@@ -1846,9 +1870,9 @@ class _CardsState extends State<_Cards> {
                 ('all', _t('TUTTE', 'ALL')),
                 ('missing', _t('BLOCCATE', 'LOCKED')),
               ])
-                Padding(
+                Expanded(child: Padding(
                   padding: const EdgeInsets.only(right: 5),
-                  child: ChoiceChip(
+                  child: FittedBox(fit: BoxFit.scaleDown, child: ChoiceChip(
                     label: Text(item.$2),
                     selected: ownership == item.$1,
                     showCheckmark: false,
@@ -1861,9 +1885,8 @@ class _CardsState extends State<_Cards> {
                     ),
                     selectedColor: const Color(0xff795d2c),
                     backgroundColor: const Color(0xff1b2c46),
-                  ),
-                ),
-              const Spacer(),
+                  )),
+                )),
               IconButton(
                 key: const Key('collection-toggle-filters'),
                 tooltip: _t('Filtri avanzati', 'Advanced filters'),
@@ -1882,9 +1905,9 @@ class _CardsState extends State<_Cards> {
                 Expanded(
                   child: _dropdown(stageFilter, [
                     ('all', _t('TUTTI GLI STAGE', 'ALL STAGES')),
-                    ('1', 'STAGE 1'),
-                    ('2', 'STAGE 2'),
-                    ('3', 'STAGE 3'),
+                    ('1', '${context.tr('STAGE')} 1'),
+                    ('2', '${context.tr('STAGE')} 2'),
+                    ('3', '${context.tr('STAGE')} 3'),
                   ], (v) => setState(() => stageFilter = v)),
                 ),
                 const SizedBox(width: 6),
@@ -2597,7 +2620,7 @@ class _Profile extends StatelessWidget {
                       style: const TextStyle(fontSize: 9),
                     ),
                     if (cloud!.identity == null && cloud!.mobileHandoff)
-                      const Text('Accesso gestito dall’app KardRune')
+                      Text(context.tr('Login managed by the KardRune app'))
                     else if (cloud!.identity == null)
                       Row(
                         children: [
@@ -2744,19 +2767,19 @@ class _Profile extends StatelessWidget {
                 audio.unlock();
                 showDialog<void>(context: context, builder: (dialogContext) => StatefulBuilder(
                   builder: (context, update) => AlertDialog(
-                    title: const Text('Audio'),
+                    title: Text(context.tr('Audio')),
                     content: Column(mainAxisSize: MainAxisSize.min, children: [
-                      SwitchListTile(title: const Text('Music'), value: audio.musicEnabled,
+                      SwitchListTile(title: Text(context.tr('Music')), value: audio.musicEnabled,
                         onChanged: (v) { audio.setMusicEnabled(v); update(() {}); onAudioChanged(); }),
-                      Slider(value: audio.musicVolume, label: 'Music volume', onChanged: (v) { audio.setMusicVolume(v); update(() {}); }),
-                      SwitchListTile(title: const Text('Sound effects'), value: audio.sfxEnabled,
+                      Slider(value: audio.musicVolume, label: context.tr('Music volume'), onChanged: (v) { audio.setMusicVolume(v); update(() {}); }),
+                      SwitchListTile(title: Text(context.tr('Sound effects')), value: audio.sfxEnabled,
                         onChanged: (v) { audio.setSfxEnabled(v); update(() {}); onAudioChanged(); }),
-                      Slider(value: audio.sfxVolume, label: 'Effects volume', onChanged: (v) { audio.setSfxVolume(v); update(() {}); }),
+                      Slider(value: audio.sfxVolume, label: context.tr('Effects volume'), onChanged: (v) { audio.setSfxVolume(v); update(() {}); }),
                     ]),
                   ),
                 ));
               },
-              tooltip: 'Audio settings',
+              tooltip: context.tr('Audio settings'),
               icon: const Icon(Icons.volume_up, size: 16),
             ),
             ]),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:idle_kardrune/localization/kr_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_kardrune/app.dart';
 import 'package:idle_kardrune/models/player_save.dart';
@@ -17,6 +18,35 @@ class _MemoryStorage implements KeyValueStorage {
 }
 
 void main() {
+  for (final language in KrLanguage.values) {
+    testWidgets('duplicate dialog inherits ${language.code} at 320px', (tester) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final storage = _MemoryStorage();
+      storage.values['idle-language-v1'] = language.code;
+      await tester.pumpWidget(KardRuneApp(random: () => 0,
+        saveService: LocalSaveService(storage)));
+      await tester.pumpAndSettle();
+      for (final section in ['PROFILE', 'CARDS', 'ARENA']) {
+        await tester.tap(find.text(KrTranslations.translate(language, section)).last);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: '${language.code}: $section at 320px');
+      }
+      await tester.tap(find.text(KrTranslations.translate(language, 'SUMMON')).last);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('summon-paid-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('summon-paid-button')));
+      await tester.pumpAndSettle();
+      expect(find.text(KrTranslations.translate(language, 'DUPLICATE CARD')), findsOneWidget);
+      expect(find.text(KrTranslations.translate(language, 'KEEP CURRENT · +100')), findsOneWidget);
+      expect(find.text(KrTranslations.translate(language, 'LATER')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   for (final size in const [
     Size(320, 568),
     Size(375, 667),

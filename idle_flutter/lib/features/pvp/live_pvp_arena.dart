@@ -865,8 +865,8 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                               Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Text(
-                                    'BATTLE ARENA',
+                                  Text(
+                                    context.tr('BATTLE ARENA'),
                                     style: TextStyle(
                                       color: Color(0xffffd993),
                                       fontWeight: FontWeight.bold,
@@ -875,7 +875,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                   ),
                                   const SizedBox(height: 5),
                                   Text(
-                                    c.actionText,
+                                    _localizedAction(context, c.actionText),
                                     key: const Key('pvp-attack-direction'),
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(
@@ -884,11 +884,6 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                       fontWeight: FontWeight.w900,
                                     ),
                                   ),
-                                  if (c.replaying)
-                                    TextButton(
-                                      onPressed: c.skipReplay,
-                                      child: Text(context.tr('SKIP REPLAY')),
-                                    ),
                                   const SizedBox(height: 5),
                                   SizedBox(
                                     height: bounds.maxHeight < 620 ? 165 : 250,
@@ -974,7 +969,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                     ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    c.actionText,
+                                    _localizedAction(context, c.actionText),
                                     style: const TextStyle(
                                       color: Color(0xffffd993),
                                       fontSize: 13,
@@ -984,8 +979,8 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                   ElevatedButton(
                                     key: const Key('pvp-complete'),
                                     onPressed: widget.onComplete,
-                                    child: const Text(
-                                      'COMPLETE',
+                                    child: Text(
+                                      context.tr('COMPLETE'),
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -1061,7 +1056,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'USED ' + c.used.length.toString(),
+                                  '${context.tr('USED')} ${c.used.length}',
                                   key: const Key('discard-count'),
                                   style: const TextStyle(fontSize: 11),
                                 ),
@@ -1092,8 +1087,8 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        const Text(
-                                          'USED',
+                                        Text(
+                                          context.tr('USED'),
                                           style: TextStyle(fontSize: 9),
                                         ),
                                       ],
@@ -1201,8 +1196,8 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        const Text(
-                                          'DECK',
+                                        Text(
+                                          context.tr('DECK'),
                                           style: TextStyle(fontSize: 9),
                                         ),
                                       ],
@@ -1212,8 +1207,8 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                               ),
                             ),
                             if (c.automatic)
-                              const Text(
-                                'TIME EXPIRED — RANDOM CARD SELECTED',
+                              Text(
+                                context.tr('TIME EXPIRED — RANDOM CARD SELECTED'),
                                 style: TextStyle(
                                   color: Colors.orangeAccent,
                                   fontSize: 11,
@@ -1806,4 +1801,11 @@ class _KrV2DieState extends State<_KrV2Die>
       ),
     );
   }
+}
+
+String _localizedAction(BuildContext context, String text) {
+  for (final skill in SkillCatalog.skills) {
+    if (text == skill.name.toUpperCase()) return skill.localized(context).name.toUpperCase();
+  }
+  return context.tr(text);
 }
