@@ -26,6 +26,8 @@ test('persistent name allocation survives new allocator calls',async()=>{
  assert.equal(values.get('bot-name-sequence:player'),'10000');
 });
 test('waiting and league penalty boundaries',()=>{
- assert.equal(botWaitMs(()=>0),20000);assert.equal(botWaitMs(()=>.999999),40000);
+ assert.equal(botWaitMs(()=>0),15000);assert.equal(botWaitMs(()=>.999999),25000);
+ assert.equal(botWaitMs(()=>.5),20000);
+ assert.equal(new Set([0,.25,.5,.75,.999999].map(v=>botWaitMs(()=>v))).size,5);
  assert.deepEqual([0,100,250,500,900,1500].map(lossPenalty),[0,5,10,15,20,20]);
 });

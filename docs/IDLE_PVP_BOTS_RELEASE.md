@@ -14,7 +14,7 @@ Quick disable: set `PVP_BOTS_ENABLED="false"` in `live-pvp/wrangler.jsonc` and d
 
 ## Behavior
 
-Humans have priority; an unmatched player receives a bot after 20–40 seconds. Server-only card decisions take up to 15 seconds, use the bot's own hand and reuse the existing D20/skill/replay combat. Names have no BOT suffix. Round readiness is automatic for the virtual participant.
+Humans have priority; an unmatched player receives a bot after 15–25 seconds. Server-only card decisions take up to 15 seconds, use the bot's own hand and reuse the existing D20/skill/replay combat. Names have no BOT suffix. Round readiness is automatic for the virtual participant.
 
 Historical human ranked wins seed the shared ledger without changing existing scores. New eligible wins add 25 points with the existing three-per-human-opponent restriction and a shared ten-win UTC-day quota. Loss penalties use the match-start league (0/5/10/15/20/20), allow demotions and floor at zero. Disconnect/replay forfeits incur a loss; cancelled initialization does not. Historical losses are not recalculated.
 

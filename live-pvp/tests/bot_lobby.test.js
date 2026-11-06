@@ -78,3 +78,17 @@ test('missing migration disables bot creation; disconnection clears bot timers a
  assert.equal(rows.length,1);assert.equal(rows[0].args[6],'loss');
  assert.equal(lobby.matches.size,0);
 });
+
+test('human match cancels bot deadline and cannot create a second match',async t=>{
+ const {lobby,a,human}=setup(t);
+ let fired=0;
+ a.botTimer=setTimeout(()=>{fired++;return lobby.matchBot(a);},15000);
+ t.mock.timers.tick(14999);
+ const b=human('b');lobby.sockets.set('b',b);lobby.waiting=null;
+ lobby.startMatch(a,b);
+ t.mock.timers.tick(10001);
+ assert.equal(fired,0);
+ assert.equal(lobby.matches.size,1);
+ assert.equal(a.match,b.match);
+ assert.equal(a.match.players.some(p=>p.isBot),false);
+});
