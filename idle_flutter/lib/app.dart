@@ -23,6 +23,8 @@ import 'features/pvp/flame_battle_audio.dart';
 import 'features/pvp/arena_landing.dart';
 import 'features/pvp/league_leaderboard.dart';
 import 'features/clans/clans_screen.dart';
+import 'features/clans/clan_invite_persistence.dart';
+import 'features/clans/clan_share.dart';
 import 'models/player_save.dart';
 import 'services/local_save_service.dart';
 import 'services/live_pvp_socket.dart';
@@ -213,10 +215,14 @@ class _IdleShellState extends State<IdleShell> {
     super.initState();
     _gameAudio.music('home_music');
     _saveService = widget.saveService ?? createDefaultLocalSave();
-    _pendingClanInvite = Uri.base.queryParameters['clan'] ?? _saveService?.storage.read('idle-clan-invite-v1');
-    if (_pendingClanInvite != null && RegExp(r'^[a-f0-9-]{32,36}$').hasMatch(_pendingClanInvite!)) {
-      _saveService?.storage.write('idle-clan-invite-v1', _pendingClanInvite!);
-    } else { _pendingClanInvite = null; }
+    // Each URL invite is a one-shot navigation request, not a startup screen.
+    // Preserve it only while an account-login redirect is in progress.
+    final incomingClanInvite = Uri.base.queryParameters['clan'];
+    _pendingClanInvite = ClanInvitePersistence.read(
+      _saveService?.storage,
+      incoming: incomingClanInvite,
+    );
+    if (incomingClanInvite != null) clearClanInviteUrl();
     _tutorialProgress = IdleTutorialProgress(_saveService?.storage);
     final save =
         _saveService?.load(nowMs: widget.nowMs()) ?? PlayerSave.initial();
@@ -349,13 +355,32 @@ class _IdleShellState extends State<IdleShell> {
     }
     _clansOpen = true;
     final uid = cloud.identity?.uid;
-    await showDialog<void>(context:context, useSafeArea:false, builder:(dialogContext)=>ClansScreen(
-      api:cloud.api, signedIn:uid!=null, invite:invite,
-      accountCurrent:()=>cloud.identity?.uid==uid,
-      onLogin:(){Navigator.pop(dialogContext); _chooseTab(3);},
-    ));
-    _clansOpen = false;
-    if(mounted) _maybeOpenClanInvite();
+    var continuingToLogin = false;
+    try {
+      await showDialog<void>(
+        context: context,
+        useSafeArea: false,
+        builder: (dialogContext) => ClansScreen(
+          api: cloud.api,
+          signedIn: uid != null,
+          invite: invite,
+          accountCurrent: () => cloud.identity?.uid == uid,
+          onLogin: () {
+            continuingToLogin = true;
+            Navigator.pop(dialogContext);
+            _chooseTab(3);
+          },
+        ),
+      );
+    } finally {
+      _clansOpen = false;
+      if (invite != null && !continuingToLogin) {
+        // This invite was viewed or dismissed: do not reopen it next launch.
+        _pendingClanInvite = null;
+        ClanInvitePersistence.clear(_saveService?.storage);
+      }
+      if (mounted) _maybeOpenClanInvite();
+    }
   }
 
   void _cloudChanged() {
