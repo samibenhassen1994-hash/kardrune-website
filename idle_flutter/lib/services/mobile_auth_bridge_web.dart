@@ -5,6 +5,7 @@ import 'package:web/web.dart' as web;
 
 const _readyKey = 'kardrune-mobile-auth-ready';
 const _completeKey = 'kardrune-mobile-auth-complete';
+const _errorKey = 'kardrune-mobile-auth-error';
 
 bool get isMobileArenaHandoff =>
     Uri.parse(web.window.location.href).queryParameters['embedded'] ==
@@ -12,8 +13,7 @@ bool get isMobileArenaHandoff =>
 
 Future<String> waitForMobileCode() async {
   final completer = Completer<String>();
-  web.window.localStorage.removeItem(_completeKey);
-  web.window.localStorage.removeItem(_readyKey);
+  clearMobileAuthSignals();
   late final web.EventListener listener;
   listener = ((web.Event event) {
     final message = event as web.MessageEvent;
@@ -43,5 +43,18 @@ Future<String> waitForMobileCode() async {
   }
 }
 
-void markMobileAuthComplete() =>
-    web.window.localStorage.setItem(_completeKey, '1');
+void markMobileAuthComplete() {
+  web.window.localStorage.removeItem(_errorKey);
+  web.window.localStorage.setItem(_completeKey, '1');
+}
+
+void markMobileAuthFailure(String code) {
+  web.window.localStorage.removeItem(_completeKey);
+  web.window.localStorage.setItem(_errorKey, code);
+}
+
+void clearMobileAuthSignals() {
+  web.window.localStorage.removeItem(_readyKey);
+  web.window.localStorage.removeItem(_completeKey);
+  web.window.localStorage.removeItem(_errorKey);
+}

@@ -46,7 +46,7 @@ test('mobile handoff verifies Firebase, binds UID, expires and consumes once', a
             async first() {
               const row = rows.get(args[0]);
               if (!row || row.expiresAt <= args[1]) return null;
-              rows.delete(args[0]);
+              if (sql.startsWith('DELETE')) rows.delete(args[0]);
               return {uid: row.uid};
             },
           };
@@ -135,4 +135,49 @@ test('custom token signer supports escaped or multiline PEM secrets', async () =
       Buffer.from(signature, 'base64url'),
       new TextEncoder().encode(header + '.' + payload)), true);
   }
+});
+
+test('server signing failure does not consume the one-time handoff code', async () => {
+  const code = 'a'.repeat(43);
+  const hash = await (async () => {
+    const bytes = await webcrypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(code),
+    );
+    return Buffer.from(bytes).toString('base64url');
+  })();
+  const rows = new Map([
+    [hash, {uid: 'same-firebase-uid', expiresAt: Math.floor(Date.now() / 1000) + 60}],
+  ]);
+  const db = {
+    prepare(sql) {
+      return {
+        bind(...args) {
+          return {
+            async first() {
+              const row = rows.get(args[0]);
+              if (!row || row.expiresAt <= args[1]) return null;
+              if (sql.startsWith('DELETE')) rows.delete(args[0]);
+              return {uid: row.uid};
+            },
+          };
+        },
+      };
+    },
+  };
+  const response = await exchange({
+    request: new Request('https://kardrune.com/api/mobile-auth/exchange', {
+      method: 'POST',
+      headers: {origin: 'https://kardrune.com'},
+      body: JSON.stringify({code}),
+    }),
+    env: {
+      DB: db,
+      FIREBASE_SERVICE_ACCOUNT_EMAIL: 'test@example.invalid',
+      FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY: 'configured-but-invalid',
+    },
+  });
+
+  assert.equal(response.status, 503);
+  assert.equal(rows.has(hash), true);
 });

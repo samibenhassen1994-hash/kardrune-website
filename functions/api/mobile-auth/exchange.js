@@ -27,11 +27,18 @@ export async function onRequestPost({request, env}) {
       return json({error: 'Invalid code'}, 400);
     }
     const now = Math.floor(Date.now() / 1000);
-    const result = await env.DB.prepare(
+    const hash = await codeHash(code);
+    const pending = await env.DB.prepare(
+      'SELECT uid FROM mobile_auth_handoffs WHERE code_hash=? AND expires_at>?',
+    ).bind(hash, now).first();
+    if (!pending?.uid) return json({error: 'Code expired or already used'}, 401);
+    const token = await customToken(pending.uid, env);
+    const consumed = await env.DB.prepare(
       'DELETE FROM mobile_auth_handoffs WHERE code_hash=? AND expires_at>? RETURNING uid',
-    ).bind(await codeHash(code), now).first();
-    if (!result?.uid) return json({error: 'Code expired or already used'}, 401);
-    const token = await customToken(result.uid, env);
+    ).bind(hash, now).first();
+    if (consumed?.uid !== pending.uid) {
+      return json({error: 'Code expired or already used'}, 401);
+    }
     return json({customToken: token});
   } catch (error) { return failure(error); }
 }
