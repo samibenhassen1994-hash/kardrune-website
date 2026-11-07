@@ -21,6 +21,7 @@
     if (new URLSearchParams(location.search).get('embedded') === 'android') {
       localStorage.removeItem('kardrune-mobile-auth-ready');
       localStorage.removeItem('kardrune-mobile-auth-complete');
+      localStorage.removeItem('kardrune-mobile-auth-error');
     }
   </script>
 

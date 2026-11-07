@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../features/profile/cloud_account_controller.dart';
 import '../models/player_save.dart';
 import 'api_client.dart';
@@ -16,23 +18,55 @@ Future<CloudAccountController?> createDefaultCloudController(
 ) async {
   const apiOrigin = String.fromEnvironment('IDLE_API_ORIGIN');
   final transport = HttpApiTransport(apiOrigin: apiOrigin);
-  final auth = await FirebaseAuthService.initialize(
-    ApiClient(_PublicOnlyAuth(), transport),
-  );
-  if (auth == null) return null;
   final mobileHandoff = isMobileArenaHandoff;
+  FirebaseAuthService? auth;
+  try {
+    auth = await FirebaseAuthService.initialize(
+      ApiClient(_PublicOnlyAuth(), transport),
+    );
+  } catch (_) {
+    if (mobileHandoff) markMobileAuthFailure('network_failed');
+    rethrow;
+  }
+  if (auth == null) {
+    if (mobileHandoff) markMobileAuthFailure('firebase_failed');
+    return null;
+  }
   if (mobileHandoff) {
-    await auth.signOut();
-    final code = await waitForMobileCode();
-    final response = await ApiClient(
-      _PublicOnlyAuth(),
-      transport,
-    ).postPublic('/api/mobile-auth/exchange', {'code': code});
+    try {
+      await auth.signOut();
+    } catch (_) {
+      markMobileAuthFailure('firebase_failed');
+      rethrow;
+    }
+    late final String code;
+    try {
+      code = await waitForMobileCode();
+    } on TimeoutException {
+      markMobileAuthFailure('handoff_timeout');
+      rethrow;
+    }
+    late final Map<String, Object?> response;
+    try {
+      response = await ApiClient(
+        _PublicOnlyAuth(),
+        transport,
+      ).postPublic('/api/mobile-auth/exchange', {'code': code});
+    } catch (_) {
+      markMobileAuthFailure('firebase_failed');
+      rethrow;
+    }
     final token = response['customToken'];
     if (token is! String || token.isEmpty) {
+      markMobileAuthFailure('firebase_failed');
       throw const FormatException('Invalid mobile authentication response');
     }
-    await auth.auth.signInWithCustomToken(token);
+    try {
+      await auth.auth.signInWithCustomToken(token);
+    } catch (_) {
+      markMobileAuthFailure('firebase_failed');
+      rethrow;
+    }
   }
   return CloudAccountController(
     auth: auth,
@@ -49,5 +83,7 @@ Future<void> completeMobileBootstrap(CloudAccountController controller) async {
   if (controller.state == CloudAccountState.synced ||
       controller.state == CloudAccountState.review) {
     markMobileAuthComplete();
+  } else if (controller.state == CloudAccountState.error) {
+    markMobileAuthFailure('sync_failed');
   }
 }

@@ -18,7 +18,12 @@ void main() {
       ),
     );
     expect(index, contains('<title>Idle KardRune</title>'));
-    expect(index, contains('<meta name="apple-mobile-web-app-title" content="Idle KardRune">'));
+    expect(
+      index,
+      contains(
+        '<meta name="apple-mobile-web-app-title" content="Idle KardRune">',
+      ),
+    );
     expect(index, contains('<link rel="manifest" href="/idle/manifest.json'));
     // The desktop frame is an actual Flutter host, not CSS-resized canvas.
     expect(index, contains('id="idle-game-frame"'));
@@ -32,6 +37,10 @@ void main() {
     expect(index, contains('kardrune-update-available'));
     expect(index, contains('kardrune-apply-update'));
     expect(index, contains('release-id.json'));
+    expect(
+      index,
+      contains("localStorage.removeItem('kardrune-mobile-auth-error')"),
+    );
     expect(index, contains('visibilitychange'));
     final worker = File('web/kardrune_service_worker.js').readAsStringSync();
     expect(worker, contains('__KARDRUNE_PACKAGED_RELEASE__'));
