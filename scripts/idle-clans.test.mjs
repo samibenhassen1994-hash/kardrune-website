@@ -7,7 +7,7 @@ import {onRequestGet,onRequestPost} from '../functions/api/clans.js';
 const migration=readFileSync(new URL('../migrations/0014_idle_clans.sql',import.meta.url),'utf8');
 const id=n=>n.toString(16).padStart(32,'0');
 function setup(){
- const sql=new DatabaseSync(':memory:');sql.exec(`PRAGMA foreign_keys=ON;CREATE TABLE players(uid TEXT PRIMARY KEY,display_name TEXT,avatar TEXT,is_banned INTEGER DEFAULT 0);INSERT INTO players(uid,display_name,avatar) VALUES('a','Sam','player'),('b','B','player'),('c','C','player');`);sql.exec(migration);
+ const sql=new DatabaseSync(':memory:');sql.exec(`PRAGMA foreign_keys=ON;CREATE TABLE players(uid TEXT PRIMARY KEY,display_name TEXT,avatar TEXT,is_banned INTEGER DEFAULT 0);INSERT INTO players(uid,display_name,avatar) VALUES('a','Sam','player'),('b','B','player'),('c','C','player');`);sql.exec(migration);sql.exec("CREATE TABLE player_roles(uid TEXT PRIMARY KEY REFERENCES players(uid),role TEXT);");
  let pending=Promise.resolve();
  const db={prepare(text){let args=[];return {bind(...values){args=values;return this;},async first(){return sql.prepare(text).get(...args)||null;},async all(){return {results:sql.prepare(text).all(...args)};},async run(){return sql.prepare(text).run(...args);}};},batch(stmts){const job=pending.then(async()=>{sql.exec('BEGIN');try{const out=[];for(const stmt of stmts)out.push(await stmt.run());sql.exec('COMMIT');return out;}catch(e){sql.exec('ROLLBACK');throw e;}});pending=job.catch(()=>{});return job;}};
  return {sql,db};
@@ -68,4 +68,21 @@ test('API requires verified Firebase auth for mutations; unconfigured schema fai
  assert.equal((await onRequestPost({request,env:{FIREBASE_PROJECT_ID:'test'}})).status,401);
  const get=await onRequestGet({request:new Request('https://test/api/clans'),env:{}});assert.equal(get.status,503);
  assert.equal(clanFailure(new Error('no such table: idle_clans')).status,503);
+});
+
+test('only game admin can delete clans; retries preserve players and creation limits',async()=>{
+ const {db,sql}=setup();await create(db,'a',1);await join(db,'b',2);
+ const before=sql.prepare('SELECT * FROM players ORDER BY uid').all();
+ const body={action:'delete',clanId:id(1),requestId:id(9),confirm:true};
+ assert.equal((await clanMutate(db,'a',body)).status,403);
+ sql.exec("INSERT INTO player_roles VALUES('c','admin')");
+ assert.equal((await clanMutate(db,'c',{...body,confirm:false})).status,400);
+ const me=await (await clanRead(new Request('https://test/api/clans?me=1'),db,'c')).json();assert.equal(me.canDelete,true);
+ assert.equal((await clanMutate(db,'c',body)).status,200);
+ assert.equal((await clanMutate(db,'c',body)).status,200);
+ assert.equal(sql.prepare('SELECT COUNT(*) n FROM idle_clans').get().n,0);
+ assert.equal(sql.prepare('SELECT COUNT(*) n FROM idle_clan_members').get().n,0);
+ assert.equal(sql.prepare('SELECT COUNT(*) n FROM idle_clan_creation_limits').get().n,1);
+ assert.deepEqual(sql.prepare('SELECT * FROM players ORDER BY uid').all(),before);
+ assert.deepEqual(sql.prepare('PRAGMA foreign_key_check').all(),[]);sql.close();
 });

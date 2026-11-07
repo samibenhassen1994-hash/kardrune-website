@@ -10,3 +10,10 @@
 - No game saves, wallets, rankings or combat rules are changed. No fake players or demo clans are inserted.
 
 Validation: SQLite migration/foreign keys, transactional creation/join/leave/retry/rate limiting, concurrent competing joins, endpoint authentication guard, seven-language Flutter forms at 320px and invite/login flow. Real Firebase/D1, installed-PWA deep links and native share sheets require a post-migration device check.
+
+## Admin deletion and PWA invitations
+
+- Game administrators (`player_roles.role=admin`), not clan founders, can delete any clan after confirmation. The authenticated API checks the role and the DELETE statement checks it again. Clan memberships cascade; player records, saves, wallets and creation-rate limits remain intact. No new migration is needed.
+- The clan view uses the Arena background and a translucent frosted panel.
+- `launch_handler: navigate-existing` reuses an installed app window where supported; it cannot force iOS to capture an external URL. Clans > Open clan invite accepts a copied link inside the installed PWA, reusing its existing authenticated session without transferring tokens or requiring browser login.
+- Validation: 8 backend tests and 48 Flutter tests (including seven-language 320px forms, admin confirmation and pasted invite/session reuse); analyzer clean. Physical iPhone link handling still needs manual verification.

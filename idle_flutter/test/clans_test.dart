@@ -8,17 +8,41 @@ import 'package:idle_kardrune/localization/kr_localizations.dart';
 class Token implements AuthTokenProvider { @override Future<String> idToken() async=>'test'; }
 class Transport implements ApiTransport {
  final requests=<ApiRequest>[];
- bool member=false;
+ bool member=false,admin=false;
  final clan={'id':'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','name':'Runes','description':'Test clan','emblem':2,'founder':'Sam','memberCount':1,'inviteCode':'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'};
  @override Future<ApiResponse> send(ApiRequest request) async {
   requests.add(request);
   if(request.method=='POST'){member=true;return const ApiResponse(200,'{"ok":true}');}
-  if(request.path.contains('me=1'))return ApiResponse(200,jsonEncode({'clan':member?clan:null}));
+  if(request.path.contains('me=1'))return ApiResponse(200,jsonEncode({'clan':member?clan:null,'canDelete':admin}));
   if(request.path.contains('invite=')||request.path.contains('id='))return ApiResponse(200,jsonEncode({'clan':clan,'members':[],'hasMore':false}));
   return ApiResponse(200,jsonEncode({'clans':[clan],'hasMore':false}));
  }
 }
 void main(){
+ testWidgets('only game admin sees delete and must confirm',(tester)async{
+  final transport=Transport()..member=true;
+  Widget screen(int version)=>MaterialApp(home:ClansScreen(key:ValueKey(version),api:ApiClient(Token(),transport),signedIn:true,onLogin:(){}));
+  await tester.pumpWidget(screen(0));await tester.pumpAndSettle();
+  expect(find.byKey(const Key('clan-delete')),findsNothing);
+  transport.admin=true;
+  await tester.pumpWidget(screen(1));await tester.pumpAndSettle();
+  await tester.ensureVisible(find.byKey(const Key('clan-delete')));
+  await tester.tap(find.byKey(const Key('clan-delete')));await tester.pumpAndSettle();
+  expect(transport.requests.where((r)=>r.method=='POST'),isEmpty);
+  await tester.tap(find.widgetWithText(FilledButton,'DELETE CLAN'));await tester.pumpAndSettle();
+  final body=jsonDecode(transport.requests.lastWhere((r)=>r.method=='POST').body!);
+  expect(body['action'],'delete');expect(body['confirm'],true);
+ });
+ testWidgets('pasted invite reuses authenticated session',(tester)async{
+  final transport=Transport();
+  await tester.pumpWidget(MaterialApp(home:ClansScreen(api:ApiClient(Token(),transport),signedIn:true,onLogin:()=>fail('must reuse session'))));await tester.pumpAndSettle();
+  await tester.tap(find.text('OPEN CLAN INVITE'));await tester.pumpAndSettle();
+  await tester.enterText(find.byType(TextField),'https://kardrune.com/idle/?clan=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
+  await tester.tap(find.widgetWithText(FilledButton,'OPEN'));await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('clan-join')));await tester.pumpAndSettle();
+  expect(jsonDecode(transport.requests.lastWhere((r)=>r.method=='POST').body!)['action'],'join');
+ });
+
  for(final language in KrLanguage.values){
   testWidgets('clans create controls fit 320px in ${language.code}',(tester)async{
    tester.view.physicalSize=const Size(320,568);tester.view.devicePixelRatio=1;

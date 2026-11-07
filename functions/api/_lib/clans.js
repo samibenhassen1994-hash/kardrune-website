@@ -17,7 +17,8 @@ export async function clanRead(request,db,uid=null){
  if(q.get('me')==='1') {
   if(!uid)return json({error:'CLAN_LOGIN'},401);
   const row=await db.prepare(`${base} JOIN idle_clan_members mine ON mine.clan_id=c.id WHERE mine.uid=?`).bind(uid).first();
-  return json({clan:row||null});
+  const role=await db.prepare('SELECT role FROM player_roles WHERE uid=?').bind(uid).first();
+  return json({clan:row||null,canDelete:role?.role==='admin'});
  }
  const code=q.get('invite'),id=q.get('id');
  if(code||id){
@@ -31,11 +32,15 @@ export async function clanRead(request,db,uid=null){
  return json({clans:rows.results.slice(0,20),hasMore:rows.results.length>20});
 }
 export async function clanMutate(db,uid,body,now=Date.now()){
- if(!body||typeof body.requestId!=='string'||!idPattern.test(body.requestId)||!['create','join','leave'].includes(body.action))return json({error:'CLAN_INVALID'},400);
+ if(!body||typeof body.requestId!=='string'||!idPattern.test(body.requestId)||!['create','join','leave','delete'].includes(body.action))return json({error:'CLAN_INVALID'},400);
  const data=body.action==='create'?validateClan(body):{};
  const clanId=body.action==='create'?body.requestId:body.clanId;
  if(typeof clanId!=='string'||!idPattern.test(clanId))return json({error:'CLAN_INVALID'},400);
- if(body.action==='leave'&&body.confirm!==true)return json({error:'CLAN_CONFIRM'},400);
+ if(['leave','delete'].includes(body.action)&&body.confirm!==true)return json({error:'CLAN_CONFIRM'},400);
+ if(body.action==='delete'){
+  const role=await db.prepare('SELECT role FROM player_roles WHERE uid=?').bind(uid).first();
+  if(role?.role!=='admin')return json({error:'CLAN_FORBIDDEN'},403);
+ }
  const payload=JSON.stringify({action:body.action,clanId,...data});
  const old=await db.prepare('SELECT payload,clan_id FROM idle_clan_requests WHERE uid=? AND request_id=?').bind(uid,body.requestId).first();
  if(old){if(old.payload!==payload)return json({error:'CLAN_INVALID'},422);return json({ok:true,clanId:old.clan_id});}
@@ -44,6 +49,7 @@ export async function clanMutate(db,uid,body,now=Date.now()){
  if(body.action==='create') statements.push(db.prepare(`INSERT INTO idle_clans(id,name,name_key,description,emblem,owner_uid,invite_code,created_at) SELECT ?,?,?,?,?,?,?,? WHERE ${pending}`).bind(clanId,data.name,data.nameKey,data.description,data.emblem,uid,crypto.randomUUID(),now,uid,body.requestId));
  if(body.action==='join') statements.push(db.prepare(`INSERT INTO idle_clan_members(uid,clan_id,joined_at) SELECT ?,?,? WHERE ${pending} AND NOT EXISTS(SELECT 1 FROM idle_clan_members WHERE uid=? AND clan_id=?)`).bind(uid,clanId,now,uid,body.requestId,uid,clanId));
  if(body.action==='leave') statements.push(db.prepare(`DELETE FROM idle_clan_members WHERE uid=? AND clan_id=? AND ${pending}`).bind(uid,clanId,uid,body.requestId));
+ if(body.action==='delete') statements.push(db.prepare(`DELETE FROM idle_clans WHERE id=? AND ${pending} AND EXISTS(SELECT 1 FROM player_roles WHERE uid=? AND role='admin')`).bind(clanId,uid,body.requestId,uid));
  statements.push(db.prepare('UPDATE idle_clan_requests SET done=1 WHERE uid=? AND request_id=?').bind(uid,body.requestId));
  await db.batch(statements);
  // Reject a concurrent reuse of a request id with different parameters.
