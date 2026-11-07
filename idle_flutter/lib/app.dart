@@ -22,6 +22,7 @@ import 'features/pvp/live_pvp_arena.dart';
 import 'features/pvp/flame_battle_audio.dart';
 import 'features/pvp/arena_landing.dart';
 import 'features/pvp/league_leaderboard.dart';
+import 'features/clans/clans_screen.dart';
 import 'models/player_save.dart';
 import 'services/local_save_service.dart';
 import 'services/live_pvp_socket.dart';
@@ -212,6 +213,10 @@ class _IdleShellState extends State<IdleShell> {
     super.initState();
     _gameAudio.music('home_music');
     _saveService = widget.saveService ?? createDefaultLocalSave();
+    _pendingClanInvite = Uri.base.queryParameters['clan'] ?? _saveService?.storage.read('idle-clan-invite-v1');
+    if (_pendingClanInvite != null && RegExp(r'^[a-f0-9-]{32,36}$').hasMatch(_pendingClanInvite!)) {
+      _saveService?.storage.write('idle-clan-invite-v1', _pendingClanInvite!);
+    } else { _pendingClanInvite = null; }
     _tutorialProgress = IdleTutorialProgress(_saveService?.storage);
     final save =
         _saveService?.load(nowMs: widget.nowMs()) ?? PlayerSave.initial();
@@ -312,6 +317,7 @@ class _IdleShellState extends State<IdleShell> {
       _ownsCloud = true;
       controller.addListener(_cloudChanged);
       controller.start();
+      _maybeOpenClanInvite();
       await completeMobileBootstrap(controller);
       if (mounted) setState(() {});
     } catch (_) {
@@ -326,7 +332,34 @@ class _IdleShellState extends State<IdleShell> {
     }
   }
 
+  String? _pendingClanInvite, _inviteShownFor;
+  bool _clansOpen = false;
+  void _maybeOpenClanInvite() {
+    final account = _cloud?.identity?.uid ?? 'guest';
+    if (_pendingClanInvite == null || _cloud == null || _clansOpen || _inviteShownFor == account) return;
+    _inviteShownFor = account;
+    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _openClans(invite: _pendingClanInvite); });
+  }
+  Future<void> _openClans({String? invite}) async {
+    if (_clansOpen) return;
+    final cloud = _cloud;
+    if (cloud == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(context.tr('CLAN_UNAVAILABLE'))));
+      return;
+    }
+    _clansOpen = true;
+    final uid = cloud.identity?.uid;
+    await showDialog<void>(context:context, useSafeArea:false, builder:(dialogContext)=>ClansScreen(
+      api:cloud.api, signedIn:uid!=null, invite:invite,
+      accountCurrent:()=>cloud.identity?.uid==uid,
+      onLogin:(){Navigator.pop(dialogContext); _chooseTab(3);},
+    ));
+    _clansOpen = false;
+    if(mounted) _maybeOpenClanInvite();
+  }
+
   void _cloudChanged() {
+    _maybeOpenClanInvite();
     final uid = _cloud?.identity?.uid;
     if (uid != _deckUid) {
       _deckUid = uid;
@@ -722,6 +755,7 @@ class _IdleShellState extends State<IdleShell> {
                               index: tab,
                               children: [
                                 ArenaLanding(
+                                  onClans: _openClans,
                                   onLeaderboard: _cloud?.identity == null ? null : () => showModalBottomSheet<void>(
                                     context: context,
                                     isScrollControlled: true,

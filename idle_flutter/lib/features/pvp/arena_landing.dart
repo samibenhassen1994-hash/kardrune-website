@@ -16,11 +16,13 @@ class ArenaLanding extends StatefulWidget {
     required this.searching,
     this.onCancel,
     this.onLeaderboard,
+    this.onClans,
     this.rewardRemaining,
     this.rewardLimit = 10,
     this.now,
   });
 
+  final VoidCallback? onClans;
   final VoidCallback onStart;
   final Widget header;
   final VoidCallback? onCancel;
@@ -274,6 +276,16 @@ final quotaHeight = renderedArtHeight * .034;
                         ),
                       ),
                     ),
+                  ),
+
+                if (widget.onClans != null)
+                  Positioned(top: imageTop + imageHeight * .415 + 56, right: artWidth * .018,
+                    child: Tooltip(message: context.tr('CLANS'), child: Material(
+                      color: const Color(0xe8171830), elevation:8,
+                      shape: const CircleBorder(side:BorderSide(color:Color(0xffedc27e),width:2)),
+                      child: InkWell(key:const Key('arena-clans'),customBorder:const CircleBorder(),onTap:widget.onClans,
+                        child: const SizedBox(width:48,height:48,child:Icon(Icons.shield_outlined,color:Color(0xffffd38a),size:28))),
+                    )),
                   ),
 
               ],
