@@ -1,4 +1,5 @@
 import {json} from './auth.js';
+import {deckPower} from '../../../shared/deck_power.js';
 const idPattern=/^[a-f0-9-]{32,36}$/;
 const projection=`c.id,c.name,c.description,c.emblem,c.invite_code AS inviteCode,c.created_at AS createdAt,
  p.display_name AS founder,(SELECT COUNT(*) FROM idle_clan_members m WHERE m.clan_id=c.id) AS memberCount`;
@@ -25,8 +26,8 @@ export async function clanRead(request,db,uid=null){
   if(!idPattern.test(code||id))return json({error:'CLAN_NOT_FOUND'},404);
   const clan=await db.prepare(`${base} WHERE c.${code?'invite_code':'id'}=?`).bind(code||id).first();
   if(!clan)return json({error:'CLAN_NOT_FOUND'},404);
-  const members=await db.prepare(`SELECT p.display_name AS name,p.avatar FROM idle_clan_members m JOIN players p ON p.uid=m.uid WHERE m.clan_id=? ORDER BY m.joined_at,m.uid LIMIT 21 OFFSET ?`).bind(clan.id,offset).all();
-  return json({clan,members:members.results.slice(0,20),hasMore:members.results.length>20});
+  const members=await db.prepare(`SELECT p.display_name AS name,p.avatar,d.cards_json,s.save_json FROM idle_clan_members m JOIN players p ON p.uid=m.uid LEFT JOIN pvp_decks d ON d.uid=p.uid LEFT JOIN demo_saves s ON s.uid=p.uid WHERE m.clan_id=? ORDER BY m.joined_at,m.uid LIMIT 21 OFFSET ?`).bind(clan.id,offset).all();
+  return json({clan,members:members.results.slice(0,20).map(row=>{let power=0;try{power=deckPower(JSON.parse(row.cards_json||'[]'),JSON.parse(row.save_json||'{}'));}catch{}return {name:row.name,avatar:row.avatar,power};}),hasMore:members.results.length>20});
  }
  const rows=await db.prepare(`${base} ORDER BY c.created_at,c.id LIMIT 21 OFFSET ?`).bind(offset).all();
  return json({clans:rows.results.slice(0,20),hasMore:rows.results.length>20});

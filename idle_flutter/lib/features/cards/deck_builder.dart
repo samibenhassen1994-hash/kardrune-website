@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../game/catalog.dart';
 import '../../game/deck_rules.dart';
+import '../../game/deck_power.dart';
 import '../../game/combat_rules.dart';
 import '../../game/skill_catalog.dart';
 import '../../theme/kardrune_theme.dart';
@@ -188,7 +189,7 @@ class _DeckBuilderState extends State<DeckBuilder> {
                           _t('FILTRA LE CARTE', 'FILTER CARDS'),
                           style: const TextStyle(
                             color: KardRuneTheme.gold,
-                            fontSize: 17,
+                            fontSize: 14,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -458,11 +459,11 @@ class _DeckBuilderState extends State<DeckBuilder> {
                     children: [
                       Expanded(
                         child: Text(
-                          '${_t('MAZZO PVP', 'PVP DECK')}  ${slots.whereType<String>().length}/9',
+                          '${_t('MAZZO PVP', 'PVP DECK')}  ${slots.whereType<String>().length}/9 · ${context.tr('POWER')}: ${DeckPower.calculate(slots.whereType<String>(),widget.owned,widget.attacks,widget.crits,widget.skills)}',
                           style: const TextStyle(
                             color: KardRuneTheme.gold,
                             fontFamily: 'Georgia',
-                            fontSize: 17,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

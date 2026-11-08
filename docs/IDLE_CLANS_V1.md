@@ -17,3 +17,13 @@ Validation: SQLite migration/foreign keys, transactional creation/join/leave/ret
 - The clan view uses the Arena background and a translucent frosted panel.
 - `launch_handler: navigate-existing` reuses an installed app window where supported; it cannot force iOS to capture an external URL. Clans > Open clan invite accepts a copied link inside the installed PWA, reusing its existing authenticated session without transferring tokens or requiring browser login.
 - Validation: 8 backend tests and 48 Flutter tests (including seven-language 320px forms, admin confirmation and pasted invite/session reuse); analyzer clean. Physical iPhone link handling still needs manual verification.
+
+## Compact clan window and deck power
+
+The clan dialog now leaves an outside dismiss area. The creation dialog scrolls with keyboard insets; Next/Done move focus or close the keyboard. Five supplied WebP emblems retain the existing dragon/wolf/phoenix/shield/raven IDs.
+
+Member taps open a public profile (name, avatar, clan, computed power only). No UID, email, wallet, inventory or save JSON is exposed. The API reads the existing saved deck and save, without writing any data.
+
+Power v1 is a display-only estimate, not a win prediction or combat input: sum up to nine distinct owned cards. Per card: `100 * stage + round(effectiveATK * (1 + effectiveCRIT/100)) + skillBonus`. Skill bonuses by existing rarity: common 10, uncommon 20, rare 35, epic 50, legendary 75, ultra 100. Invalid skills give no bonus. Existing Stage limits apply; unknown/unowned cards are ignored. JS and Dart use the same integer rounding. User bar uses the saved local deck; the editor previews its current selection; public profiles use the saved cloud deck. Unsynchronized local changes can therefore differ until cloud save completes.
+
+Verification: 61 targeted Flutter tests, including keyboard at 320x568 in seven languages, dismissal, profiles, admin and deck flows; 10 SQLite/API/power tests. A physical Android keyboard still needs a manual check. No new D1 migration.

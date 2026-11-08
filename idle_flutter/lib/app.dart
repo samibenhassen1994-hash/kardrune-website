@@ -11,6 +11,7 @@ import 'game/combat_rules.dart';
 import 'game/game_rules.dart';
 import 'game/summon_rules.dart';
 import 'game/skill_catalog.dart';
+import 'game/deck_power.dart';
 import 'features/cards/deck_builder.dart';
 import 'features/cards/card_stat_badges.dart';
 import 'features/summon/summon_result.dart';
@@ -749,7 +750,7 @@ class _IdleShellState extends State<IdleShell> {
                       child: Column(
                         children: [
                           if (tab != 0 && tab != 2)
-                            _Header(shards: shards, name: name, avatar: avatar),
+                            _Header(shards: shards, name: name, avatar: avatar,power:DeckPower.calculate(deck,owned,attacks,crits,skills)),
                           Expanded(
                             child: IndexedStack(
                               index: tab,
@@ -769,6 +770,7 @@ class _IdleShellState extends State<IdleShell> {
                                     ),
                                   ),
                                   header: _Header(
+                                    power:DeckPower.calculate(deck,owned,attacks,crits,skills),
                                     shards: shards,
                                     name: name,
                                     avatar: avatar,
@@ -829,6 +831,7 @@ class _IdleShellState extends State<IdleShell> {
                                 ),
                                 SummonScreen(
                                   header: _Header(
+                                    power:DeckPower.calculate(deck,owned,attacks,crits,skills),
                                     shards: shards,
                                     name: name,
                                     avatar: avatar,
@@ -1391,11 +1394,13 @@ class _Header extends StatelessWidget {
     required this.shards,
     required this.name,
     required this.avatar,
+    this.power = 0,
     this.transparent = false,
     this.onNotifications,
   });
   final int shards;
   final String name, avatar;
+  final int power;
   final bool transparent;
   final VoidCallback? onNotifications;
 
@@ -1449,7 +1454,7 @@ class _Header extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
+            child: Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[Text(
               name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -1461,6 +1466,8 @@ class _Header extends StatelessWidget {
                 shadows: [Shadow(color: Colors.black, blurRadius: 6)],
               ),
             ),
+            Text('${context.tr('POWER')}: $power',maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Color(0xffffd98a),fontSize:11)),
+            ]),
           ),
           if (onNotifications != null)
             IconButton(

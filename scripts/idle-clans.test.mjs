@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {deckPower} from '../shared/deck_power.js';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
@@ -7,7 +8,7 @@ import {onRequestGet,onRequestPost} from '../functions/api/clans.js';
 const migration=readFileSync(new URL('../migrations/0014_idle_clans.sql',import.meta.url),'utf8');
 const id=n=>n.toString(16).padStart(32,'0');
 function setup(){
- const sql=new DatabaseSync(':memory:');sql.exec(`PRAGMA foreign_keys=ON;CREATE TABLE players(uid TEXT PRIMARY KEY,display_name TEXT,avatar TEXT,is_banned INTEGER DEFAULT 0);INSERT INTO players(uid,display_name,avatar) VALUES('a','Sam','player'),('b','B','player'),('c','C','player');`);sql.exec(migration);sql.exec("CREATE TABLE player_roles(uid TEXT PRIMARY KEY REFERENCES players(uid),role TEXT);");
+ const sql=new DatabaseSync(':memory:');sql.exec(`PRAGMA foreign_keys=ON;CREATE TABLE players(uid TEXT PRIMARY KEY,display_name TEXT,avatar TEXT,is_banned INTEGER DEFAULT 0);INSERT INTO players(uid,display_name,avatar) VALUES('a','Sam','player'),('b','B','player'),('c','C','player');`);sql.exec(migration);sql.exec("CREATE TABLE pvp_decks(uid TEXT PRIMARY KEY,cards_json TEXT);CREATE TABLE demo_saves(uid TEXT PRIMARY KEY,save_json TEXT);CREATE TABLE player_roles(uid TEXT PRIMARY KEY REFERENCES players(uid),role TEXT);");
  let pending=Promise.resolve();
  const db={prepare(text){let args=[];return {bind(...values){args=values;return this;},async first(){return sql.prepare(text).get(...args)||null;},async all(){return {results:sql.prepare(text).all(...args)};},async run(){return sql.prepare(text).run(...args);}};},batch(stmts){const job=pending.then(async()=>{sql.exec('BEGIN');try{const out=[];for(const stmt of stmts)out.push(await stmt.run());sql.exec('COMMIT');return out;}catch(e){sql.exec('ROLLBACK');throw e;}});pending=job.catch(()=>{});return job;}};
  return {sql,db};
@@ -85,4 +86,18 @@ test('only game admin can delete clans; retries preserve players and creation li
  assert.equal(sql.prepare('SELECT COUNT(*) n FROM idle_clan_creation_limits').get().n,1);
  assert.deepEqual(sql.prepare('SELECT * FROM players ORDER BY uid').all(),before);
  assert.deepEqual(sql.prepare('PRAGMA foreign_key_check').all(),[]);sql.close();
+});
+
+test('deck power uses capped stats and skills and counts only distinct owned cards',()=>{
+ assert.equal(deckPower(['sam:1','sam:1','tor:3'],{owned:['sam:1'],attacks:{'sam:1':50},crits:{'sam:1':8},skills:{'sam:1':'C1'}}),164);
+ assert.equal(deckPower(['sam:3'],{owned:['sam:3'],attacks:{'sam:3':999},crits:{'sam:3':99},skills:{'sam:3':'U1'}}),525);
+ assert.equal(deckPower(['sam:2'],{owned:['sam:2'],attacks:{'sam:2':75},crits:{'sam:2':16},skills:{'sam:2':'N1'}}),307);
+ assert.equal(deckPower([],{}),0);
+});
+test('member profiles expose only display fields and computed saved-deck power',async()=>{
+ const {db,sql}=setup();await create(db,'a',1);
+ sql.prepare('INSERT INTO pvp_decks VALUES(?,?)').run('a',JSON.stringify(['sam:1']));
+ sql.prepare('INSERT INTO demo_saves VALUES(?,?)').run('a',JSON.stringify({owned:['sam:1'],attacks:{'sam:1':50},crits:{'sam:1':8},skills:{'sam:1':'C1'},shards:999}));
+ const profile=(await (await clanRead(new Request('https://test/api/clans?id='+id(1)),db)).json()).members[0];
+ assert.deepEqual(profile,{name:'Sam',avatar:'player',power:164});sql.close();
 });

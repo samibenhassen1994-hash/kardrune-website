@@ -58,10 +58,11 @@ class _ClansScreenState extends State<ClansScreen> {
   final name=TextEditingController(),description=TextEditingController();int emblem=0;
   final form=GlobalKey<FormState>();
   final result=await showDialog<Map<String,dynamic>>(context:context,builder:(context)=>StatefulBuilder(builder:(context,update)=>AlertDialog(
+   scrollable:true, insetPadding:const EdgeInsets.symmetric(horizontal:16,vertical:12),
    title:Text(context.tr('CREATE CLAN')),
    content:SizedBox(width:340,child:SingleChildScrollView(child:Form(key:form,child:Column(mainAxisSize:MainAxisSize.min,children:[
-    TextFormField(controller:name,maxLength:24,decoration:InputDecoration(labelText:context.tr('CLAN NAME')),validator:(v)=>v==null||v.trim().isEmpty?context.tr('CLAN_INVALID'):null),
-    TextFormField(controller:description,maxLength:160,maxLines:3,decoration:InputDecoration(labelText:context.tr('DESCRIPTION'))),
+    TextFormField(controller:name,textInputAction:TextInputAction.next,onFieldSubmitted:(_)=>FocusScope.of(context).nextFocus(),maxLength:24,decoration:InputDecoration(labelText:context.tr('CLAN NAME')),validator:(v)=>v==null||v.trim().isEmpty?context.tr('CLAN_INVALID'):null),
+    TextFormField(controller:description,textInputAction:TextInputAction.done,onFieldSubmitted:(_)=>FocusScope.of(context).unfocus(),maxLength:160,maxLines:3,decoration:InputDecoration(labelText:context.tr('DESCRIPTION'))),
     ClanEmblem(emblem,size:80),
     Wrap(spacing:4,children:[for(var i=0;i<5;i++)Tooltip(message:context.tr(clanEmblems[i]),child:InkWell(key:Key('clan-emblem-$i'),onTap:()=>update(()=>emblem=i),child:Container(decoration:BoxDecoration(border:Border.all(color:emblem==i?const Color(0xffffd98a):Colors.transparent)),child:ClanEmblem(i,size:42))))]),
    ])))),
@@ -88,6 +89,17 @@ class _ClansScreenState extends State<ClansScreen> {
   final id=selected!['id'];
   final yes=await showDialog<bool>(context:context,builder:(context)=>AlertDialog(title:Text(context.tr('LEAVE CLAN')),content:Text(context.tr('CLAN LEAVE CONFIRM')),actions:[TextButton(onPressed:()=>Navigator.pop(context,false),child:Text(context.tr('CANCEL'))),FilledButton(onPressed:()=>Navigator.pop(context,true),child:Text(context.tr('CONFIRM')))]));
   if(yes==true&&mounted)await _mutate('leave',{'clanId':id,'confirm':true});
+ }
+ Future<void> _profile(Map<String,dynamic> member) async {
+  final avatar=const ['player','guard','vassal','king'].contains(member['avatar'])?member['avatar']:'player';
+  await showDialog<void>(context:context,builder:(context)=>AlertDialog(
+   scrollable:true,title:Text(member['name'] as String),
+   content:Column(mainAxisSize:MainAxisSize.min,children:[
+    CircleAvatar(radius:42,backgroundImage:AssetImage('assets/idle/avatars/avatar_$avatar.webp')),
+    const SizedBox(height:12),Text(selected!['name'] as String),
+    const SizedBox(height:12),Text('${context.tr('DECK POWER')}: ${member['power']??0}',style:const TextStyle(color:Color(0xffffd98a),fontSize:20)),
+   ]),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:Text(context.tr('CLOSE')))],
+  ));
  }
  Future<void> _delete() async {
   final id=selected!['id'];
@@ -140,18 +152,19 @@ class _ClansScreenState extends State<ClansScreen> {
    else Text(context.tr('CLAN_ALREADY_MEMBER')),
    if(canDelete)TextButton.icon(key:const Key('clan-delete'),onPressed:busy?null:_delete,icon:const Icon(Icons.delete_forever,color:Colors.redAccent),label:Text(context.tr('DELETE CLAN'),style:const TextStyle(color:Colors.redAccent))),
    Text('${selected!['memberCount']} ${context.tr('MEMBERS')}'),
-   for(final member in members)ListTile(leading:ClipOval(child:Image.asset('assets/idle/avatars/avatar_${RegExp(r'^[a-z0-9_]+$').hasMatch(member['avatar'] as String? ?? '')?member['avatar']:'player'}.webp',width:42,height:42,errorBuilder:(_,e,s)=>const Icon(Icons.person))),title:Text(member['name'] as String)),
+   for(final member in members)ListTile(onTap:()=>_profile(member),trailing:const Icon(Icons.chevron_right),leading:ClipOval(child:Image.asset('assets/idle/avatars/avatar_${RegExp(r'^[a-z0-9_]+$').hasMatch(member['avatar'] as String? ?? '')?member['avatar']:'player'}.webp',width:42,height:42,errorBuilder:(_,e,s)=>const Icon(Icons.person))),title:Text(member['name'] as String)),
    if(memberMore)TextButton(onPressed:()=>_detail(id:selected!['id'] as String,next:true),child:Text(context.tr('LOAD MORE'))),
   ])),
  ]));
- Widget _glass(Widget child) => Dialog.fullscreen(
-  backgroundColor: const Color(0xff091426),
-  child: Stack(fit:StackFit.expand,children:[
-   ImageFiltered(imageFilter:ImageFilter.blur(sigmaX:3,sigmaY:3),child:Image.asset('assets/idle/arena/arena_background.webp',fit:BoxFit.cover,cacheWidth:1080)),
-   SafeArea(child:Padding(padding:const EdgeInsets.all(8),child:Container(
-    decoration:BoxDecoration(color:const Color(0xd0142034),borderRadius:BorderRadius.circular(18),border:Border.all(color:const Color(0xbbdfbb79)),boxShadow:const [BoxShadow(color:Color(0x66000000),blurRadius:16)]),
-    child:child,
-   ))),
-  ]),
+ Widget _glass(Widget child) => Dialog(
+  insetPadding:const EdgeInsets.symmetric(horizontal:18,vertical:28),
+  backgroundColor:Colors.transparent,
+  child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:520,maxHeight:740),child:ClipRRect(
+   borderRadius:BorderRadius.circular(18),
+   child:Stack(fit:StackFit.expand,children:[
+    ImageFiltered(imageFilter:ImageFilter.blur(sigmaX:3,sigmaY:3),child:Image.asset('assets/idle/arena/arena_background.webp',fit:BoxFit.cover,cacheWidth:1080)),
+    Container(decoration:BoxDecoration(color:const Color(0xd0142034),borderRadius:BorderRadius.circular(18),border:Border.all(color:const Color(0xbbdfbb79))),child:Material(color:Colors.transparent,child:child)),
+   ]),
+  )),
  );
 }
