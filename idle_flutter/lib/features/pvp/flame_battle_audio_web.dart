@@ -11,6 +11,13 @@ FlameBattleAudio createFlameBattleAudio() => _WebBattleAudio();
 /// opens TEST FLAME on iOS Safari.
 class _WebBattleAudio implements FlameBattleAudio {
   web.AudioContext? _context;
+  late final web.EventListener _resumeListener=((web.Event _) {
+    if (_context!=null && web.document.visibilityState=='visible') unlock();
+  }).toJS;
+  _WebBattleAudio(){
+    web.document.addEventListener('visibilitychange',_resumeListener);
+    web.document.addEventListener('pointerdown',_resumeListener);
+  }
 
   @override
   void unlock() {
@@ -96,6 +103,8 @@ class _WebBattleAudio implements FlameBattleAudio {
 
   @override
   void dispose() {
+    web.document.removeEventListener('visibilitychange',_resumeListener);
+    web.document.removeEventListener('pointerdown',_resumeListener);
     final context = _context;
     _context = null;
     if (context != null && context.state != 'closed') {

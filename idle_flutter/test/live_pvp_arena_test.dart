@@ -10,6 +10,23 @@ const cards = [
   PvpCard(id: 'dren:1', hero: 'dren', stage: 1, attack: 65, crit: 7),
 ];
 void main() {
+ test('summary is server-log based and replay-safe; reward requires confirmation',(){
+  final c=ArenaViewController();
+  final payload=<String,dynamic>{'round':1,'selfIndex':1,'log':[
+   {'kind':'hit','actor':1,'damage':40,'critical':true},
+   {'kind':'hit','actor':0,'damage':12},
+   {'kind':'counter','actor':0,'damage':5},
+   {'kind':'extra_hit','actor':1,'damage':10},
+   {'kind':'skill','source':1},
+   {'kind':'heal','source':0,'heal':8},
+  ]};
+  c.recordStatistics(payload);c.recordStatistics(payload);
+  expect(c.statistics,[50,17,1,0,1,0,0,8]);
+  c.finish('you',[2,0],reward:100);expect(c.rewardStatus,'pending');
+  c.setRewardStatus('credited');expect(c.rewardStatus,'credited');
+  c.resetMatch();expect(c.statistics,List.filled(8,0));expect(c.rewardStatus,'none');c.dispose();
+ });
+
   testWidgets('five battle events fit 320px with damage and skill colors', (tester) async {
     final controller = ArenaViewController();
     controller.battleLog.addAll([
@@ -302,6 +319,10 @@ void main() {
     expect(find.byKey(const Key('pvp-final-result')), findsOneWidget);
     expect(find.text('FINAL SCORE  2 - 0'), findsOneWidget);
     expect(find.text('2 / 3 ROUNDS PLAYED'), findsOneWidget);
+    expect(find.text('+100 Shards'),findsNothing);
+    c.setRewardStatus('credited');await tester.pump();
+    expect(find.text('+100 Shards'),findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('pvp-complete')));
     await tester.tap(find.byKey(const Key('pvp-complete')));
     expect(completed, isTrue);
   });

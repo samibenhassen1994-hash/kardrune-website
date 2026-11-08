@@ -55,6 +55,27 @@ class ArenaViewController extends ChangeNotifier {
 
   String matchWinner = 'draw';
   int roundsPlayed = 0;
+  String rewardStatus='none';
+  void setRewardStatus(String status){rewardStatus=status;notifyListeners();}
+  final Map<int,List<int>> _roundStatistics={};
+  List<int> get statistics {
+    final sum=List<int>.filled(8,0);
+    for(final row in _roundStatistics.values){for(var i=0;i<8;i++){sum[i]+=row[i];}}
+    return sum;
+  }
+  void recordStatistics(Map<String,dynamic> payload){
+    final stats=List<int>.filled(8,0),self=payload['selfIndex'] as int? ?? 0;
+    for(final raw in (payload['log'] as List? ?? [])){
+      final log=Map<String,dynamic>.from(raw as Map);
+      final side=(log['source']??log['actor']??0)==self?0:1;
+      final kind=log['kind']??'hit';
+      if(const ['hit','dot','counter','extra_hit'].contains(kind))stats[side]+=(log['damage'] as num? ?? 0).toInt();
+      if(const ['hit','counter','extra_hit'].contains(kind)&&log['critical']==true)stats[2+side]++;
+      if(kind=='skill')stats[4+side]++;
+      if(kind=='heal')stats[6+side]+=(log['heal'] as num? ?? 0).toInt();
+    }
+    _roundStatistics[payload['round'] as int? ?? hand?.round ?? 1]=stats;
+  }
   DiceEvent? dice;
   bool diceVisible = false, diceSettled = false, diceResultVisible = false;
   VoidCallback? onReady;
@@ -149,6 +170,7 @@ class ArenaViewController extends ChangeNotifier {
     if (_replaying) return;
     _replaying = true;
     _replayPayload = json;
+    recordStatistics(json);
     final serial = ++_replaySequence;
     _clock?.cancel();
     battleStarted = true;
@@ -340,6 +362,7 @@ class ArenaViewController extends ChangeNotifier {
 
   void finish(String winner, List<int> value, {int reward = 0}) {
     matchFinished = true;
+    rewardStatus=reward==100 ? 'pending' : 'none';
     matchWinner = winner;
     score = [...value];
     roundsPlayed = hand?.round ?? roundsPlayed;
@@ -370,6 +393,8 @@ class ArenaViewController extends ChangeNotifier {
     matchFinished = false;
     matchWinner = 'draw';
     roundsPlayed = 0;
+    _roundStatistics.clear();
+    rewardStatus='none';
     _diceSettle?.cancel();
     _diceReveal?.cancel();
     _diceHide?.cancel();
@@ -902,7 +927,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                 ],
                               ),
                             if (c.matchFinished)
-                              Column(
+                              SingleChildScrollView(child:Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
@@ -971,6 +996,25 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                       ),
                                     ),
                                   const SizedBox(height: 8),
+                                  Container(
+                                    key:const Key('pvp-reward-summary'),
+                                    padding:const EdgeInsets.all(12),
+                                    decoration:BoxDecoration(color:const Color(0xff20354a),border:Border.all(color:const Color(0xffffd98a)),borderRadius:BorderRadius.circular(12)),
+                                    child:Column(children:[
+                                      Text(context.tr('REWARDS'),style:const TextStyle(color:Color(0xffffd98a),fontWeight:FontWeight.bold)),
+                                      Text(c.rewardStatus=='credited'?'+100 Shards':c.rewardStatus=='pending'?context.tr('REWARD PENDING'):c.rewardStatus=='limit'?context.tr('PvP daily reward limit reached (10/24h).'):context.tr('No PvP reward for this match.'),textAlign:TextAlign.center,style:TextStyle(color:c.rewardStatus=='credited'?const Color(0xff79ffae):Colors.white,fontSize:20,fontWeight:FontWeight.bold)),
+                                    ]),
+                                  ),
+                                  const SizedBox(height:8),
+                                  Table(columnWidths:const {0:FlexColumnWidth(2),1:FlexColumnWidth(),2:FlexColumnWidth()},children:[
+                                    TableRow(children:[const SizedBox(),Text(widget.playerName,maxLines:1,overflow:TextOverflow.ellipsis),Text(c.hand?.opponent ?? context.tr('OPPONENT'),maxLines:1,overflow:TextOverflow.ellipsis)]),
+                                    for(var i=0;i<4;i++)TableRow(children:[
+                                      Padding(padding:const EdgeInsets.symmetric(vertical:3),child:Text(context.tr(const ['DAMAGE DEALT','CRITICAL HITS','SKILLS USED','HEALING'][i]))),
+                                      Text('${c.statistics[i*2]}',style:const TextStyle(color:Color(0xff79ffae))),
+                                      Text('${c.statistics[i*2+1]}',style:const TextStyle(color:Color(0xffff7777))),
+                                    ]),
+                                  ]),
+                                  const SizedBox(height: 8),
                                   BattleEventLog(controller: c, playerName: widget.playerName),
                                   const SizedBox(height: 24),
                                   ElevatedButton(
@@ -984,7 +1028,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                     ),
                                   ),
                                 ],
-                              ),
+                              )),
                             if (!c.matchFinished && c.popup != null)
                               Container(
                                 key: const Key('battle-announcement'),

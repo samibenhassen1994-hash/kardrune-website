@@ -20,8 +20,8 @@ class GameAudio extends ChangeNotifier {
   web.AudioContext? _context;
   web.GainNode? _musicGain, _sfxGain;
   void _connect(web.HTMLAudioElement player, bool music) {
-    final context = _context;
-    if (context == null) return;
+    _createContext();
+    final context = _context!;
     context.createMediaElementSource(player).connect(music ? _musicGain! : _sfxGain!);
   }
   bool get _ios => RegExp(r'iPhone|iPad|iPod').hasMatch(web.window.navigator.userAgent);
@@ -69,7 +69,7 @@ class GameAudio extends ChangeNotifier {
 
   GameAudio() {
     _visibilityListener = ((web.Event _) {
-      if (web.document.visibilityState == 'visible') { _resume(); } else {
+      if (web.document.visibilityState == 'visible') { if (_unlocked) _context?.resume().toDart.ignore(); _resume(); } else {
         _stopClick();
         _music?.pause();
         for (final player in _sfx.values) { player.pause(); }
@@ -96,20 +96,31 @@ class GameAudio extends ChangeNotifier {
     _resume();
   }
 
+  void prepareBattle() {
+    unlock();
+    for (final track in ['battle_music','boss_battle_music','fun_moment_story_music']) {
+      _iosMusic.putIfAbsent(track, () {
+        final player=web.HTMLAudioElement()..src='assets/assets/audio/music/$track.mp3'..preload='auto';
+        _connect(player,true); player.load(); return player;
+      });
+    }
+    for (final effect in ['victory','defeat','chest_reward','dice_roll']) {
+      if (!_clickBuffers.containsKey(effect)) unawaited(_prepareClick(effect));
+    }
+  }
+
   void music(String track) {
     if (!musicTracks.contains(track) || _track == track) return;
     _track = track;
     void change() {
       _music?.pause();
-      if (_ios) {
+      {
         _music = _iosMusic.putIfAbsent(track, () {
           final player = web.HTMLAudioElement()
             ..src = 'assets/assets/audio/music/$track.mp3';
           _connect(player, true);
           return player;
         });
-      } else if (_music != null) {
-        _music!.src = 'assets/assets/audio/music/$track.mp3';
       }
       if (_unlocked) _resume();
     }
@@ -130,18 +141,19 @@ class GameAudio extends ChangeNotifier {
     final player = _music!;
     if (player.src.isEmpty) player.src = 'assets/assets/audio/music/$_track.mp3';
     player.loop = true;
-    player.preload = 'none';
+    player.preload = 'auto';
     _musicGain?.gain.value = musicVolume;
     try { player.play().toDart.ignore(); } catch (_) { /* Audio is optional. */ }
   }
 
   void effect(String effect) {
     if (!_unlocked || !sfxEnabled || !effects.contains(effect)) return;
-    if (_ios && (effect == 'button_click' || effect == 'button_click_2')) {
-      _stopClick();
+    if (_clickBuffers.containsKey(effect) || (_ios && (effect == 'button_click' || effect == 'button_click_2'))) {
+      if (effect.startsWith('button_click')) _stopClick();
       final buffer = _clickBuffers[effect];
       if (buffer == null || web.document.visibilityState != 'visible') return;
-      final source = _clickSource = _context!.createBufferSource()..buffer = buffer;
+      final source = _context!.createBufferSource()..buffer = buffer;
+      if (effect.startsWith('button_click')) _clickSource=source;
       source.connect(_sfxGain!);
       source.addEventListener('ended', ((web.Event _) {
         source.disconnect();

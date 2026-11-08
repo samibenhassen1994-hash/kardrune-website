@@ -18,7 +18,7 @@ export function botName(sequence){
  let name='';while(n>0n){n--;name=syllables[Number(n%16n)]+name;n/=16n;}
  return name[0].toUpperCase()+name.slice(1);
 }
-export const botWaitMs=rng=>15000+Math.floor(rng()*10001);
+export const botWaitMs=rng=>15000+Math.floor(Math.max(0,Math.min(.999999999,rng()))*5001);
 export const lossPenalty=points=>[0,5,10,15,20,20][leagues.indexOf(leagueFor(points).name)];
 
 export function cardPower(card,style='strategic'){

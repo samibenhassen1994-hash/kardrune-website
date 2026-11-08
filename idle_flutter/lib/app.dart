@@ -475,6 +475,7 @@ class _IdleShellState extends State<IdleShell> {
     if (_audioFinishedMatchId != matchId) {
       _audioFinishedMatchId = matchId;
       final winner = _pvp?.arena.matchWinner;
+      _gameAudio.music(winner == 'you' ? 'fun_moment_story_music' : 'home_music');
       if (winner == 'you') _gameAudio.effect('victory');
       if (winner == 'opponent') _gameAudio.effect('defeat');
     }
@@ -486,7 +487,18 @@ class _IdleShellState extends State<IdleShell> {
   Future<void> _claimPvpReward(String matchId) async {
     final cloud = _cloud;
     if (cloud == null) return;
+    final uid=cloud.identity?.uid;
     final outcome = await cloud.claimPvpRewardOutcome(matchId);
+    if (!mounted || _cloud?.identity?.uid != uid) return;
+    final arena=_pvp?.arena;
+    if ((arena?.hand?.matchId ?? arena?.dice?.matchId)==matchId) {
+      arena?.setRewardStatus(switch(outcome){
+        PvpRewardClaimOutcome.credited || PvpRewardClaimOutcome.alreadyClaimed => 'credited',
+        PvpRewardClaimOutcome.dailyLimit => 'limit',
+        PvpRewardClaimOutcome.ineligible => 'none',
+        _ => 'pending',
+      });
+    }
     if (outcome == PvpRewardClaimOutcome.credited) _gameAudio.effect('chest_reward');
     unawaited(_refreshQuota());
     if (mounted && _cloud?.identity?.uid == cloud.identity?.uid && outcome != PvpRewardClaimOutcome.alreadyClaimed) {
@@ -824,7 +836,7 @@ class _IdleShellState extends State<IdleShell> {
                                           LiveMatchState.connecting ||
                                       _pvp?.state == LiveMatchState.waiting,
                                   onStart: _pvp != null && deck.length >= 3
-                                      ? () { _gameAudio.music('suspance_story_music'); _gameAudio.unlock(); _gameAudio.effect('button_click_2'); _pvp!.findMatch(); }
+                                      ? () { _flameAudio.unlock(); _gameAudio.prepareBattle(); _gameAudio.music('suspance_story_music'); _gameAudio.unlock(); _gameAudio.effect('button_click_2'); _pvp!.findMatch(); }
                                       : () => setState(
                                           () => tab = _cloud?.identity == null
                                               ? 3
