@@ -66,6 +66,8 @@ abstract final class KrTranslations {
   };
 
   static const _catalog = <String, Map<KrLanguage, String>>{
+    'BEFORE': {KrLanguage.italian:'PRIMA',KrLanguage.spanish:'ANTES',KrLanguage.japanese:'強化前',KrLanguage.korean:'강화 전',KrLanguage.chinese:'强化前',KrLanguage.german:'VORHER'},
+    'AFTER': {KrLanguage.italian:'DOPO',KrLanguage.spanish:'DESPUÉS',KrLanguage.japanese:'強化後',KrLanguage.korean:'강화 후',KrLanguage.chinese:'强化后',KrLanguage.german:'NACHHER'},
 "DELETE CLAN":{KrLanguage.english:"DELETE CLAN",KrLanguage.italian:"ELIMINA CLAN",KrLanguage.spanish:"ELIMINAR CLAN",KrLanguage.japanese:"クランを削除",KrLanguage.korean:"클랜 삭제",KrLanguage.chinese:"删除氏族",KrLanguage.german:"CLAN LÖSCHEN"},
 "CLAN DELETE CONFIRM":{KrLanguage.english:"Permanently delete this clan and remove all memberships? Player progress will be preserved.",KrLanguage.italian:"Eliminare definitivamente il clan e tutte le iscrizioni? I progressi dei giocatori saranno conservati.",KrLanguage.spanish:"¿Eliminar el clan y todas sus membresías? Se conservará el progreso de los jugadores.",KrLanguage.japanese:"クランと全メンバーの所属を削除しますか？プレイヤーの進行状況は保持されます。",KrLanguage.korean:"클랜과 모든 가입 정보를 삭제할까요? 플레이어 진행 상황은 유지됩니다.",KrLanguage.chinese:"永久删除氏族及所有成员关系？玩家进度将保留。",KrLanguage.german:"Clan und alle Mitgliedschaften endgültig löschen? Spielfortschritte bleiben erhalten."},
 "CLAN_FORBIDDEN":{KrLanguage.english:"Only a game administrator can delete clans.",KrLanguage.italian:"Solo un amministratore del gioco può eliminare i clan.",KrLanguage.spanish:"Solo un administrador del juego puede eliminar clanes.",KrLanguage.japanese:"ゲーム管理者のみクランを削除できます。",KrLanguage.korean:"게임 관리자만 클랜을 삭제할 수 있습니다.",KrLanguage.chinese:"只有游戏管理员可以删除氏族。",KrLanguage.german:"Nur Spieladministratoren dürfen Clans löschen."},

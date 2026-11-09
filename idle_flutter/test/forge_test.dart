@@ -102,6 +102,47 @@ void main() {
     expect(find.text('1 / 2'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
+  for (final size in [
+    const Size(320, 568),
+    const Size(390, 844),
+    const Size(430, 932),
+  ]) {
+    testWidgets('Forge fits without vertical scrolling at $size', (t) async {
+      t.view.physicalSize = size;
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.resetPhysicalSize);
+      addTearDown(t.view.resetDevicePixelRatio);
+      await t.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.only(bottom: 68),
+              child: ForgeScreen(
+                header: const SizedBox(height: 68),
+                active: true,
+                api: ApiClient(Token(), Transport()..manyCards = true),
+                uid: 'a',
+                onLogin: () {},
+                onSave: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await t.pumpAndSettle();
+      expect(find.byType(SingleChildScrollView), findsNothing);
+      expect(t.takeException(), isNull);
+      expect(
+        t.getBottomRight(find.byKey(const Key('forge-start'))).dy,
+        lessThanOrEqualTo(size.height - 68),
+      );
+      for (final scroll in t.stateList<ScrollableState>(
+        find.byType(Scrollable),
+      )) {
+        expect(scroll.position.maxScrollExtent, 0);
+      }
+    });
+  }
   for (final lang in KrLanguage.values) {
     testWidgets('Forge 320px selection and server result ${lang.code}', (
       t,

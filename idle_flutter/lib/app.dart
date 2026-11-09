@@ -771,7 +771,7 @@ class _IdleShellState extends State<IdleShell> {
               // height so its purchase buttons never sit behind the nav bar.
               extendBody: tab == 0,
               body: SafeArea(
-                top: tab != 0 && tab != 2,
+                top: tab != 0 && tab != 2 && tab != 4,
                 bottom: tab != 0,
                 child: DecoratedBox(
                   decoration: const BoxDecoration(
@@ -788,7 +788,7 @@ class _IdleShellState extends State<IdleShell> {
                       constraints: const BoxConstraints(maxWidth: 720),
                       child: Column(
                         children: [
-                          if (tab != 0 && tab != 2)
+                          if (tab != 0 && tab != 2 && tab != 4)
                             _Header(shards: shards, name: name, avatar: avatar,power:DeckPower.calculate(deck,owned,attacks,crits,skills)),
                           Expanded(
                             child: IndexedStack(
@@ -961,7 +961,7 @@ class _IdleShellState extends State<IdleShell> {
                                   cloudMessage: _cloudInitializationMessage,
                                   onCloudRetry: _initializeCloud,
                                 ),
-                                ForgeScreen(key:ValueKey('forge-${_cloud?.identity?.uid}'),active:tab==4,api:_cloud?.api,uid:_cloud?.identity?.uid,storage:_saveService?.storage,onLogin:()=>_chooseTab(3),accountCurrent:()=>_cloud?.identity?.uid==forgeUid,onSave:(response){if(_cloud?.identity?.uid==forgeUid)_cloud?.applyServerSave(response);}),
+                                ForgeScreen(header: _Header(shards: shards, name: name, avatar: avatar, power: DeckPower.calculate(deck,owned,attacks,crits,skills), transparent: true),key:ValueKey('forge-${_cloud?.identity?.uid}'),active:tab==4,api:_cloud?.api,uid:_cloud?.identity?.uid,storage:_saveService?.storage,onLogin:()=>_chooseTab(3),accountCurrent:()=>_cloud?.identity?.uid==forgeUid,onSave:(response){if(_cloud?.identity?.uid==forgeUid)_cloud?.applyServerSave(response);}),
                               ],
                             ),
                           ),
