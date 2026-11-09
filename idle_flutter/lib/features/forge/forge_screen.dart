@@ -93,8 +93,18 @@ class _ForgeState extends State<ForgeScreen> {
     try {
       final data = await widget.api!.get('/api/forge');
       if (!mounted || widget.accountCurrent?.call() == false) return;
+      if (data['save'] is Map) widget.onSave(data);
       setState(() {
         state = data;
+        if (data['pendingSkill'] is Map) {
+          result = Map<String, dynamic>.from(data['pendingSkill'] as Map);
+          cardId = result!['cardId'] as String;
+          stat = 'SKILL';
+          _clearPending();
+        } else if (result?['pendingSkill'] == true) {
+          result = null;
+        }
+
         if (!cards.any((c) => c['id'] == cardId)) {
           cardId = cards.firstOrNull?['id'] as String?;
         }
@@ -194,6 +204,42 @@ class _ForgeState extends State<ForgeScreen> {
           animating = false;
         });
       }
+    }
+  }
+
+  Future<void> _decideSkill(bool accept) async {
+    if (busy ||
+        result?['pendingSkill'] != true ||
+        widget.accountCurrent?.call() == false) {
+      return;
+    }
+    setState(() {
+      busy = true;
+      error = null;
+    });
+    try {
+      final response = await widget.api!.post('/api/forge', {
+        'action': 'decision',
+        'requestId': result!['requestId'],
+        'accept': accept,
+        'revision': state!['revision'],
+      });
+      if (!mounted || widget.accountCurrent?.call() == false) return;
+      widget.onSave(response);
+      setState(() {
+        state = response;
+        result = null;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => error = e is ApiFailure && e.message.startsWith('FORGE_')
+              ? e.message
+              : 'FORGE_RETRY',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
     }
   }
 
@@ -355,10 +401,31 @@ class _ForgeState extends State<ForgeScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          FilledButton(
-            onPressed: () => setState(() => result = null),
-            child: Text(context.tr('CONFIRM')),
-          ),
+          if (result?['pendingSkill'] == true)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    key: const Key('forge-reject'),
+                    onPressed: busy ? null : () => _decideSkill(false),
+                    child: Text(context.tr('FORGE_REJECT')),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton(
+                    key: const Key('forge-accept'),
+                    onPressed: busy ? null : () => _decideSkill(true),
+                    child: Text(context.tr('FORGE_ACCEPT')),
+                  ),
+                ),
+              ],
+            )
+          else
+            FilledButton(
+              onPressed: () => setState(() => result = null),
+              child: Text(context.tr('CONFIRM')),
+            ),
         ],
       ),
     );

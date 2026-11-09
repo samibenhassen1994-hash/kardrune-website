@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {forgeOutcome,forgeAttempt,forgeState} from '../functions/api/_lib/forge.js';
+import {forgeOutcome,forgeAttempt,forgeState,forgeDecision} from '../functions/api/_lib/forge.js';
 for(const [color,p] of Object.entries({green:35,blue:55,red:75}))test(`${color} probability boundary`,()=>{
  const card={card_id:'sam:1',attack:30,crit:2,skill_id:'C1',rarity:'common',skill_version:1};
  assert.equal(forgeOutcome(card,color,'ATK',{min:1,max:5},max=>max===100?p-1:0).success,true);
@@ -16,6 +16,7 @@ function setup(){
  CREATE TABLE demo_saves(uid TEXT PRIMARY KEY,save_json TEXT,revision INTEGER,updated_at TEXT);
  CREATE TABLE skill_grants(uid TEXT,card_id TEXT,attack INTEGER,crit INTEGER,skill_id TEXT,rarity TEXT,skill_version INTEGER,updated_at INTEGER,source TEXT DEFAULT 'initial',PRIMARY KEY(uid,card_id));`);
  sql.exec(readFileSync(new URL('../migrations/0015_idle_forge.sql',import.meta.url),'utf8'));
+ sql.exec(readFileSync(new URL('../migrations/0016_forge_skill_choice.sql',import.meta.url),'utf8'));
  const save={owned:['sam:1'],active:'sam:1',attacks:{'sam:1':48},crits:{'sam:1':7},skills:{'sam:1':{id:'C1',rarity:'common',v:1}},shards:1234};
  sql.prepare('INSERT INTO demo_saves VALUES(?,?,1,NULL)').run('a',JSON.stringify(save));
  sql.exec("INSERT INTO skill_grants VALUES('a','sam:1',48,7,'C1','common',1,0,'initial');INSERT INTO forge_keys VALUES('a','green',2)");
@@ -87,10 +88,11 @@ test('inventory isolates accounts and defaults to zero without free grants',asyn
 
 test('skill replacement persists permanently and failed transaction rolls back key and receipt',async()=>{
  const {sql,env}=setup();await forgeAttempt(env,'a',req(1,'SKILL'),()=>0);
+ await forgeDecision(env,'a',{requestId:req().requestId,accept:true,revision:2});
  const grant=sql.prepare('SELECT * FROM skill_grants').get();assert.notEqual(grant.skill_id,'C1');
  assert.equal(JSON.parse(sql.prepare('SELECT save_json FROM demo_saves').get().save_json).skills['sam:1'].id,grant.skill_id);
  sql.exec("CREATE TRIGGER fail_save BEFORE UPDATE ON demo_saves BEGIN SELECT RAISE(ABORT,'test rollback');END;");
- await assert.rejects(forgeAttempt(env,'a',req(2,'ATK',2),()=>0),/test rollback/);
+ await assert.rejects(forgeAttempt(env,'a',req(2,'ATK',3),()=>0),/test rollback/);
  assert.equal(sql.prepare('SELECT quantity FROM forge_keys').get().quantity,1);
  assert.equal(sql.prepare('SELECT COUNT(*) n FROM forge_attempts').get().n,1);assert.equal(sql.prepare('SELECT attack FROM skill_grants').get().attack,48);sql.close();
 });
@@ -99,4 +101,52 @@ test('same id concurrent retry returns original outcome; injected stats ignored'
  const {sql,env}=setup();const body={...req(),attack:999,success:true,quantity:99};
  const results=await Promise.all([forgeAttempt(env,'a',body,()=>0),forgeAttempt(env,'a',body,()=>99)]);
  assert.deepEqual(results[0],results[1]);assert.equal(sql.prepare('SELECT quantity FROM forge_keys').get().quantity,1);assert.equal(sql.prepare('SELECT attack FROM skill_grants').get().attack,49);sql.close();
+});
+
+test('successful skill waits for approval without changing equipped skill',async()=>{
+ const {sql,env}=setup();const result=await forgeAttempt(env,'a',req(1,'SKILL'),()=>0);
+ assert.equal(result.pendingSkill,true);
+ assert.equal(sql.prepare('SELECT skill_id FROM skill_grants').get().skill_id,'C1');
+ assert.equal(sql.prepare('SELECT quantity FROM forge_keys').get().quantity,1);
+ sql.close();
+});
+
+for(const accept of [true,false])test(`skill choice ${accept} persists once and never spends another key`,async()=>{
+ const {sql,env}=setup();const r=await forgeAttempt(env,'a',req(1,'SKILL'),()=>0);
+ assert.equal((await forgeState(env,'a')).pendingSkill.requestId,req().requestId);
+ await assert.rejects(forgeAttempt(env,'a',req(2,'ATK',2),()=>0),/FORGE_PENDING/);
+ await assert.rejects(forgeDecision(env,'b',{requestId:req().requestId,accept,revision:1}),/FORGE_/);
+ const body={requestId:req().requestId,accept,revision:2};
+ assert.deepEqual(await forgeDecision(env,'a',body),await forgeDecision(env,'a',body));
+ assert.equal(sql.prepare('SELECT skill_id FROM skill_grants').get().skill_id,accept?r.after.skillId:'C1');
+ assert.equal(sql.prepare('SELECT quantity FROM forge_keys').get().quantity,1);
+ assert.equal(sql.prepare('SELECT revision FROM demo_saves').get().revision,3);
+ assert.equal((await forgeState(env,'a')).pendingSkill,null);
+ assert.deepEqual(sql.prepare('PRAGMA foreign_key_check').all(),[]);sql.close();
+});
+test('failed skill and stat attempts cannot become skill decisions',async()=>{
+ for(const stat of ['SKILL','ATK']){const {sql,env}=setup();await forgeAttempt(env,'a',req(1,stat),()=>99);
+ await assert.rejects(forgeDecision(env,'a',{requestId:req().requestId,accept:true,revision:2}),/FORGE_INVALID/);sql.close();}
+});
+
+test('competing decisions settle once and rejection cannot refund or overwrite later stats',async()=>{
+ const {sql,env}=setup();await forgeAttempt(env,'a',req(1,'SKILL'),()=>0);
+ const body={requestId:req().requestId,revision:2};
+ const outcomes=await Promise.all([forgeDecision(env,'a',{...body,accept:false}),forgeDecision(env,'a',{...body,accept:true})]);
+ assert.deepEqual(outcomes[0],outcomes[1]);assert.equal(outcomes[0].accepted,false);
+ assert.equal(sql.prepare('SELECT skill_id FROM skill_grants').get().skill_id,'C1');
+ assert.equal(sql.prepare('SELECT quantity FROM forge_keys').get().quantity,1);sql.close();
+});
+test('decision rollback, stale revision and changed underlying skill preserve data',async()=>{
+ const {sql,env}=setup();await forgeAttempt(env,'a',req(1,'SKILL'),()=>0);
+ const body={requestId:req().requestId,accept:true,revision:2};
+ await assert.rejects(forgeDecision(env,'a',{...body,revision:1}),/FORGE_CONFLICT/);
+ sql.exec("CREATE TRIGGER decision_fail BEFORE UPDATE ON demo_saves BEGIN SELECT RAISE(ABORT,'rollback');END;");
+ await assert.rejects(forgeDecision(env,'a',body),/rollback/);
+ assert.equal(sql.prepare('SELECT COUNT(*) n FROM forge_skill_decisions').get().n,0);
+ assert.equal(sql.prepare('SELECT skill_id FROM skill_grants').get().skill_id,'C1');
+ sql.exec("DROP TRIGGER decision_fail;UPDATE skill_grants SET skill_id='C3'");
+ await assert.rejects(forgeDecision(env,'a',body),/FORGE_CONFLICT/);
+ await forgeDecision(env,'a',{...body,accept:false});
+ assert.equal(sql.prepare('SELECT skill_id FROM skill_grants').get().skill_id,'C3');sql.close();
 });

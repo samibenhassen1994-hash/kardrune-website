@@ -29,9 +29,19 @@ class Transport implements ApiTransport {
   final requests = <ApiRequest>[];
   bool failOnce = false;
   bool manyCards = false;
+  bool skillPending = false;
+  final proposal = <String, dynamic>{
+    'pendingSkill': true,
+    'requestId': '00000000000000000000000000000001',
+    'cardId': 'sam:1',
+    'success': true,
+    'before': {'attack': 48, 'crit': 7, 'skillId': 'C1'},
+    'after': {'attack': 48, 'crit': 7, 'skillId': 'C2'},
+  };
   int attack = 48, keys = 2;
   Map<String, dynamic> state() => {
     'revision': 1,
+    'pendingSkill': skillPending ? proposal : null,
     'keys': {'green': keys, 'blue': 0, 'red': 0},
     'chances': {'green': 35, 'blue': 55, 'red': 75},
     'caps': {
@@ -51,6 +61,12 @@ class Transport implements ApiTransport {
   Future<ApiResponse> send(ApiRequest r) async {
     requests.add(r);
     if (r.method == 'POST') {
+      final body = jsonDecode(r.body!) as Map;
+      if (body['action'] == 'decision') {
+        skillPending = false;
+        return ApiResponse(200, jsonEncode(state()));
+      }
+
       if (failOnce) {
         failOnce = false;
         throw Exception('connection lost');
@@ -155,10 +171,10 @@ void main() {
       );
       await t.pumpAndSettle();
       expect(find.byType(SingleChildScrollView), findsNothing);
-      final initial=t.getRect(find.byKey(const Key('forge-upgrade-card')));
-      await t.tap(find.widgetWithText(ChoiceChip,'SKILL'));
+      final initial = t.getRect(find.byKey(const Key('forge-upgrade-card')));
+      await t.tap(find.widgetWithText(ChoiceChip, 'SKILL'));
       await t.pumpAndSettle();
-      expect(t.getRect(find.byKey(const Key('forge-upgrade-card'))),initial);
+      expect(t.getRect(find.byKey(const Key('forge-upgrade-card'))), initial);
 
       expect(t.takeException(), isNull);
       expect(
@@ -171,6 +187,35 @@ void main() {
         expect(scroll.position.maxScrollExtent, 0);
       }
     });
+  }
+  for (final accept in [true, false]) {
+    testWidgets(
+      'resumed skill proposal can be ${accept ? 'accepted' : 'rejected'}',
+      (t) async {
+        final transport = Transport()..skillPending = true;
+        await t.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ForgeScreen(
+                active: true,
+                api: ApiClient(Token(), transport),
+                uid: 'a',
+                onLogin: () {},
+                onSave: (_) {},
+              ),
+            ),
+          ),
+        );
+        await t.pumpAndSettle();
+        expect(find.byKey(const Key('forge-accept')), findsOneWidget);
+        expect(find.byKey(const Key('forge-reject')), findsOneWidget);
+        await t.tap(find.byKey(Key(accept ? 'forge-accept' : 'forge-reject')));
+        await t.pumpAndSettle();
+        expect(transport.skillPending, false);
+        expect(find.byKey(const Key('forge-start')), findsOneWidget);
+        expect(t.takeException(), isNull);
+      },
+    );
   }
   for (final lang in KrLanguage.values) {
     testWidgets('Forge 320px selection and server result ${lang.code}', (
