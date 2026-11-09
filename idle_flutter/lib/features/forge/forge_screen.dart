@@ -326,6 +326,102 @@ class _ForgeState extends State<ForgeScreen> {
       ],
     ),
   );
+  void _skillInfo() {
+    final language = context.krLanguage;
+    final current = SkillCatalog.byId(result?['before']['skillId'] as String?);
+    final proposed = SkillCatalog.byId(result?['after']['skillId'] as String?);
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => KrLocaleScope(
+        language: language,
+        child: Builder(
+          builder: (c) => AlertDialog(
+            backgroundColor: const Color(0xff132032),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Color(0xffe6ba68)),
+            ),
+            title: Text(c.tr('SKILL')),
+            content: SizedBox(
+              width: 400,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final entry in [
+                      ('FORGE_CURRENT_SKILL', current),
+                      ('FORGE_PROPOSED_SKILL', proposed),
+                    ])
+                      if (entry.$2 case final skill?)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: skill.color.withValues(alpha: .1),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: skill.color),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  c.tr(entry.$1),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  skill.localized(c).name,
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: skill.color,
+                                  ),
+                                ),
+                                Text(
+                                  c.tr(skill.rarity.toUpperCase()),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: skill.color,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  skill.localized(c).description,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  '${skill.localized(c).trigger} · ${skill.localized(c).limit}',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(c.tr('CLOSE')),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   bool get locked => busy || pending != null || result != null;
   Widget pickCard(Map<String, dynamic> c, double height) => GestureDetector(
     onTap: locked ? null : () => setState(() => cardId = c['id'] as String),
@@ -400,6 +496,16 @@ class _ForgeState extends State<ForgeScreen> {
               ],
             ),
           ),
+          if (result?['pendingSkill'] == true)
+            SizedBox(
+              height: 36,
+              child: TextButton.icon(
+                key: const Key('forge-skill-info'),
+                onPressed: _skillInfo,
+                icon: const Icon(Icons.info_outline, size: 18),
+                label: Text(context.tr('INFO')),
+              ),
+            ),
           const SizedBox(height: 10),
           if (result?['pendingSkill'] == true)
             Row(

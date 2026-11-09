@@ -209,6 +209,14 @@ void main() {
         await t.pumpAndSettle();
         expect(find.byKey(const Key('forge-accept')), findsOneWidget);
         expect(find.byKey(const Key('forge-reject')), findsOneWidget);
+        await t.tap(find.byKey(const Key('forge-skill-info')));
+        await t.pumpAndSettle();
+        expect(find.text('CURRENT SKILL'), findsOneWidget);
+        expect(find.text('PROPOSED SKILL'), findsOneWidget);
+        expect(find.text('COMMON'), findsNWidgets(2));
+        expect(transport.requests.where((r) => r.method == 'POST'), isEmpty);
+        await t.tap(find.text('CLOSE'));
+        await t.pumpAndSettle();
         await t.tap(find.byKey(Key(accept ? 'forge-accept' : 'forge-reject')));
         await t.pumpAndSettle();
         expect(transport.skillPending, false);

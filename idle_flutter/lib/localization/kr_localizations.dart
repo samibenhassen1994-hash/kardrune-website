@@ -66,6 +66,8 @@ abstract final class KrTranslations {
   };
 
   static const _catalog = <String, Map<KrLanguage, String>>{
+    'FORGE_CURRENT_SKILL': {KrLanguage.english:'CURRENT SKILL',KrLanguage.italian:'SKILL ATTUALE',KrLanguage.spanish:'HABILIDAD ACTUAL',KrLanguage.japanese:'現在のスキル',KrLanguage.korean:'현재 스킬',KrLanguage.chinese:'当前技能',KrLanguage.german:'AKTUELLE FÄHIGKEIT'},
+    'FORGE_PROPOSED_SKILL': {KrLanguage.english:'PROPOSED SKILL',KrLanguage.italian:'NUOVA SKILL',KrLanguage.spanish:'NUEVA HABILIDAD',KrLanguage.japanese:'新しいスキル',KrLanguage.korean:'새 스킬',KrLanguage.chinese:'新技能',KrLanguage.german:'NEUE FÄHIGKEIT'},
     'FORGE_ACCEPT': {KrLanguage.english:'ACCEPT',KrLanguage.italian:'APPROVA',KrLanguage.spanish:'ACEPTAR',KrLanguage.japanese:'承認',KrLanguage.korean:'승인',KrLanguage.chinese:'接受',KrLanguage.german:'ANNEHMEN'},
     'FORGE_REJECT': {KrLanguage.english:'REJECT',KrLanguage.italian:'RIFIUTA',KrLanguage.spanish:'RECHAZAR',KrLanguage.japanese:'拒否',KrLanguage.korean:'거절',KrLanguage.chinese:'拒绝',KrLanguage.german:'ABLEHNEN'},
     'FORGE_PENDING': {KrLanguage.english:'Decide whether to keep the proposed skill first.',KrLanguage.italian:'Approva o rifiuta prima la skill proposta.',KrLanguage.spanish:'Acepta o rechaza primero la habilidad propuesta.',KrLanguage.japanese:'先に提案されたスキルを承認または拒否してください。',KrLanguage.korean:'먼저 제안된 스킬을 승인하거나 거절하세요.',KrLanguage.chinese:'请先接受或拒绝提议的技能。',KrLanguage.german:'Nimm zuerst die vorgeschlagene Fähigkeit an oder lehne sie ab.'},
