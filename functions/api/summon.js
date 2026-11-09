@@ -57,7 +57,7 @@ export async function onRequestPost({request,env}){
   save.pulls=(Number.isSafeInteger(save.pulls)?save.pulls:0)+1;
   if(duplicate){
    save.pendingDuplicate={id:card.id,attack:card.attack,crit:card.crit,
-    skillId:card.skill.id,skillVersion:SKILL_VERSION,rollId:body.rollId};
+    skillId:card.skill.id,skillVersion:SKILL_VERSION,free:cost===0,rollId:body.rollId};
   }else{
    save.owned=[...save.owned,card.id];
    save.attacks[card.id]=card.attack;

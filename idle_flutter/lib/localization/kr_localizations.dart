@@ -66,6 +66,8 @@ abstract final class KrTranslations {
   };
 
   static const _catalog = <String, Map<KrLanguage, String>>{
+    'KEEP CURRENT': {KrLanguage.italian:'MANTIENI ATTUALE',KrLanguage.spanish:'CONSERVAR ACTUAL',KrLanguage.japanese:'現在のカードを保持',KrLanguage.korean:'현재 카드 유지',KrLanguage.chinese:'保留当前卡牌',KrLanguage.german:'AKTUELLE BEHALTEN'},
+    'REPLACE = NEW STATS': {KrLanguage.italian:'SOSTITUISCI = NUOVE STATISTICHE',KrLanguage.spanish:'REEMPLAZAR = NUEVAS ESTADÍSTICAS',KrLanguage.japanese:'交換 = 新しい能力値',KrLanguage.korean:'교체 = 새로운 능력치',KrLanguage.chinese:'替换 = 新属性',KrLanguage.german:'ERSETZEN = NEUE WERTE'},
     'BEFORE': {KrLanguage.italian:'PRIMA',KrLanguage.spanish:'ANTES',KrLanguage.japanese:'強化前',KrLanguage.korean:'강화 전',KrLanguage.chinese:'强化前',KrLanguage.german:'VORHER'},
     'AFTER': {KrLanguage.italian:'DOPO',KrLanguage.spanish:'DESPUÉS',KrLanguage.japanese:'強化後',KrLanguage.korean:'강화 후',KrLanguage.chinese:'强化后',KrLanguage.german:'NACHHER'},
 "DELETE CLAN":{KrLanguage.english:"DELETE CLAN",KrLanguage.italian:"ELIMINA CLAN",KrLanguage.spanish:"ELIMINAR CLAN",KrLanguage.japanese:"クランを削除",KrLanguage.korean:"클랜 삭제",KrLanguage.chinese:"删除氏族",KrLanguage.german:"CLAN LÖSCHEN"},

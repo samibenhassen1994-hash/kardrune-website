@@ -21,12 +21,14 @@ class SummonResult extends StatefulWidget {
     required this.onReplace,
     required this.onContinue,
     this.onVideoComplete,
+    this.freeDuplicate = false,
     this.allowVideoWithReducedMotion = false,
     this.oldAttack,
     this.oldCrit,
     this.oldSkillId,
     this.newSkillId,
   });
+  final bool freeDuplicate;
   final bool allowVideoWithReducedMotion;
   final String heroName, asset;
   final int stage, hp, newAttack, newCrit;
@@ -135,7 +137,7 @@ class _SummonResultState extends State<SummonResult>
                     children: [
                       Expanded(
                         child: _button(
-                          'KEEP CURRENT · +100',
+                          widget.freeDuplicate ? 'KEEP CURRENT' : 'KEEP CURRENT · +100',
                           const Key('summon-keep'),
                           widget.onKeep,
                           false,
@@ -154,7 +156,7 @@ class _SummonResultState extends State<SummonResult>
                   ),
                   const SizedBox(height: 7),
                   Text(
-                    context.tr('KEEP = +100 SHARDS  ·  REPLACE = NEW STATS'),
+                    context.tr(widget.freeDuplicate ? 'REPLACE = NEW STATS' : 'KEEP = +100 SHARDS  ·  REPLACE = NEW STATS'),
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Color(0xffacbdd5), fontSize: 8),
                   ),

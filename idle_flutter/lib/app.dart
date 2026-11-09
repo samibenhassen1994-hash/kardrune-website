@@ -961,7 +961,7 @@ class _IdleShellState extends State<IdleShell> {
                                   cloudMessage: _cloudInitializationMessage,
                                   onCloudRetry: _initializeCloud,
                                 ),
-                                ForgeScreen(header: _Header(shards: shards, name: name, avatar: avatar, power: DeckPower.calculate(deck,owned,attacks,crits,skills), transparent: true),key:ValueKey('forge-${_cloud?.identity?.uid}'),active:tab==4,api:_cloud?.api,uid:_cloud?.identity?.uid,storage:_saveService?.storage,onLogin:()=>_chooseTab(3),accountCurrent:()=>_cloud?.identity?.uid==forgeUid,onSave:(response){if(_cloud?.identity?.uid==forgeUid)_cloud?.applyServerSave(response);}),
+                                ForgeScreen(onVideoActive: _gameAudio.suspendMusic,header: _Header(shards: shards, name: name, avatar: avatar, power: DeckPower.calculate(deck,owned,attacks,crits,skills), transparent: true),key:ValueKey('forge-${_cloud?.identity?.uid}'),active:tab==4,api:_cloud?.api,uid:_cloud?.identity?.uid,storage:_saveService?.storage,onLogin:()=>_chooseTab(3),accountCurrent:()=>_cloud?.identity?.uid==forgeUid,onSave:(response){if(_cloud?.identity?.uid==forgeUid)_cloud?.applyServerSave(response);}),
                               ],
                             ),
                           ),
@@ -1155,6 +1155,7 @@ class _IdleShellState extends State<IdleShell> {
           'crit': crit,
           'skillId': skill.id,
           'skillVersion': SkillCatalog.version,
+          if (free) 'free': true,
         };
       } else {
         owned.add(id);
@@ -1261,7 +1262,7 @@ class _IdleShellState extends State<IdleShell> {
         }
         return;
       }
-      final decision = SummonRules.resolveDuplicate(replace: replace);
+      final decision = SummonRules.resolveDuplicate(replace: replace, free: _pendingDuplicate?['free'] == true);
       setState(() {
         if (decision.useNewStats) {
           attacks[id] = attack;
@@ -1289,6 +1290,7 @@ class _IdleShellState extends State<IdleShell> {
           _gameAudio.suspendMusic(false);
           _gameAudio.effect('card_reveal');
         },
+        freeDuplicate: _pendingDuplicate?['free'] == true,
         heroName: hero.name,
         stage: stage,
         asset: hero.cardAsset(hero.stages[stage - 1]),

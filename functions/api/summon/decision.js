@@ -3,6 +3,8 @@ import {ensureLegacySkills,mergeGrantedSave,currentAccount} from '../_lib/skill_
 import {SKILL_BY_ID,SKILL_VERSION} from '../../../shared/skill_catalog.js';
 import {requireActiveAccount} from '../_lib/account_status.js';
 
+export function duplicateRefund(cost, replace) { return !replace && (cost===300 || cost===600) ? 100 : 0; }
+
 export async function onRequestPost({request,env}){
  try{
   const user=await userFromRequest(request,env);
@@ -30,11 +32,12 @@ export async function onRequestPost({request,env}){
   const pending=save.pendingDuplicate;
   if(pending?.rollId!==body.rollId||!SKILL_BY_ID[pending.skillId]||
    !save.owned.includes(pending.id))return json({error:'Pending duplicate mismatch'},409);
+  const refund=duplicateRefund(JSON.parse(roll.result_json).cost,body.replace);
   if(body.replace){
    save.attacks[pending.id]=pending.attack;
    save.crits[pending.id]=pending.crit;
    save.skills[pending.id]={id:pending.skillId,rarity:SKILL_BY_ID[pending.skillId].rarity,v:SKILL_VERSION};
-  }else save.shards+=100;
+  }else save.shards+=refund;
   save.pendingDuplicate=null;
   const response={revision:row.revision+1,save,rollId:body.rollId,replaced:body.replace};
   const statements=[
@@ -43,8 +46,8 @@ export async function onRequestPost({request,env}){
    env.DB.prepare('UPDATE demo_saves SET save_json=?,revision=revision+1,updated_at=CURRENT_TIMESTAMP WHERE uid=? AND revision=?')
     .bind(JSON.stringify(save),user.uid,row.revision),
   ];
-  if(!body.replace)statements.push(env.DB.prepare('UPDATE skill_wallets SET shards=shards+100,updated_at=? WHERE uid=?')
-   .bind(Date.now(),user.uid));
+  if(refund>0)statements.push(env.DB.prepare('UPDATE skill_wallets SET shards=shards+?,updated_at=? WHERE uid=?')
+   .bind(refund,Date.now(),user.uid));
   if(body.replace)statements.push(env.DB.prepare(`INSERT INTO skill_grants
    (uid,card_id,attack,crit,skill_id,rarity,skill_version,source,roll_id,updated_at)
    VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(uid,card_id) DO UPDATE SET

@@ -115,6 +115,7 @@ class PlayerSave {
               int.parse(id.split(':').last),
             ))
           'skillId': p['skillId'] as String,
+        if (p['free'] == true) 'free': true,
         if (p['skillVersion'] == SkillCatalog.version)
           'skillVersion': SkillCatalog.version,
         if (p['rollId'] is String) 'rollId': p['rollId'] as String,

@@ -36,10 +36,20 @@ class _State extends State<ForgeVideo> {
         ..backgroundColor = 'black';
       final v = video = web.HTMLVideoElement()
         ..src = 'assets/assets/idle/forge/forge.mp4'
-        ..muted = true
+        ..muted = false
         ..playsInline = true
         ..controls = false;
       v.setAttribute('playsinline', '');
+      v.setAttribute('webkit-playsinline', '');
+      v.addEventListener(
+        'click',
+        ((web.Event _) {
+          v.muted = false;
+          v.play().toDart.catchError((Object _) {
+            return null;
+          });
+        }).toJS,
+      );
       v.style
         ..width = '100%'
         ..height = '100%'
@@ -63,7 +73,11 @@ class _State extends State<ForgeVideo> {
         if (v.isConnected) {
           t.cancel();
           v.play().toDart.catchError((Object _) {
-            finish();
+            v.muted = true;
+            v.play().toDart.catchError((Object _) {
+              finish();
+              return null;
+            });
             return null;
           });
         }

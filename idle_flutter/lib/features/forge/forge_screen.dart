@@ -25,8 +25,10 @@ class ForgeScreen extends StatefulWidget {
     required this.onSave,
     this.accountCurrent,
     this.header,
+    this.onVideoActive,
   });
   final Widget? header;
+  final ValueChanged<bool>? onVideoActive;
   final ApiClient? api;
   final String? uid;
   final KeyValueStorage? storage;
@@ -141,6 +143,7 @@ class _ForgeState extends State<ForgeScreen> {
       result = null;
     });
     final language = KrLocaleScope.languageOf(context);
+    widget.onVideoActive?.call(true);
     final playback = showGeneralDialog<void>(
       context: context,
       useRootNavigator: true,
@@ -184,6 +187,7 @@ class _ForgeState extends State<ForgeScreen> {
       }
     } finally {
       await playback;
+      widget.onVideoActive?.call(false);
       if (mounted) {
         setState(() {
           busy = false;
@@ -195,19 +199,45 @@ class _ForgeState extends State<ForgeScreen> {
 
   String skillName(dynamic id) =>
       SkillCatalog.byId(id as String?)?.localized(context).name ?? '—';
-  Widget art(Map<String, dynamic> c, double height) {
+  Widget art(Map<String, dynamic> c, double height, {bool upgrade = false}) {
     final parts = (c['id'] as String).split(':'),
         hero = KardRuneCatalog.heroes.firstWhere((h) => h.id == parts.first);
     return SizedBox(
+      key: upgrade ? const Key('forge-upgrade-card') : null,
       height: height,
       width: height * .75,
-      child: CharacterCardArt(
-        asset: hero.cardAsset(hero.stages[int.parse(parts.last) - 1]),
-        hp: CombatRules.hpForStage(int.parse(parts.last)),
-        attack: c['attack'] as int,
-        crit: c['crit'] as int,
-        skillId: c['skillId'] as String?,
-        compact: true,
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: SizedBox(
+          width: 180,
+          height: 240,
+          child: Stack(
+            children: [
+              CharacterCardArt(
+                asset: hero.cardAsset(hero.stages[int.parse(parts.last) - 1]),
+                hp: CombatRules.hpForStage(int.parse(parts.last)),
+                attack: c['attack'] as int,
+                crit: c['crit'] as int,
+                skillId: c['skillId'] as String?,
+              ),
+              if (upgrade)
+                Positioned(
+                  left: stat == 'ATK'
+                      ? 4
+                      : stat == 'CRT'
+                      ? 76
+                      : 76,
+                  top: stat == 'SKILL' ? 176 : 32,
+                  child: const Icon(
+                    Icons.arrow_upward,
+                    color: Colors.greenAccent,
+                    size: 26,
+                    shadows: [Shadow(color: Colors.black, blurRadius: 5)],
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -324,6 +354,7 @@ class _ForgeState extends State<ForgeScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 10),
           FilledButton(
             onPressed: () => setState(() => result = null),
             child: Text(context.tr('CONFIRM')),
@@ -423,7 +454,11 @@ class _ForgeState extends State<ForgeScreen> {
                                                         Icons.style_outlined,
                                                       ),
                                                     )
-                                                  : art(card!, 120),
+                                                  : art(
+                                                      card!,
+                                                      155,
+                                                      upgrade: true,
+                                                    ),
                                             ),
                                           ),
                                           DragTarget<String>(
@@ -511,16 +546,24 @@ class _ForgeState extends State<ForgeScreen> {
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                      if (stat != 'SKILL' && card != null)
-                                        Text(
-                                          '$stat $current / $cap · ${atCap ? context.tr('FORGE_CAP') : '+1–${min(stat == 'ATK' ? 5 : 2, cap - current)}${stat == 'CRT' ? '%' : ''}'}',
-                                          textAlign: TextAlign.center,
+                                      SizedBox(
+                                        height: 48,
+                                        child: Center(
+                                          child: stat == 'SKILL'
+                                              ? TextButton(
+                                                  onPressed: _odds,
+                                                  child: Text(
+                                                    context.tr('INFO'),
+                                                  ),
+                                                )
+                                              : Text(
+                                                  card == null
+                                                      ? ''
+                                                      : '$stat $current / $cap · ${atCap ? context.tr('FORGE_CAP') : '+1–${min(stat == 'ATK' ? 5 : 2, cap - current)}${stat == 'CRT' ? '%' : ''}'}',
+                                                  textAlign: TextAlign.center,
+                                                ),
                                         ),
-                                      if (stat == 'SKILL')
-                                        TextButton(
-                                          onPressed: _odds,
-                                          child: Text(context.tr('INFO')),
-                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -556,17 +599,30 @@ class _ForgeState extends State<ForgeScreen> {
                             Expanded(
                               flex: 4,
                               child: LayoutBuilder(
-                                builder: (c, b) => GridView.count(
-                                  key: const Key('forge-card-grid'),
-                                  padding: EdgeInsets.zero,
-                                  crossAxisCount: 2,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  mainAxisExtent: b.maxHeight / 2,
-                                  children: [
-                                    for (final c
-                                        in cards.skip(cardPage * 4).take(4))
-                                      pickCard(c, max(20, b.maxHeight / 2 - 4)),
-                                  ],
+                                builder: (c, b) => Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0x99132032),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(0x66e6ba68),
+                                    ),
+                                  ),
+                                  child: GridView.count(
+                                    key: const Key('forge-card-grid'),
+                                    padding: EdgeInsets.zero,
+                                    crossAxisCount: 2,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    mainAxisExtent: (b.maxHeight - 2) / 2,
+                                    children: [
+                                      for (final c
+                                          in cards.skip(cardPage * 4).take(4))
+                                        pickCard(
+                                          c,
+                                          max(20, b.maxHeight / 2 - 4),
+                                        ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),

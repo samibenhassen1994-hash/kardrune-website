@@ -21,6 +21,8 @@ abstract final class SummonRules {
       featured && rateUpRoll < .35
       ? 3
       : (heroRoll.clamp(0, .999999999) * 9).floor();
-  static DuplicateDecision resolveDuplicate({required bool replace}) =>
-      DuplicateDecision(replace ? 0 : 100, replace);
+  static DuplicateDecision resolveDuplicate({
+    required bool replace,
+    bool free = false,
+  }) => DuplicateDecision(replace || free ? 0 : 100, replace);
 }

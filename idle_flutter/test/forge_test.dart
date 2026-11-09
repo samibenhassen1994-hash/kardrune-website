@@ -1,5 +1,8 @@
 import 'dart:convert';
 
+import 'package:idle_kardrune/game/summon_rules.dart';
+import 'package:idle_kardrune/models/player_save.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_kardrune/features/forge/forge_screen.dart';
@@ -69,6 +72,27 @@ class Transport implements ApiTransport {
 }
 
 void main() {
+  test('free duplicate keeps zero refund after save reload', () {
+    final save = PlayerSave.fromJson({
+      'owned': ['sam:1'],
+      'pendingDuplicate': {
+        'id': 'sam:1',
+        'attack': 40,
+        'crit': 4,
+        'free': true,
+      },
+    });
+    expect(save.pendingDuplicate?['free'], true);
+    expect(
+      SummonRules.resolveDuplicate(
+        replace: false,
+        free: save.pendingDuplicate?['free'] == true,
+      ).refund,
+      0,
+    );
+    expect(SummonRules.resolveDuplicate(replace: false).refund, 100);
+  });
+
   testWidgets('Forge card arrows paginate a two-column grid', (t) async {
     final transport = Transport()..manyCards = true;
     await t.pumpWidget(
@@ -131,6 +155,11 @@ void main() {
       );
       await t.pumpAndSettle();
       expect(find.byType(SingleChildScrollView), findsNothing);
+      final initial=t.getRect(find.byKey(const Key('forge-upgrade-card')));
+      await t.tap(find.widgetWithText(ChoiceChip,'SKILL'));
+      await t.pumpAndSettle();
+      expect(t.getRect(find.byKey(const Key('forge-upgrade-card'))),initial);
+
       expect(t.takeException(), isNull);
       expect(
         t.getBottomRight(find.byKey(const Key('forge-start'))).dy,
