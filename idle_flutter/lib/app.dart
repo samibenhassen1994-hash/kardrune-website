@@ -1592,7 +1592,7 @@ class _RuneNavigation extends StatelessWidget {
         top: false,
         child: Row(
           children: [
-            for (var i = 0; i < items.length; i++)
+            for (final i in const [0, 1, 4, 2, 3])
               Expanded(
                 child: Semantics(
                   button: true,

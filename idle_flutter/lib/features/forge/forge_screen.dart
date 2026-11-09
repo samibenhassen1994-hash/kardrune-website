@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
@@ -40,6 +41,7 @@ class _ForgeState extends State<ForgeScreen> {
   String? cardId, error;
   String color = 'green', stat = 'ATK';
   bool loading = false, busy = false, animating = false;
+  int cardPage = 0;
   String get pendingKey => 'idle-forge-pending-v1:${widget.uid}';
   @override
   void initState() {
@@ -132,6 +134,7 @@ class _ForgeState extends State<ForgeScreen> {
     widget.storage?.write(pendingKey, jsonEncode(pending));
     setState(() {
       busy = true;
+      animating = true;
       error = null;
       result = null;
     });
@@ -144,11 +147,11 @@ class _ForgeState extends State<ForgeScreen> {
         stat = pending!['stat'] as String;
         state = response;
         _clearPending();
-        animating = true;
       });
     } catch (e) {
       if (mounted) {
         setState(() {
+          animating = false;
           error = e is ApiFailure && e.message.startsWith('FORGE_')
               ? e.message
               : 'FORGE_RETRY';
@@ -232,10 +235,13 @@ class _ForgeState extends State<ForgeScreen> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Image.asset(
-          'assets/idle/forge/background.webp',
-          fit: BoxFit.cover,
-          cacheWidth: 1080,
+        ImageFiltered(
+          imageFilter: ui.ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+          child: Image.asset(
+            'assets/idle/forge/background.webp',
+            fit: BoxFit.cover,
+            cacheWidth: 1080,
+          ),
         ),
         const ColoredBox(color: Color(0x55000000)),
         if (animating)
@@ -463,48 +469,69 @@ class _ForgeState extends State<ForgeScreen> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    SizedBox(
-                      height: 112,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          for (final c in cards)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                              ),
-                              child: GestureDetector(
-                                onTap: busy || pending != null || result != null
-                                    ? null
-                                    : () => setState(
-                                        () => cardId = c['id'] as String,
-                                      ),
-                                child: LongPressDraggable<String>(
-                                  data: c['id'] as String,
-                                  maxSimultaneousDrags:
-                                      busy || pending != null || result != null
-                                      ? 0
-                                      : 1,
-                                  feedback: Material(
-                                    color: Colors.transparent,
-                                    child: art(c, 130),
-                                  ),
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: cardId == c['id']
-                                            ? Colors.amber
-                                            : Colors.transparent,
-                                        width: 2,
-                                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          key: const Key('forge-prev'),
+                          onPressed: cardPage > 0
+                              ? () => setState(() => cardPage--)
+                              : null,
+                          icon: const Icon(Icons.chevron_left),
+                        ),
+                        Text(
+                          '${min(cardPage + 1, max(1, (cards.length / 4).ceil()))} / ${max(1, (cards.length / 4).ceil())}',
+                        ),
+                        IconButton(
+                          key: const Key('forge-next'),
+                          onPressed: (cardPage + 1) * 4 < cards.length
+                              ? () => setState(() => cardPage++)
+                              : null,
+                          icon: const Icon(Icons.chevron_right),
+                        ),
+                      ],
+                    ),
+                    GridView.count(
+                      key: const Key('forge-card-grid'),
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisExtent: 128,
+                      children: [
+                        for (final c in cards.skip(cardPage * 4).take(4))
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: GestureDetector(
+                              onTap: busy || pending != null || result != null
+                                  ? null
+                                  : () => setState(
+                                      () => cardId = c['id'] as String,
                                     ),
-                                    child: art(c, 106),
+                              child: LongPressDraggable<String>(
+                                data: c['id'] as String,
+                                maxSimultaneousDrags:
+                                    busy || pending != null || result != null
+                                    ? 0
+                                    : 1,
+                                feedback: Material(
+                                  color: Colors.transparent,
+                                  child: art(c, 130),
+                                ),
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: cardId == c['id']
+                                          ? Colors.amber
+                                          : Colors.transparent,
+                                      width: 2,
+                                    ),
                                   ),
+                                  child: art(c, 120),
                                 ),
                               ),
                             ),
-                        ],
-                      ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     SizedBox(

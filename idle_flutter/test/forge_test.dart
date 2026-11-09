@@ -25,6 +25,7 @@ class Store implements KeyValueStorage {
 class Transport implements ApiTransport {
   final requests = <ApiRequest>[];
   bool failOnce = false;
+  bool manyCards = false;
   int attack = 48, keys = 2;
   Map<String, dynamic> state() => {
     'revision': 1,
@@ -38,6 +39,9 @@ class Transport implements ApiTransport {
     },
     'cards': [
       {'id': 'sam:1', 'attack': attack, 'crit': 7, 'skillId': 'C1'},
+      if (manyCards)
+        for (final hero in ['lira', 'rhea', 'dren', 'tor'])
+          {'id': '$hero:1', 'attack': 40, 'crit': 7, 'skillId': 'C1'},
     ],
   };
   @override
@@ -65,6 +69,39 @@ class Transport implements ApiTransport {
 }
 
 void main() {
+  testWidgets('Forge card arrows paginate a two-column grid', (t) async {
+    final transport = Transport()..manyCards = true;
+    await t.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ForgeScreen(
+            active: true,
+            api: ApiClient(Token(), transport),
+            uid: 'a',
+            storage: Store(),
+            onLogin: () {},
+            onSave: (_) {},
+          ),
+        ),
+      ),
+    );
+    await t.pumpAndSettle();
+    final grid = t.widget<GridView>(find.byKey(const Key('forge-card-grid')));
+    expect(
+      (grid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount)
+          .crossAxisCount,
+      2,
+    );
+    expect(find.text('1 / 2'), findsOneWidget);
+    await t.ensureVisible(find.byKey(const Key('forge-next')));
+    await t.tap(find.byKey(const Key('forge-next')));
+    await t.pumpAndSettle();
+    expect(find.text('2 / 2'), findsOneWidget);
+    await t.tap(find.byKey(const Key('forge-prev')));
+    await t.pumpAndSettle();
+    expect(find.text('1 / 2'), findsOneWidget);
+    expect(t.takeException(), isNull);
+  });
   for (final lang in KrLanguage.values) {
     testWidgets('Forge 320px selection and server result ${lang.code}', (
       t,
