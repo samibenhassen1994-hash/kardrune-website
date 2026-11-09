@@ -13,6 +13,7 @@ import 'game/summon_rules.dart';
 import 'game/skill_catalog.dart';
 import 'game/deck_power.dart';
 import 'features/cards/deck_builder.dart';
+import 'features/forge/forge_screen.dart';
 import 'features/cards/card_stat_badges.dart';
 import 'features/summon/summon_result.dart';
 import 'features/summon/summon_screen.dart';
@@ -727,6 +728,7 @@ class _IdleShellState extends State<IdleShell> {
 
   @override
   Widget build(BuildContext context) {
+    final forgeUid=_cloud?.identity?.uid;
     if (_pvp?.state == LiveMatchState.arena) {
       return _motionWrap(
         _withUpdate(
@@ -959,6 +961,7 @@ class _IdleShellState extends State<IdleShell> {
                                   cloudMessage: _cloudInitializationMessage,
                                   onCloudRetry: _initializeCloud,
                                 ),
+                                ForgeScreen(key:ValueKey('forge-${_cloud?.identity?.uid}'),active:tab==4,api:_cloud?.api,uid:_cloud?.identity?.uid,storage:_saveService?.storage,onLogin:()=>_chooseTab(3),accountCurrent:()=>_cloud?.identity?.uid==forgeUid,onSave:(response){if(_cloud?.identity?.uid==forgeUid)_cloud?.applyServerSave(response);}),
                               ],
                             ),
                           ),
@@ -1575,6 +1578,7 @@ class _RuneNavigation extends StatelessWidget {
         KrTranslations.translate(language, 'SUMMON'),
       ),
       (Icons.person_outline, KrTranslations.translate(language, 'PROFILE')),
+      (Icons.hardware, KrTranslations.translate(language, 'FORGE')),
     ];
     return Container(
       key: const Key('idle-navigation-bar'),
