@@ -38,3 +38,9 @@ cd idle_flutter
 flutter test test/forge_test.dart test/app_shell_test.dart test/live_pvp_arena_test.dart test/clans_test.dart
 flutter build web --release --base-href /idle/
 ```
+
+## Production release — 2026-11-09
+
+PR #89 merged as `962ed7654fc0bc8e35a83fffca79fb75907c644f` after review. Official full D1 export verified by restoration, integrity check and a local migration rehearsal; backup SHA256 `308c457218b3d59d3f380cea8f0748627594c138f036937e91b3fb661b303556` (509853 bytes), retained outside Git.
+
+Migration 0015 applied once to `idle-kardrune`: both tables and both triggers present, `PRAGMA foreign_key_check` empty, zero key rows and zero attempts. No keys distributed or player transactions executed. Pages production deployed commit `962ed76`; public `/idle/release-id.json` serves packaged release `9f8b9c6`, and `/api/forge` correctly returns HTTP 401 without authentication. PvP Worker unchanged.
