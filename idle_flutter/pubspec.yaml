@@ -83,6 +83,7 @@ flutter:
     - assets/idle/tutorial/
     - assets/idle/summon/
     - assets/idle/summon/banners/
+    - assets/idle/forge/
     - assets/idle/clans/
     - assets/idle/avatars/
     - assets/audio/music/

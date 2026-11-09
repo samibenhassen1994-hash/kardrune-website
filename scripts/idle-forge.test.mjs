@@ -84,3 +84,19 @@ test('inventory isolates accounts and defaults to zero without free grants',asyn
  const {sql,env}=setup();const b=await forgeState(env,'b');assert.deepEqual(b.keys,{green:0,blue:0,red:0});assert.deepEqual(b.cards,[]);
  await assert.rejects(forgeAttempt(env,'b',req()),/FORGE_CARD/);sql.close();
 });
+
+test('skill replacement persists permanently and failed transaction rolls back key and receipt',async()=>{
+ const {sql,env}=setup();await forgeAttempt(env,'a',req(1,'SKILL'),()=>0);
+ const grant=sql.prepare('SELECT * FROM skill_grants').get();assert.notEqual(grant.skill_id,'C1');
+ assert.equal(JSON.parse(sql.prepare('SELECT save_json FROM demo_saves').get().save_json).skills['sam:1'].id,grant.skill_id);
+ sql.exec("CREATE TRIGGER fail_save BEFORE UPDATE ON demo_saves BEGIN SELECT RAISE(ABORT,'test rollback');END;");
+ await assert.rejects(forgeAttempt(env,'a',req(2,'ATK',2),()=>0),/test rollback/);
+ assert.equal(sql.prepare('SELECT quantity FROM forge_keys').get().quantity,1);
+ assert.equal(sql.prepare('SELECT COUNT(*) n FROM forge_attempts').get().n,1);assert.equal(sql.prepare('SELECT attack FROM skill_grants').get().attack,48);sql.close();
+});
+
+test('same id concurrent retry returns original outcome; injected stats ignored',async()=>{
+ const {sql,env}=setup();const body={...req(),attack:999,success:true,quantity:99};
+ const results=await Promise.all([forgeAttempt(env,'a',body,()=>0),forgeAttempt(env,'a',body,()=>99)]);
+ assert.deepEqual(results[0],results[1]);assert.equal(sql.prepare('SELECT quantity FROM forge_keys').get().quantity,1);assert.equal(sql.prepare('SELECT attack FROM skill_grants').get().attack,49);sql.close();
+});
