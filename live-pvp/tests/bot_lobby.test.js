@@ -28,6 +28,7 @@ test('complete bot match uses D20, skill replay, automatic readiness and persist
   assert.ok(bot.chosen);
   lobby.play(a,buildHand(a.deck,a.used)[0].id);
   const replay=a.ws.messages.filter(m=>m.type==='round_result').at(-1);
+  assert.equal(a.used.length,3*(n+1));assert.equal(bot.used.length,3*(n+1));
   assert.ok(replay.log.length>0);assert.equal(match.awaiting.size,1);
   lobby.ready(a);
  }
@@ -57,6 +58,7 @@ test('two human participants complete D20, alternating rounds, replay acknowledg
   lobby.play(a,buildHand(a.deck,a.used)[0].id);
   lobby.play(b,buildHand(b.deck,b.used)[0].id);
   const replay=a.ws.messages.filter(m=>m.type==='round_result').at(-1);
+  assert.equal(a.used.length,3*(n+1));assert.equal(b.used.length,3*(n+1));
   assert.equal(replay.starter,(diceA.starter+n)%2);
   assert.ok(replay.log.length>0);
   assert.equal(match.awaiting.size,2);lobby.ready(a);
@@ -91,4 +93,29 @@ test('human match cancels bot deadline and cannot create a second match',async t
  assert.equal(lobby.matches.size,1);
  assert.equal(a.match,b.match);
  assert.equal(a.match.players.some(p=>p.isBot),false);
+});
+
+test('matchmaking rejects zero through eight cards before a socket is created',async t=>{
+ const {lobby}=setup(t);
+ for(let length=0;length<9;length++){
+  const response=await lobby.fetch(new Request('https://lobby/connect',{headers:{Upgrade:'websocket','X-Player':'u','X-Deck':JSON.stringify(generateBotDeck(250,()=>.5).slice(0,length))}}));
+  assert.equal(response.status,400);
+ }
+ assert.equal(lobby.sockets.size,1);
+});
+
+test('three real rounds place all nine distinct drawn cards in both graveyards',async t=>{
+ const {lobby,a,human,jobs}=setup(t),b=human('b');lobby.sockets.set('b',b);lobby.waiting=null;
+ await lobby.startMatch(a,b);const match=a.match;
+ for(let n=0;n<3;n++){
+  const hands=[a,b].map(p=>buildHand(p.deck,p.used));
+  assert.ok(hands.every(h=>h.length===3));
+  lobby.play(a,hands[0][0].id);lobby.play(b,hands[1][0].id);
+  assert.equal(a.used.length,(n+1)*3);assert.equal(b.used.length,(n+1)*3);
+  if(n===1)match.scores=[1,1];
+  if(n<2){lobby.ready(a);lobby.ready(b)}
+ }
+ assert.equal(new Set(a.used).size,9);assert.equal(new Set(b.used).size,9);
+ assert.deepEqual(buildHand(a.deck,a.used),[]);
+ lobby.ready(a);lobby.ready(b);await Promise.all(jobs);
 });

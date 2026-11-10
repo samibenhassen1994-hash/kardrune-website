@@ -820,10 +820,10 @@ class _IdleShellState extends State<IdleShell> {
                                           language,
                                           'SIGN IN FROM PROFILE TO PLAY LIVE',
                                         )
-                                      : deck.length < 3
+                                      : deck.length != 9
                                       ? KrTranslations.translate(
                                           language,
-                                          'ADD THREE CARDS TO YOUR DECK',
+                                          'ADD NINE CARDS TO YOUR DECK',
                                         )
                                       : _pvp?.state == LiveMatchState.idle
                                       ? ''
@@ -837,13 +837,11 @@ class _IdleShellState extends State<IdleShell> {
                                       _pvp?.state ==
                                           LiveMatchState.connecting ||
                                       _pvp?.state == LiveMatchState.waiting,
-                                  onStart: _pvp != null && deck.length >= 3
+                                  onStart: _pvp != null && deck.length == 9
                                       ? () { _flameAudio.unlock(); _gameAudio.prepareBattle(); _gameAudio.music('suspance_story_music'); _gameAudio.unlock(); _gameAudio.effect('button_click_2'); _pvp!.findMatch(); }
-                                      : () => setState(
-                                          () => tab = _cloud?.identity == null
-                                              ? 3
-                                              : 1,
-                                        ),
+                                      : _cloud?.identity == null
+                                          ? () => setState(() => tab = 3)
+                                          : null,
                                   onCancel: _pvp?.close,
                                 ),
                                 _Cards(

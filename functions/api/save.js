@@ -1,6 +1,7 @@
 import {userFromRequest,failure,json} from './_lib/auth.js';
-import {ensureLegacySkills,mergeGrantedSave,rollSkill} from './_lib/skill_store.js';
+import {ensureLegacySkills,mergeGrantedSave} from './_lib/skill_store.js';
 import {SKILL_VERSION} from '../../shared/skill_catalog.js';
+import {starterAdditions,starterSave,ensureStarterCards} from './_lib/starter_deck.js';
 import {isolateCompetitiveSave,selectVerifiedActive} from './_lib/save_policy.js';
 import {requireActiveAccount} from './_lib/account_status.js';
 import {ensureNameChoices,chosenNameFor} from './_lib/name_store.js';
@@ -22,9 +23,10 @@ async function handle({request,env},write){
   await ensureNameChoices(env);
   const chosenName=await chosenNameFor(env,user.uid);
   if(!write){
-   const row=await env.DB.prepare('SELECT save_json,revision,updated_at FROM demo_saves WHERE uid=?').bind(user.uid).first();
+   let row=await env.DB.prepare('SELECT save_json,revision,updated_at FROM demo_saves WHERE uid=?').bind(user.uid).first();
    if(!row)return json({save:null,revision:0});
-   const grants=await ensureLegacySkills(env,user.uid);
+   let grants=await ensureLegacySkills(env,user.uid);
+   ({row,grants}=await ensureStarterCards(env,user.uid,row,grants));
    const wallet=await env.DB.prepare('SELECT shards FROM skill_wallets WHERE uid=?').bind(user.uid).first();
    const daily=await env.DB.prepare('SELECT day,count FROM practice_daily WHERE uid=?').bind(user.uid).first();
    if(!wallet||!daily)return json({error:'Verified progress unavailable'},503);
@@ -39,19 +41,17 @@ async function handle({request,env},write){
   if(!input?.save||!Object.hasOwn(input.save,'skills'))
    return json({error:'Update Idle KardRune before saving online'},426);
   if(!validSave(input.save)||!Number.isSafeInteger(input.revision)||input.revision<0)return json({error:'Invalid demo save'},400);
-  const existing=await env.DB.prepare('SELECT revision,save_json FROM demo_saves WHERE uid=?').bind(user.uid).first();
+  let existing=await env.DB.prepare('SELECT revision,save_json FROM demo_saves WHERE uid=?').bind(user.uid).first();
+  if(existing){const verified=await ensureLegacySkills(env,user.uid);({row:existing}=await ensureStarterCards(env,user.uid,existing,verified));}
   const current=existing?.revision||0;
   if(input.revision!==current)return json({error:'Save conflict',revision:current},409);
   const grants=existing?await ensureLegacySkills(env,user.uid):[];
-  if(!existing&&input.save.owned.includes('sam:1')){
-   const skill=rollSkill(1);
-   grants.push({card_id:'sam:1',attack:40,crit:4,skill_id:skill.id,
-    rarity:skill.rarity,skill_version:SKILL_VERSION,source:'initial'});
-  }
+  if(!existing)grants.push(...starterAdditions({owned:[]},[],undefined));
   const previous=existing?JSON.parse(existing.save_json):null;
   const pending=previous?.pendingDuplicate??null;
   const isolated=isolateCompetitiveSave(input.save,previous);
-  const normalized=mergeGrantedSave(isolated,grants,pending);
+  const normalized=starterSave(isolated,grants,[]);
+  normalized.pendingDuplicate=pending;
   normalized.active=selectVerifiedActive(input.save.active,previous?.active,normalized.owned);
   if(chosenName)normalized.name=chosenName;
   const wallet=existing?await env.DB.prepare('SELECT shards FROM skill_wallets WHERE uid=?').bind(user.uid).first():null;
@@ -70,7 +70,7 @@ async function handle({request,env},write){
      .bind(user.uid,1500,Date.now()),
     env.DB.prepare('INSERT INTO practice_daily(uid,day,count) VALUES(?,?,0)')
      .bind(user.uid,'')];
-   if(grants.length){const grant=grants[0];statements.push(env.DB.prepare(`INSERT INTO skill_grants
+   for(const grant of grants){statements.push(env.DB.prepare(`INSERT INTO skill_grants
      (uid,card_id,attack,crit,skill_id,rarity,skill_version,source,roll_id,updated_at)
      VALUES(?,?,?,?,?,?,?,?,?,?)`).bind(user.uid,grant.card_id,grant.attack,grant.crit,
       grant.skill_id,grant.rarity,SKILL_VERSION,'initial',null,Date.now()));}

@@ -66,6 +66,8 @@ abstract final class KrTranslations {
   };
 
   static const _catalog = <String, Map<KrLanguage, String>>{
+    'ADD NINE CARDS TO YOUR DECK': {KrLanguage.english:'You must put 9 cards in your deck to start a battle.',KrLanguage.italian:'Devi inserire 9 carte nel mazzo per iniziare una battaglia.',KrLanguage.spanish:'Debes poner 9 cartas en el mazo para iniciar una batalla.',KrLanguage.japanese:'バトルを始めるにはデッキに9枚のカードが必要です。',KrLanguage.korean:'전투를 시작하려면 덱에 카드 9장을 넣어야 합니다.',KrLanguage.chinese:'开始战斗前，牌组中必须有9张卡牌。',KrLanguage.german:'Du brauchst 9 Karten im Deck, um einen Kampf zu beginnen.'},
+    'GRAVEYARD': {KrLanguage.english:'GRAVEYARD',KrLanguage.italian:'CIMITERO',KrLanguage.spanish:'CEMENTERIO',KrLanguage.japanese:'墓地',KrLanguage.korean:'무덤',KrLanguage.chinese:'墓地',KrLanguage.german:'FRIEDHOF'},
     'FORGE_CURRENT_SKILL': {KrLanguage.english:'CURRENT SKILL',KrLanguage.italian:'SKILL ATTUALE',KrLanguage.spanish:'HABILIDAD ACTUAL',KrLanguage.japanese:'現在のスキル',KrLanguage.korean:'현재 스킬',KrLanguage.chinese:'当前技能',KrLanguage.german:'AKTUELLE FÄHIGKEIT'},
     'FORGE_PROPOSED_SKILL': {KrLanguage.english:'PROPOSED SKILL',KrLanguage.italian:'NUOVA SKILL',KrLanguage.spanish:'NUEVA HABILIDAD',KrLanguage.japanese:'新しいスキル',KrLanguage.korean:'새 스킬',KrLanguage.chinese:'新技能',KrLanguage.german:'NEUE FÄHIGKEIT'},
     'FORGE_ACCEPT': {KrLanguage.english:'ACCEPT',KrLanguage.italian:'APPROVA',KrLanguage.spanish:'ACEPTAR',KrLanguage.japanese:'承認',KrLanguage.korean:'승인',KrLanguage.chinese:'接受',KrLanguage.german:'ANNEHMEN'},

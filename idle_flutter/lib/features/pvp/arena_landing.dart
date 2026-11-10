@@ -23,7 +23,7 @@ class ArenaLanding extends StatefulWidget {
   });
 
   final VoidCallback? onClans;
-  final VoidCallback onStart;
+  final VoidCallback? onStart;
   final Widget header;
   final VoidCallback? onCancel;
   final VoidCallback? onLeaderboard;

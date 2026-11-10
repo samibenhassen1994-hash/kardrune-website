@@ -7,7 +7,7 @@ const ranges=[[[8,9],[0,1],[0,0]],[[6,8],[1,3],[0,0]],[[2,4],[5,7],[0,0]],[[0,2]
 const leagues=['Bronze','Silver','Gold','Platinum','Diamond','Legend'];
 // Pregame stat quantiles only: preserve legal bounds, skill odds and combat RNG.
 // Keep weak/balanced/strong variety while making entry leagues more forgiving.
-const statQuantileScale=[.82,.8,.93,.94,1,1.05];
+const statQuantileScale=[.82,1.08,.93,1.03,1,1.05];
 const randomChoiceChance=[.9,.7,.45,.3,.15,.08];
 const syllables=['vael','mor','zyr','eld','thal','kael','drav','nyr','ael','vor','ryn','sha','tor','vel','lys','nar'];
 const pick=(items,rng)=>items[Math.floor(rng()*items.length)];

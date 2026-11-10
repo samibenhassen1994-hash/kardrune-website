@@ -161,7 +161,7 @@ class ArenaViewController extends ChangeNotifier {
     if (lockedCard != null && lockedCard != id) return;
     lockedCard = id;
     this.automatic = automatic;
-    used.add(id);
+    used.addAll(hand?.hand.map((c) => c.id) ?? [id]);
     // Keep the server deadline visible while the opponent is choosing.
     notifyListeners();
   }
@@ -1088,16 +1088,17 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                 Text(
                                   (c.hand == null
                                               ? 0
-                                              : c.hand!.deckSize -
-                                                    c.used.length)
+                                              : (c.hand!.deckSize -
+                                                    c.hand!.usedCount -
+                                                    c.hand!.hand.length).clamp(0, 99))
                                           .toString() +
-                                      ' LEFT',
+                                      ' ${context.tr('DECK')}',
                                   key: const Key('deck-remaining'),
                                   style: const TextStyle(fontSize: 11),
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  '${context.tr('USED')} ${c.used.length}',
+                                  '${context.tr('GRAVEYARD')} ${c.used.length}',
                                   key: const Key('discard-count'),
                                   style: const TextStyle(fontSize: 11),
                                 ),
@@ -1231,7 +1232,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                                           size: 30,
                                         ),
                                         Text(
-                                          '${c.hand == null ? 0 : (c.hand!.deckSize - c.used.length).clamp(0, 99)}',
+                                          '${c.hand == null ? 0 : (c.hand!.deckSize - c.hand!.usedCount - c.hand!.hand.length).clamp(0, 99)}',
                                           style: const TextStyle(
                                             color: Color(0xffffd993),
                                             fontWeight: FontWeight.bold,
@@ -1258,7 +1259,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                             Text(
                               c.used.isEmpty
                                   ? 'Each card can be used only once'
-                                  : 'USED: ' + c.used.join(' · '),
+                                  : '${context.tr('GRAVEYARD')}: ' + c.used.join(' · '),
                               key: const Key('used-card'),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

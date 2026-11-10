@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {buildHand,resolveDuel,resolveDuelFromStarter,pickWinner,matchComplete,hpByStage,rollInitiative,starterForRound} from '../src/rules.js';
-test('three options, unplayed cards remain available',()=>{
+test('three options and a whole drawn hand enter the graveyard',()=>{
  const deck=Array.from({length:9},(_,i)=>({id:'card:'+i}));
  assert.deepEqual(buildHand(deck,[],1).map(x=>x.id),['card:0','card:1','card:2']);
- assert.deepEqual(buildHand(deck,['card:1'],2).map(x=>x.id),['card:0','card:2','card:3']);
+ assert.deepEqual(buildHand(deck,['card:0','card:1','card:2'],2).map(x=>x.id),['card:3','card:4','card:5']);
 });
 test('fixed HP values per evolution stage',()=>{
  assert.deepEqual([1,2,3].map(hpByStage),[240,340,430]);
@@ -44,4 +44,15 @@ test('direct attacks alternate beginning with the declared starter',()=>{
  const result=resolveDuelFromStarter(a,b,1,()=>.99);
  assert.deepEqual(result.log.filter(entry=>entry.kind==='attack_start').slice(0,4)
    .map(entry=>entry.actor),[1,0,1,0]);
+});
+
+test('nine shuffled cards enter graveyard in three disjoint hands',()=>{
+ const deck=Array.from({length:9},(_,i)=>({id:`hero:${i}`})),grave=[];
+ for(let round=0;round<3;round++){
+  const hand=buildHand(deck,grave);
+  assert.equal(hand.length,3);
+  assert.ok(hand.every(card=>!grave.includes(card.id)));
+  grave.push(...hand.map(card=>card.id));
+ }
+ assert.equal(new Set(grave).size,9);assert.equal(buildHand(deck,grave).length,0);
 });

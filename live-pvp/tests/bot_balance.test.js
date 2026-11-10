@@ -43,7 +43,7 @@ test('independent player cohorts with realistic choices and reproducible seeds',
     const hands=decks.map((d,i)=>buildHand(d,used[i]));
     const choice=chooseBotCard({hand:hands[1],remaining:decks[1].filter(c=>!used[1].includes(c.id)),points,score:[scores[1],scores[0]],style:['aggressive','defensive','strategic'][n%3]},rng);
     const cards=[playerChoice(hands[0],cohort,round,scores,rng),hands[1].find(c=>c.id===choice)];
-    cards.forEach((c,i)=>used[i].push(c.id));
+    hands.forEach((hand,i)=>used[i].push(...hand.map(c=>c.id)));
     const result=resolveDuelFromStarter(...cards,starterForRound(initiative.starter,round),rng);
     assert.ok(result.log.length>0);assert.ok(result.hp.every(Number.isFinite));
     if(result.winner!=='draw')scores[result.winner]++;

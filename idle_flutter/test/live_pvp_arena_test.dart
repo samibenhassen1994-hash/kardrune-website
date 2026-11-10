@@ -10,6 +10,16 @@ const cards = [
   PvpCard(id: 'dren:1', hero: 'dren', stage: 1, attack: 65, crit: 7),
 ];
 void main() {
+ test('locking one card moves the entire drawn hand to the graveyard', () {
+  final c = ArenaViewController();
+  c.startHand(const HandEvent(round: 1, opponent: 'Rival', score: [0, 0],
+    hand: cards, deckSize: 9, usedCount: 0, durationMs: 30000,
+    deadline: 30000, matchId: 'graveyard'));
+  expect(c.select('sam:1'), isTrue);
+  expect(c.used, ['sam:1', 'lira:1', 'dren:1']);
+  expect(c.select('lira:1'), isFalse);
+  c.dispose();
+ });
  test('summary is server-log based and replay-safe; reward requires confirmation',(){
   final c=ArenaViewController();
   final payload=<String,dynamic>{'round':1,'selfIndex':1,'log':[

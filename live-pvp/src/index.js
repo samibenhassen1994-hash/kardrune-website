@@ -25,7 +25,7 @@ export default {
   const deckRow=await env.DB.prepare('SELECT d.cards_json,s.save_json,p.display_name FROM pvp_decks d JOIN demo_saves s ON d.uid=s.uid JOIN players p ON p.uid=d.uid WHERE d.uid=? AND p.is_banned=0').bind(row.uid).first();
   if(!deckRow)return new Response('Deck unavailable',{status:403});
   const save=JSON.parse(deckRow.save_json),ids=JSON.parse(deckRow.cards_json);
-  if(!Array.isArray(ids)||ids.length<MAX_ROUNDS||ids.length>9||new Set(ids).size!==ids.length)return new Response('Invalid deck',{status:400});
+  if(!Array.isArray(ids)||ids.length!==9||new Set(ids).size!==ids.length)return new Response('Invalid deck',{status:400});
   const deck=[];
   for(const id of ids){
    const [hero,stageText]=id.split(':'),stage=Number(stageText);
@@ -50,7 +50,7 @@ export class PvpLobby {
  async fetch(request){
   if(request.headers.get('Upgrade')?.toLowerCase()!=='websocket')return new Response('WebSocket required',{status:426});
   const uid=request.headers.get('X-Player'),name=request.headers.get('X-Name'),avatar=request.headers.get('X-Avatar')||'player',deck=JSON.parse(request.headers.get('X-Deck')||'[]');
-  if(!uid||deck.length<MAX_ROUNDS||deck.length>9)return new Response('Invalid match participant',{status:400});
+  if(!uid||deck.length!==9)return new Response('Invalid match participant',{status:400});
   // The Durable Object serializes requests to this lobby. Reject a second
   // session before creating a socket or touching the active match.
   if(this.sockets.has(uid)){
@@ -89,6 +89,7 @@ export class PvpLobby {
  }
  startMatch(waiting,player){
    clearTimeout(waiting.botTimer);clearTimeout(player.botTimer);
+   waiting.used=[];player.used=[];
    const initiative=rollInitiative(secureRandom);
    const match={id:crypto.randomUUID(),players:[waiting,player],round:0,scores:[0,0],selectTimer:null,readyTimer:null,awaiting:null,initiative,initializing:true};
    waiting.match=match;player.match=match;this.matches.set(match.id,match);
@@ -197,7 +198,7 @@ export class PvpLobby {
   if(!match.players.every(p=>p.chosen))return;
   this.clearTimers(match);
   const [a,b]=match.players;
-  a.used.push(a.chosen.id);b.used.push(b.chosen.id);
+  for(const p of [a,b])p.used.push(...buildHand(p.deck,p.used).map(c=>c.id));
   const roundStarter=starterForRound(match.initiative?.starter??0,match.round);
   const result=resolveDuelFromStarter(a.chosen,b.chosen,roundStarter);
   const timeline=result.log.map(entry=>({...entry,round:match.round,matchId:match.id}));
