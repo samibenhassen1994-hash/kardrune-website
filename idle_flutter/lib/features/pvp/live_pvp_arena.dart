@@ -149,7 +149,6 @@ class ArenaViewController extends ChangeNotifier {
         diceVisible ||
         lockedCard != null ||
         _replaying ||
-        used.contains(id) ||
         !hand!.hand.any((c) => c.id == id)) {
       return false;
     }
@@ -629,7 +628,9 @@ class _LivePvpArenaState extends State<LivePvpArena> {
     final battle =
         c.battleStarted && c.playerCard != null && c.opponentCard != null;
     final choosing = c.hand != null && c.lockedCard == null && !c.battleStarted;
-    final handCards = cards.where((card) => !c.used.contains(card.id)).toList();
+    // The server owns the draw. Local replay history must never hide a card
+    // from an authoritative hand (including after a rolling Worker update).
+    final handCards = c.lockedCard == null ? cards : const <PvpCard>[];
     return Stack(
       children: [
         Scaffold(

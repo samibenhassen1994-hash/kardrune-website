@@ -10,6 +10,20 @@ const cards = [
   PvpCard(id: 'dren:1', hero: 'dren', stage: 1, attack: 65, crit: 7),
 ];
 void main() {
+ testWidgets('server hand shows all three cards despite stale local history', (tester) async {
+  final c = ArenaViewController();
+  c.used.addAll(['sam:1', 'lira:1']);
+  c.startHand(const HandEvent(round: 2, opponent: 'Rival', score: [1, 0],
+    hand: cards, deckSize: 9, usedCount: 3, durationMs: 30000,
+    deadline: 30000, matchId: 'authoritative-hand'));
+  await tester.pumpWidget(MaterialApp(home: LivePvpArena(
+    controller: c, onPlay: (_) {}, onReady: () {})));
+  await tester.pump(const Duration(milliseconds: 1100));
+  expect(find.byKey(const Key('hand-card')), findsNWidgets(3));
+  expect(c.select('sam:1'), isTrue);
+  await tester.pumpWidget(const SizedBox.shrink());
+  c.dispose();
+ });
  test('locking one card moves the entire drawn hand to the graveyard', () {
   final c = ArenaViewController();
   c.startHand(const HandEvent(round: 1, opponent: 'Rival', score: [0, 0],
