@@ -56,6 +56,12 @@ void main() {
       'NOT COLLECTED',
       'PER PULL',
         'Nine heroes · 300 Shards or a free charge',
+        "OLYMPUS PULL  ◆ 1200",
+        "Olympus: 10% total (1.67% each). Otherwise, featured-style heroes with extra Stage 3 chance.",
+        "Cost: 1200 Shards. Six Olympus gods: 10% total; 1.67% each.",
+        "Other heroes: 90%. Dren featured rate-up.",
+        "Fallback stages: Stage 1 55%, Stage 2 30%, Stage 3 15%.",
+        "Olympus cards: one form, Ultra fixed skills, ATK 100, CRIT 25%, HP 430.",
         'No event banner is active. Rates and featured heroes will appear here when an event is configured.',
       ];
       for (final language in KrLanguage.values.where(

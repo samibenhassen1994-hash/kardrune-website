@@ -247,11 +247,9 @@ class _IdleShellState extends State<IdleShell> {
       for (final id in owned) {
         if (skills.containsKey(id)) continue;
         final stage = int.tryParse(id.split(':').last) ?? 1;
-        skills[id] = SkillCatalog.roll(
-          stage,
-          widget.random(),
-          widget.random(),
-        ).id;
+        skills[id] = KardRuneCatalog.isOlympus(id.split(':').first)
+          ? SkillCatalog.olympusSkills[id.split(':').first]!
+          : SkillCatalog.roll(stage,widget.random(),widget.random()).id;
         migrated = true;
       }
       if (migrated) _saveService?.save(save.copyWith(skills: Map.of(skills)));

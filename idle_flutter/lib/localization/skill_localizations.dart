@@ -26,6 +26,12 @@ extension LocalizedSkillDefinition on SkillDefinition {
 
 const _skillTexts = <KrLanguage, Map<String, _SkillText>>{
   KrLanguage.english: {
+    'D1': ("Divine Judgment", "Zeus: +22% ATK, +18 first hit. Next card: +15% ATK.", "Attacks and next card", "One following duel"),
+    'D2': ("Sovereign Tide", "Poseidon: first hit +16; first damage taken -30%. Next card: -20% on its first hit taken.", "First hit and next card", "One use each"),
+    'D3': ("Shadow Pact", "Hades heals 12% of direct damage. Next card heals 8% of direct damage.", "Direct attacks", "Max HP; next duel only"),
+    'D4': ("Aegis of Wisdom", "Athena reduces the first damage taken by 25%. Next card gains +3 CRIT points.", "First hit and next card", "Once; max 25% CRIT"),
+    'D5': ("War Fury", "Ares: +12% ATK, first hit +15. Next card: +10% ATK.", "Attacks and next card", "One following duel"),
+    'D6': ("Healing Light", "Apollo heals 45 HP after first damage taken. Next card heals 60 HP after first damage.", "First damage taken", "Once if alive, max HP"),
     'C1': (
       'Precise Strike',
       'The first direct attack deals +8 damage.',
@@ -208,6 +214,12 @@ const _skillTexts = <KrLanguage, Map<String, _SkillText>>{
     ),
   },
   KrLanguage.spanish: {
+    'D1': ("Juicio divino", "Zeus: +22% ATK, +18 primer golpe. Siguiente carta: +15% ATK.", "Ataques y carta siguiente", "Un duelo siguiente"),
+    'D2': ("Marea soberana", "Poseidón: primer golpe +16; primer daño recibido -30%. Siguiente carta: -20% primer daño.", "Primer golpe y carta siguiente", "Una vez cada efecto"),
+    'D3': ("Pacto de sombras", "Hades cura el 12% del daño directo. Siguiente carta cura el 8%.", "Golpes directos", "HP máximo; un duelo"),
+    'D4': ("Égida de sabiduría", "Atenea reduce el primer daño recibido un 25%. Siguiente carta: +3 puntos CRIT.", "Primer daño y carta siguiente", "Una vez; CRIT máximo 25%"),
+    'D5': ("Furia de guerra", "Ares: +12% ATK, primer golpe +15. Siguiente carta: +10% ATK.", "Ataques y carta siguiente", "Un duelo siguiente"),
+    'D6': ("Luz sanadora", "Apolo cura 45 HP tras el primer daño. Siguiente carta cura 60 HP.", "Primer daño recibido", "Una vez si sobrevive"),
     'C1': (
       'Golpe preciso',
       'El primer ataque directo inflige +8 de daño.',
@@ -390,6 +402,12 @@ const _skillTexts = <KrLanguage, Map<String, _SkillText>>{
     ),
   },
   KrLanguage.german: {
+    'D1': ("Göttliches Urteil", "Zeus: +22% ATK, erster Treffer +18. Nächste Karte: +15% ATK.", "Angriffe und nächste Karte", "Ein folgendes Duell"),
+    'D2': ("Souveräne Flut", "Poseidon: erster Treffer +16; erster erhaltener Schaden -30%. Nächste Karte: -20%.", "Erster Treffer und nächste Karte", "Je einmal"),
+    'D3': ("Schattenpakt", "Hades heilt 12% des direkten Schadens. Nächste Karte heilt 8%.", "Direkte Treffer", "Bis max. HP; ein Duell"),
+    'D4': ("Ägis der Weisheit", "Athene: erster Schaden -25%. Nächste Karte: +3 CRIT-Punkte.", "Erster Treffer und nächste Karte", "Einmal; CRIT max. 25%"),
+    'D5': ("Kriegswut", "Ares: +12% ATK, erster Treffer +15. Nächste Karte: +10% ATK.", "Angriffe und nächste Karte", "Ein folgendes Duell"),
+    'D6': ("Heilendes Licht", "Apollon heilt nach dem ersten Treffer 45 HP. Nächste Karte heilt 60 HP.", "Erster erhaltener Treffer", "Einmal, falls am Leben"),
     'C1': (
       'Präziser Schlag',
       'Der erste direkte Angriff verursacht +8 Schaden.',
@@ -572,6 +590,12 @@ const _skillTexts = <KrLanguage, Map<String, _SkillText>>{
     ),
   },
   KrLanguage.japanese: {
+    'D1': ("神の裁き", "ゼウス：ATK+22%、初撃+18。次のカードはATK+15%。", "攻撃と次のカード", "次の1戦のみ"),
+    'D2': ("海王の潮流", "ポセイドン：初撃+16、初被ダメージ-30%。次のカードは初被ダメージ-20%。", "初撃と次のカード", "各1回"),
+    'D3': ("冥界の契約", "ハデスは直接ダメージの12%回復。次カードは8%回復。", "直接攻撃", "最大HPまで、次の1戦のみ"),
+    'D4': ("知恵の盾", "アテナ：初被ダメージ-25%。次のカードはCRIT+3ポイント。", "初被ダメージと次のカード", "各1回、CRIT最大25%"),
+    'D5': ("戦神の怒り", "アレス：ATK+12%、初撃+15。次のカードはATK+10%。", "攻撃と次のカード", "次の1戦のみ"),
+    'D6': ("癒しの光", "アポロン：初被ダメージ後45HP回復。次のカードは60HP回復。", "初被ダメージ", "生存時1回、最大HPまで"),
     'C1': ('精密攻撃', '最初の直接攻撃のダメージが+8。', '最初の攻撃', 'デュエル中1回'),
     'C2': ('硬い皮膚', '最初に受ける直接ダメージを8軽減。', '最初に受けた攻撃', '1チャージ'),
     'C3': ('持久力', '最大HPと現在HPが+15の状態で開始。', 'デュエル開始', 'パッシブ'),
@@ -614,6 +638,12 @@ const _skillTexts = <KrLanguage, Map<String, _SkillText>>{
     'U5': ('昇華', '攻撃後ごとにATKが15%上昇、最大+60%。', '各攻撃終了時', '4スタック; デュエル終了まで'),
   },
   KrLanguage.korean: {
+    'D1': ("신의 심판", "제우스: ATK +22%, 첫 공격 +18. 다음 카드 ATK +15%.", "공격 및 다음 카드", "다음 결투 1회"),
+    'D2': ("바다의 격류", "포세이돈: 첫 공격 +16, 첫 피해 -30%. 다음 카드 첫 피해 -20%.", "첫 공격 및 다음 카드", "각 1회"),
+    'D3': ("그림자 계약", "하데스는 직접 피해의 12% 회복. 다음 카드는 8% 회복.", "직접 공격", "최대 HP; 다음 결투만"),
+    'D4': ("지혜의 아이기스", "아테나: 첫 피해 -25%. 다음 카드 CRIT +3포인트.", "첫 피해 및 다음 카드", "1회, CRIT 최대 25%"),
+    'D5': ("전쟁의 분노", "아레스: ATK +12%, 첫 공격 +15. 다음 카드 ATK +10%.", "공격 및 다음 카드", "다음 결투 1회"),
+    'D6': ("치유의 빛", "아폴론: 첫 피해 후 45 HP 회복. 다음 카드는 60 HP 회복.", "첫 피해", "생존 시 1회, 최대 HP"),
     'C1': ('정밀 타격', '첫 직접 공격이 +8 피해를 줍니다.', '첫 공격', '결투당 1회'),
     'C2': ('단단한 피부', '처음 받는 직접 피해를 8 감소시킵니다.', '첫 피격', '1회 충전'),
     'C3': ('인내', '최대 및 현재 HP +15로 결투를 시작합니다.', '결투 시작', '패시브'),
@@ -666,6 +696,12 @@ const _skillTexts = <KrLanguage, Map<String, _SkillText>>{
     'U5': ('승천', '매 공격 후 ATK가 15%씩 증가, 최대 +60%.', '각 공격 종료', '4중첩; 결투 종료까지'),
   },
   KrLanguage.chinese: {
+    'D1': ("神圣裁决", "宙斯：ATK+22%，首次攻击+18；下一张卡ATK+15%。", "攻击与下一张卡", "仅下一场决斗"),
+    'D2': ("海王浪潮", "波塞冬：首击+16，首次受伤-30%；下一张卡首次受伤-20%。", "首次攻击与下一张卡", "各一次"),
+    'D3': ("冥界契约", "哈迪斯回复直接伤害的12%；下一张卡回复8%。", "直接攻击", "不超过最大HP；下一场"),
+    'D4': ("智慧神盾", "雅典娜首次受伤减少25%；下一张卡CRIT+3点。", "首次受伤与下一张卡", "一次；CRIT最高25%"),
+    'D5': ("战争怒火", "阿瑞斯ATK+12%，首击+15；下一张卡ATK+10%。", "攻击与下一张卡", "仅下一场决斗"),
+    'D6': ("治愈之光", "阿波罗首次受伤后回复45HP；下一张卡回复60HP。", "首次受伤", "存活时一次，最多最大HP"),
     'C1': ('精准打击', '第一次直接攻击造成额外8点伤害。', '第一次攻击', '每场决斗一次'),
     'C2': ('坚韧皮肤', '首次受到的直接伤害减少8点。', '首次受击', '一次充能'),
     'C3': ('耐力', '以额外15点最大和当前HP开始决斗。', '决斗开始', '被动'),
