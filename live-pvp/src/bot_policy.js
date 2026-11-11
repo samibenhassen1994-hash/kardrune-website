@@ -71,7 +71,7 @@ export function generateBotDeck(points,rng){
    const roll=([lo,hi])=>Math.min(hi,lo+Math.floor((band[0]+rng()*(band[1]-band[0]))*statQuantileScale[index]*(hi-lo+1)));
    let ticket=Math.floor(rng()*1000),rarity=0;
    while(rarity<5&&ticket>=SKILL_WEIGHTS[stage][rarity])ticket-=SKILL_WEIGHTS[stage][rarity++];
-   const skill=pick(SKILLS.filter(s=>s.rarity===RARITIES[rarity]),rng);
+   const skill=pick(SKILLS.filter(s=>s.rarity===RARITIES[rarity]&&!s.id.startsWith('D')),rng);
    deck.push({id:`${hero}:${stage}`,hero,stage,...effectiveCardStats(stage,roll(CARD_STAT_LIMITS[stage].attack),roll(CARD_STAT_LIMITS[stage].crit)),skillId:skill.id,skillRarity:skill.rarity,skillVersion:SKILL_VERSION});
   }
  }

@@ -21,8 +21,8 @@ export function rollInitiative(random=Math.random){
 export function starterForRound(initialStarter,round){
  return (initialStarter+Math.max(0,round-1))%2;
 }
-export function resolveDuelFromStarter(a,b,starter,random=Math.random){
- return resolveSkillDuel([a,b],random,starter);
+export function resolveDuelFromStarter(a,b,starter,random=Math.random,blessings=[]){
+ return resolveSkillDuel([a,b],random,starter,blessings);
 }
 export function matchComplete(scores, roundsPlayed){return scores.some(score=>score>=2)||roundsPlayed>=3}
 export function pickWinner(scores){return scores[0]===scores[1]?'draw':scores[0]>scores[1]?0:1}

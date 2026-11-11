@@ -110,7 +110,7 @@ class PlayerSave {
         'attack': effective.attack,
         'crit': effective.crit,
         if (p['skillId'] is String &&
-            SkillCatalog.validForStage(
+            SkillCatalog.validForCard(id,
               p['skillId'] as String,
               int.parse(id.split(':').last),
             ))
@@ -148,7 +148,7 @@ class PlayerSave {
           if (rawSkills[id] is Map &&
               (rawSkills[id] as Map)['id'] is String &&
               (rawSkills[id] as Map)['v'] == SkillCatalog.version &&
-              SkillCatalog.validForStage(
+              SkillCatalog.validForCard(id,
                 (rawSkills[id] as Map)['id'] as String,
                 int.parse(id.split(':').last),
               ))

@@ -7,7 +7,7 @@ void main() {
     final profiles = SkillCatalog.skills
         .map((skill) => skillEffectProfileFor(skill.id))
         .toList();
-    expect(profiles.map((profile) => profile.signature).toSet(), hasLength(30));
+    expect(profiles.map((profile) => profile.signature).toSet(), hasLength(SkillCatalog.skills.length));
     expect(profiles.every((profile) => profile.particleCount >= 6), isTrue);
   });
 

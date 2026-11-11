@@ -1,4 +1,4 @@
-import {SKILLS,SKILL_BY_ID,SKILL_WEIGHTS,SKILL_VERSION,RARITIES,validSkillForStage} from '../../../shared/skill_catalog.js';
+import {SKILLS,SKILL_BY_ID,SKILL_WEIGHTS,SKILL_VERSION,RARITIES,validSkillForStage,validSkillForCard,OLYMPUS_HEROES,OLYMPUS_IDS,OLYMPUS_RATE_PER_1000,OLYMPUS_CAP} from '../../../shared/skill_catalog.js';
 import {effectiveCardStats,rollCardStats} from '../../../shared/card_stat_limits.js';
 
 // Rejection sampling avoids modulo bias in server-issued rarity/stat rolls.
@@ -13,15 +13,19 @@ export function rollSkill(stage){
  if(!weights)throw new RangeError('Invalid Stage');
  let ticket=secureInt(1000),rarity=0;
  while(ticket>=weights[rarity]){ticket-=weights[rarity];rarity++}
- const options=SKILLS.filter(skill=>skill.rarity===RARITIES[rarity]);
+ const options=SKILLS.filter(skill=>skill.rarity===RARITIES[rarity]&&!skill.id.startsWith('D'));
  return options[secureInt(5)];
 }
-export function rollCard(featured){
- const stageTicket=secureInt(100),stage=featured
-  ?stageTicket<60?1:stageTicket<90?2:3
-  :stageTicket<78?1:stageTicket<97?2:3;
+export function rollCard(featured,event=false){
+ if(event&&secureInt(1000)<OLYMPUS_RATE_PER_1000){
+  const hero=OLYMPUS_IDS[secureInt(6)];return {id:`${hero}:3`,attack:OLYMPUS_CAP.attack,crit:OLYMPUS_CAP.crit,skill:SKILL_BY_ID[OLYMPUS_HEROES[hero].skillId]};
+ }
+ const stageTicket=secureInt(1000),stage=event
+  ?stageTicket<550?1:stageTicket<850?2:3
+  :featured?stageTicket<600?1:stageTicket<900?2:3
+  :stageTicket<780?1:stageTicket<970?2:3;
  const heroes=['sam','lira','rhea','dren','tor','aria','kael','neris','nyra'];
- const hero=featured&&secureInt(100)<35?'dren':heroes[secureInt(9)];
+ const hero=(featured||event)&&secureInt(100)<35?'dren':heroes[secureInt(9)];
  return {id:`${hero}:${stage}`,...rollCardStats(stage,secureInt),skill:rollSkill(stage)};
 }
 export async function grantsFor(env,uid){
@@ -56,7 +60,7 @@ export function mergeGrantedSave(save,grants,serverPending=undefined){
  const next={...save,attacks:{...save.attacks},crits:{...save.crits},skills:{}};
  for(const grant of grants){
   const stage=Number(grant.card_id.split(':')[1]);
-  if(!validSkillForStage(grant.skill_id,stage)||grant.skill_version!==SKILL_VERSION)continue;
+  if(!validSkillForCard(grant.card_id,grant.skill_id,stage)||grant.skill_version!==SKILL_VERSION)continue;
   const effective=effectiveCardStats(stage,grant.attack,grant.crit);
   if(!next.owned?.includes(grant.card_id))next.owned=[...(next.owned||[]),grant.card_id];
   next.attacks[grant.card_id]=effective.attack;

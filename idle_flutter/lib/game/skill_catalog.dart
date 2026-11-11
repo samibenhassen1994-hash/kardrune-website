@@ -55,7 +55,21 @@ abstract final class SkillCatalog {
     SkillDefinition(id: "U3", name: "Fiamma cosmica", rarity: "ultra", description: "Il primo colpo applica bruciatura del 10% HP massimi per 3 azioni.", trigger: "Primo colpo riuscito", limit: "Max 35 per tick; 3 tick", vfx: "burn"),
     SkillDefinition(id: "U4", name: "Scudo divino", rarity: "ultra", description: "Riduce del 60% i primi 2 danni diretti ricevuti.", trigger: "Colpo diretto in arrivo", limit: "2 cariche", vfx: "shield"),
     SkillDefinition(id: "U5", name: "Ascensione", rarity: "ultra", description: "Dopo ogni attacco, ATK cresce del 15% fino a +60%.", trigger: "Fine di ogni attacco", limit: "4 stack; fino a fine duello", vfx: "ascend"),
+    SkillDefinition(id: "D1", name: "Giudizio Divino", rarity: "ultra", description: "Zeus infligge +22% ATK; il primo attacco +18 danni. La prossima carta ottiene +15% ATK.", trigger: "Attacchi e carta successiva", limit: "Bonus alla prossima carta per un solo duello", vfx: "storm"),
+    SkillDefinition(id: "D2", name: "Marea Sovrana", rarity: "ultra", description: "Il primo attacco infligge +16 danni e il primo colpo subito è ridotto del 30%. La prossima carta riduce il primo colpo del 20%.", trigger: "Primo attacco, prima difesa e carta successiva", limit: "Un colpo per effetto", vfx: "shield"),
+    SkillDefinition(id: "D3", name: "Patto delle Ombre", rarity: "ultra", description: "Ade recupera il 12% del danno diretto inflitto. La prossima carta recupera l’8% del danno diretto inflitto.", trigger: "Colpi diretti a segno", limit: "Massimo HP; solo il duello seguente", vfx: "heal"),
+    SkillDefinition(id: "D4", name: "Egida della Saggezza", rarity: "ultra", description: "Riduce del 25% il primo danno subito. +3 punti CRIT alla prossima carta.", trigger: "Primo colpo ricevuto e carta successiva", limit: "Una volta; CRIT massimo 25%", vfx: "shield"),
+    SkillDefinition(id: "D5", name: "Furia di Guerra", rarity: "ultra", description: "Ares infligge +12% ATK e +15 danni col primo attacco. La prossima carta ottiene +10% ATK.", trigger: "Attacchi e carta successiva", limit: "Bonus successivo valido un duello", vfx: "power"),
+    SkillDefinition(id: "D6", name: "Luce Guaritrice", rarity: "ultra", description: "Apollo recupera 45 HP dopo il primo colpo subito. La prossima carta recupera 60 HP dopo il primo colpo subito.", trigger: "Primo colpo ricevuto", limit: "Una cura se sopravvive; massimo HP", vfx: "heal"),
   ];
+  static const olympusSkills = <String,String>{'zeus':'D1','poseidon':'D2','hades':'D3','athena':'D4','ares':'D5','apollo':'D6'};
+  static bool validForCard(String id,String? skillId,int stage) {
+    final parts=id.split(':');
+    if(parts.length!=2)return false;
+    final fixed=olympusSkills[parts.first];
+    if(fixed!=null)return stage==3&&parts.last=='3'&&fixed==skillId;
+    return validForStage(skillId,stage)&&!(skillId?.startsWith('D')??false);
+  }
   static SkillDefinition? byId(String? id) {
     for (final skill in skills) { if (skill.id == id) return skill; }
     return null;
@@ -73,7 +87,7 @@ abstract final class SkillCatalog {
       ticket -= table[rarity];
       rarity++;
     }
-    final options = skills.where((s) => s.rarity == rarities[rarity]).toList();
+    final options = skills.where((s) => s.rarity == rarities[rarity] && !s.id.startsWith('D')).toList();
     return options[(skillRoll.clamp(0.0, .999999999) * 5).floor()];
   }
 }

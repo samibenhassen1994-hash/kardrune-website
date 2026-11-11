@@ -6,7 +6,7 @@ export const SKILL_WEIGHTS={
   2:[0,600,280,100,15,5],
   3:[0,0,700,230,60,10],
 };
-export const SKILLS=[
+const RANDOM_SKILLS=[
   {id:'C1',name:'Colpo preciso',vfx:'slash',description:'Il primo attacco diretto infligge +8 danni.',trigger:'Primo attacco',limit:'Una volta per duello'},
   {id:'C2',name:'Pelle dura',vfx:'shield',description:'Riduce di 8 il primo danno diretto ricevuto.',trigger:'Primo colpo subito',limit:'Una carica'},
   {id:'C3',name:'Resistenza',vfx:'shield',description:'Inizia il duello con +15 HP massimi e attuali.',trigger:'Inizio duello',limit:'Passiva'},
@@ -38,6 +38,34 @@ export const SKILLS=[
   {id:'U4',name:'Scudo divino',vfx:'shield',description:'Riduce del 60% i primi 2 danni diretti ricevuti.',trigger:'Colpo diretto in arrivo',limit:'2 cariche'},
   {id:'U5',name:'Ascensione',vfx:'ascend',description:'Dopo ogni attacco, ATK cresce del 15% fino a +60%.',trigger:'Fine di ogni attacco',limit:'4 stack; fino a fine duello'},
 ].map(skill=>Object.freeze({...skill,rarity:RARITIES['CNRELU'.indexOf(skill.id[0])],v:SKILL_VERSION}));
+export const DIVINE_SKILLS=[
+ {id:'D1',name:'Giudizio Divino',vfx:'storm',description:'Zeus infligge +22% ATK; il primo attacco +18 danni. La prossima carta ottiene +15% ATK.',trigger:'Attacchi e carta successiva',limit:'Bonus alla prossima carta per un solo duello'},
+ {id:'D2',name:'Marea Sovrana',vfx:'shield',description:'Il primo attacco infligge +16 danni e il primo colpo subito è ridotto del 30%. La prossima carta riduce il primo colpo del 20%.',trigger:'Primo attacco, prima difesa e carta successiva',limit:'Un colpo per effetto'},
+ {id:'D3',name:'Patto delle Ombre',vfx:'heal',description:'Ade recupera il 12% del danno diretto inflitto. La prossima carta recupera l’8% del danno diretto inflitto.',trigger:'Colpi diretti a segno',limit:'Massimo HP; solo il duello seguente'},
+ {id:'D4',name:'Egida della Saggezza',vfx:'shield',description:'Riduce del 25% il primo danno subito. +3 punti CRIT alla prossima carta.',trigger:'Primo colpo ricevuto e carta successiva',limit:'Una volta; CRIT massimo 25%'},
+ {id:'D5',name:'Furia di Guerra',vfx:'power',description:'Ares infligge +12% ATK e +15 danni col primo attacco. La prossima carta ottiene +10% ATK.',trigger:'Attacchi e carta successiva',limit:'Bonus successivo valido un duello'},
+ {id:'D6',name:'Luce Guaritrice',vfx:'heal',description:'Apollo recupera 45 HP dopo il primo colpo subito. La prossima carta recupera 60 HP dopo il primo colpo subito.',trigger:'Primo colpo ricevuto',limit:'Una cura se sopravvive; massimo HP'},
+].map(s=>Object.freeze({...s,rarity:'ultra',v:SKILL_VERSION}));
+export const SKILLS=Object.freeze([...RANDOM_SKILLS,...DIVINE_SKILLS]);
 export const SKILL_BY_ID=Object.fromEntries(SKILLS.map(skill=>[skill.id,skill]));
 export function rarityIndex(skillId){return RARITIES.indexOf(SKILL_BY_ID[skillId]?.rarity)}
 export function validSkillForStage(skillId,stage){return Number.isInteger(stage)&&stage>=1&&stage<=3&&rarityIndex(skillId)>=stage-1}
+
+// Fixed single-form Olympus cards. :3 is an internal combat cap, not an evolution.
+export const OLYMPUS_HEROES=Object.freeze({
+ zeus:{name:'Zeus',skillId:'D1',blessing:{type:'attack_pct',value:15}},
+ poseidon:{name:'Poseidon',skillId:'D2',blessing:{type:'shield_first',value:20}},
+ hades:{name:'Ade',skillId:'D3',blessing:{type:'lifesteal_pct',value:8}},
+ athena:{name:'Atena',skillId:'D4',blessing:{type:'crit_pct',value:3}},
+ ares:{name:'Ares',skillId:'D5',blessing:{type:'attack_pct',value:10}},
+ apollo:{name:'Apollo',skillId:'D6',blessing:{type:'heal_after_hit',value:60}},
+});
+export const OLYMPUS_IDS=Object.freeze(Object.keys(OLYMPUS_HEROES));
+export const OLYMPUS_COST=1200,OLYMPUS_RATE_PER_1000=100;
+export const OLYMPUS_CAP=Object.freeze({stage:3,attack:100,crit:25,hp:430});
+export const isOlympusHero=hero=>Object.hasOwn(OLYMPUS_HEROES,hero);
+export const fixedOlympusSkill=id=>typeof id==='string'&&id.endsWith(':3')?OLYMPUS_HEROES[id.split(':')[0]]?.skillId??null:null;
+export const validSkillForCard=(id,skillId,stage)=>{
+ const divine=fixedOlympusSkill(id);
+ return divine?skillId===divine:!isOlympusHero(String(id).split(':')[0])&&validSkillForStage(skillId,stage)&&!String(skillId).startsWith('D');
+};

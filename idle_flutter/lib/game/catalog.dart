@@ -142,5 +142,19 @@ abstract final class KardRuneCatalog {
         'nyra_stage_3_loop.mp4',
       ],
     ),
+    HeroDefinition(id: 'zeus', name: 'Zeus', element: 'Storm', power: 100,
+      stages: const ['olympus/zeus.webp', 'olympus/zeus.webp', 'olympus/zeus.webp'], loops: const ['', '', '']),
+    HeroDefinition(id: 'poseidon', name: 'Poseidon', element: 'Water', power: 100,
+      stages: const ['olympus/poseidon.webp', 'olympus/poseidon.webp', 'olympus/poseidon.webp'], loops: const ['', '', '']),
+    HeroDefinition(id: 'hades', name: 'Ade', element: 'Shadow', power: 100,
+      stages: const ['olympus/hades.webp', 'olympus/hades.webp', 'olympus/hades.webp'], loops: const ['', '', '']),
+    HeroDefinition(id: 'athena', name: 'Atena', element: 'Light', power: 100,
+      stages: const ['olympus/athena.webp', 'olympus/athena.webp', 'olympus/athena.webp'], loops: const ['', '', '']),
+    HeroDefinition(id: 'ares', name: 'Ares', element: 'Fire', power: 100,
+      stages: const ['olympus/ares.webp', 'olympus/ares.webp', 'olympus/ares.webp'], loops: const ['', '', '']),
+    HeroDefinition(id: 'apollo', name: 'Apollo', element: 'Light', power: 100,
+      stages: const ['olympus/apollo.webp', 'olympus/apollo.webp', 'olympus/apollo.webp'], loops: const ['', '', '']),
   ];
+  static const olympusIds = <String>{'zeus','poseidon','hades','athena','ares','apollo'};
+  static bool isOlympus(String heroId) => olympusIds.contains(heroId);
 }

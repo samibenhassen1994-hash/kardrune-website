@@ -15,7 +15,7 @@ export function forgeOutcome(card,color,stat,range=FORGE_INCREMENTS[stat],random
   if(stat==='SKILL'){
    let ticket=random(1000),rarity=0;const weights=SKILL_WEIGHTS[stage];
    while(ticket>=weights[rarity])ticket-=weights[rarity++];
-   const choices=SKILLS.filter(s=>s.rarity===RARITIES[rarity]&&s.id!==card.skill_id);
+   const choices=SKILLS.filter(s=>s.rarity===RARITIES[rarity]&&!s.id.startsWith('D')&&s.id!==card.skill_id);
    const skill=choices[random(choices.length)];after.skillId=skill.id;after.rarity=skill.rarity;
   }else{
    after[field]=Math.min(limits[field][1],effectiveCardStats(stage,card.attack,card.crit)[field]+range.min+random(range.max-range.min+1));
@@ -32,7 +32,7 @@ export async function forgeState(env,uid){
  const pending=await env.DB.prepare(`SELECT a.result_json FROM forge_attempts a LEFT JOIN forge_skill_decisions d ON d.uid=a.uid AND d.request_id=a.request_id WHERE a.uid=? AND json_extract(a.result_json,'$.pendingSkill')=1 AND d.request_id IS NULL LIMIT 1`).bind(uid).first();
  const grants=await grantsFor(env,uid);
  return {pendingSkill:pending?present(JSON.parse(pending.result_json)):null,revision:save?.revision??0,keys:Object.fromEntries(['green','blue','red'].map(c=>[c,inventory.results.find(r=>r.color===c)?.quantity??0])),
- chances:FORGE_CHANCES,increments:FORGE_INCREMENTS,cards:grants.filter(c=>owned.includes(c.card_id)&&validSkillForStage(c.skill_id,Number(c.card_id.split(':')[1]))).map(c=>({id:c.card_id,...effectiveCardStats(Number(c.card_id.split(':')[1]),c.attack,c.crit),skillId:c.skill_id})),caps:CARD_STAT_LIMITS};
+ chances:FORGE_CHANCES,increments:FORGE_INCREMENTS,cards:grants.filter(c=>owned.includes(c.card_id)&&!['zeus','poseidon','hades','athena','ares','apollo'].includes(c.card_id.split(':')[0])&&validSkillForStage(c.skill_id,Number(c.card_id.split(':')[1]))).map(c=>({id:c.card_id,...effectiveCardStats(Number(c.card_id.split(':')[1]),c.attack,c.crit),skillId:c.skill_id})),caps:CARD_STAT_LIMITS};
 }
 export async function forgeAttempt(env,uid,body,random=secureInt){
  if(!body||typeof body.requestId!=='string'||!/^[-a-f0-9]{32,36}$/.test(body.requestId)||typeof body.cardId!=='string'||!/^(sam|lira|rhea|dren|tor|aria|kael|neris|nyra):[123]$/.test(body.cardId)||!Object.hasOwn(FORGE_CHANCES,body.color)||!['ATK','CRT','SKILL'].includes(body.stat)||!Number.isSafeInteger(body.revision)||body.revision<1)throw new Error('FORGE_INVALID');

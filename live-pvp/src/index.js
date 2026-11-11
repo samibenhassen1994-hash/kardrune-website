@@ -1,5 +1,5 @@
 import {buildHand,resolveDuelFromStarter,pickWinner,rollInitiative,starterForRound} from './rules.js';
-import {validSkillForStage,SKILL_BY_ID,SKILL_VERSION} from '../../shared/skill_catalog.js';
+import {validSkillForCard,SKILL_BY_ID,SKILL_VERSION,OLYMPUS_HEROES} from '../../shared/skill_catalog.js';
 import {effectiveCardStats} from '../../shared/card_stat_limits.js';
 import {allocateBotName,botWaitMs,generateBotDeck,chooseBotCard} from './bot_policy.js';
 import {botResultsReady} from '../../functions/api/_lib/bot_results.js';
@@ -31,9 +31,10 @@ export default {
    const [hero,stageText]=id.split(':'),stage=Number(stageText);
    const grant=await env.DB.prepare('SELECT attack,crit,skill_id,skill_version FROM skill_grants WHERE uid=? AND card_id=?').bind(row.uid,id).first();
    const attack=grant?.attack,crit=grant?.crit,skillId=grant?.skill_id;
-   if(!save.owned?.includes(id)||!['sam','lira','rhea','dren','tor','aria','kael','neris','nyra'].includes(hero)||![1,2,3].includes(stage)||!Number.isInteger(attack)||attack<1||attack>100||!Number.isInteger(crit)||crit<0||crit>25)
+   if(!save.owned?.includes(id)||!['sam','lira','rhea','dren','tor','aria','kael','neris','nyra','zeus','poseidon','hades','athena','ares','apollo'].includes(hero)||![1,2,3].includes(stage)||!Number.isInteger(attack)||attack<1||attack>100||!Number.isInteger(crit)||crit<0||crit>25)
     return new Response('Invalid card',{status:400});
-   if(grant.skill_version!==SKILL_VERSION||!validSkillForStage(skillId,stage))return new Response('Skill grant unavailable',{status:409});
+   if(grant.skill_version!==SKILL_VERSION||!validSkillForCard(id,skillId,stage))return new Response('Skill grant unavailable',{status:409});
+   if(OLYMPUS_HEROES[hero]&&(stage!==3||attack!==100||crit!==25))return new Response('Invalid divine card',{status:400});
    const effective=effectiveCardStats(stage,attack,crit);
    deck.push({id,hero,stage,...effective,skillId,skillRarity:SKILL_BY_ID[skillId].rarity,skillVersion:SKILL_VERSION});
   }
@@ -61,7 +62,7 @@ export class PvpLobby {
   }
   const pair=new WebSocketPair(),client=pair[0],server=pair[1];server.accept();
   for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]]}
-  const player={uid,name,avatar,deck,ws:server,used:[],chosen:null,match:null,lastSeen:Date.now()};
+  const player={uid,name,avatar,deck,ws:server,used:[],chosen:null,nextBlessing:null,match:null,lastSeen:Date.now()};
   this.sockets.set(uid,player);
   server.addEventListener('message',event=>{
    if(this.sockets.get(uid)!==player)return;
@@ -133,7 +134,7 @@ export class PvpLobby {
     avatar:['player','guard','vassal','king'][Math.floor(secureRandom()*4)],
     deck:generateBotDeck(points,secureRandom),points,
     style:['aggressive','defensive','strategic'][Math.floor(secureRandom()*3)],
-    used:[],chosen:null,match:null};
+    used:[],chosen:null,nextBlessing:null,match:null};
    player.startPoints=points;
    this.waiting=null;await this.startMatch(player,bot);
   }catch(error){console.error('Bot matchmaking unavailable',error);}
@@ -168,8 +169,8 @@ export class PvpLobby {
   if(!handA.length||!handB.length){this.finish(match,'completed');return}
   match.awaiting=null;match.round++;a.chosen=null;b.chosen=null;
   const deadline=Date.now()+CHOOSE_MS;
-  send(a.ws,{type:'hand',round:match.round,playerName:a.name,playerAvatar:a.avatar,opponent:b.name,opponentAvatar:b.avatar,score:match.scores,hand:handA,deckSize:a.deck.length,usedCount:a.used.length,durationMs:CHOOSE_MS,deadline,matchId:match.id});
-  send(b.ws,{type:'hand',round:match.round,playerName:b.name,playerAvatar:b.avatar,opponent:a.name,opponentAvatar:a.avatar,score:[...match.scores].reverse(),hand:handB,deckSize:b.deck.length,usedCount:b.used.length,durationMs:CHOOSE_MS,deadline,matchId:match.id});
+  send(a.ws,{type:'hand',round:match.round,playerName:a.name,playerAvatar:a.avatar,opponent:b.name,opponentAvatar:b.avatar,score:match.scores,hand:handA,deckSize:a.deck.length,usedCount:a.used.length,nextBlessing:a.nextBlessing??null,durationMs:CHOOSE_MS,deadline,matchId:match.id});
+  send(b.ws,{type:'hand',round:match.round,playerName:b.name,playerAvatar:b.avatar,opponent:a.name,opponentAvatar:a.avatar,score:[...match.scores].reverse(),hand:handB,deckSize:b.deck.length,usedCount:b.used.length,nextBlessing:b.nextBlessing??null,durationMs:CHOOSE_MS,deadline,matchId:match.id});
   match.selectTimer=setTimeout(()=>{
    if(!this.matches.has(match.id)||match.awaiting)return;
    for(const p of match.players){
@@ -200,7 +201,13 @@ export class PvpLobby {
   const [a,b]=match.players;
   for(const p of [a,b])p.used.push(...buildHand(p.deck,p.used).map(c=>c.id));
   const roundStarter=starterForRound(match.initiative?.starter??0,match.round);
-  const result=resolveDuelFromStarter(a.chosen,b.chosen,roundStarter);
+  const blessings=[a.nextBlessing??null,b.nextBlessing??null];
+   a.nextBlessing=null;b.nextBlessing=null;
+   const result=resolveDuelFromStarter(a.chosen,b.chosen,roundStarter,undefined,blessings);
+   for(const player of [a,b]){
+    const divine=OLYMPUS_HEROES[player.chosen?.hero];
+    if(divine&&player.chosen.skillId===divine.skillId)player.nextBlessing={skillId:divine.skillId,...divine.blessing};
+   }
   const timeline=result.log.map(entry=>({...entry,round:match.round,matchId:match.id}));
   if(result.winner===0)match.scores[0]++;
   if(result.winner===1)match.scores[1]++;
