@@ -6,7 +6,7 @@ void main() {
     final heroes = KardRuneCatalog.heroes;
 
     expect(
-      heroes.map((hero) => '${hero.id}:${hero.name}:${hero.element}:${hero.power}'),
+      heroes.take(9).map((hero) => '${hero.id}:${hero.name}:${hero.element}:${hero.power}'),
       [
         'sam:Sam:Light:42',
         'lira:Lira:Arcane:46',
@@ -21,6 +21,12 @@ void main() {
     );
     expect(heroes.every((hero) => hero.stages.length == 3), isTrue);
     expect(heroes.every((hero) => hero.loops.length == 3), isTrue);
+    expect(KardRuneCatalog.olympusIds.length, 6);
+    for (final hero in heroes.skip(9)) {
+      expect(KardRuneCatalog.isOlympus(hero.id), isTrue);
+      expect(hero.stages.toSet().length, 1);
+      expect(hero.power, 100);
+    }
     expect(heroes.first.stages, [
       'young_sam/young_sam_stage_1.webp',
       'young_sam/sam_of_aster_stage_2.webp',
@@ -28,7 +34,7 @@ void main() {
     ]);
     expect(heroes.first.loops, ['', 'sam_stage_2_loop_.mp4', 'sam_stage_3_loop.mp4']);
     expect(
-      heroes.last.stages.map(heroes.last.cardAsset),
+      heroes[8].stages.map(heroes[8].cardAsset),
       [
         'assets/idle/cards/nyra/nyra_stage_1.webp',
         'assets/idle/cards/nyra/nyra_stage_2.webp',
