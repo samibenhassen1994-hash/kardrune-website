@@ -1,0 +1,22 @@
+name: Olympus event — Node tests
+on:
+  push:
+    branches: [feature/olympus-event-production-20261111]
+    paths: ['shared/**','live-pvp/**','functions/**','idle_flutter/**','.github/workflows/olympus-event-tests.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run authoritative PvP, bot, skill and security tests
+        run: node --test live-pvp/tests/*.test.js
+      - name: Validate generated Flutter catalog
+        run: |
+          node idle_flutter/tool/generate_skill_catalog.mjs
+          git diff --exit-code -- idle_flutter/lib/game/skill_catalog.dart

@@ -1129,12 +1129,12 @@ class _IdleShellState extends State<IdleShell> {
       return;
     }
     final divine = event && SummonRules.isOlympusPull(widget.random());
+    final stage = divine ? 3 : SummonRules.stageFor(featured,widget.random(),event:event);
     final hero = divine
         ? KardRuneCatalog.heroes.firstWhere((h) => h.id ==
             const ['zeus','poseidon','hades','athena','ares','apollo'][(widget.random()*6).floor().clamp(0,5)])
         : KardRuneCatalog.heroes[SummonRules.heroIndex(
             featured || event, widget.random(), widget.random())];
-    final stage = divine ? 3 : SummonRules.stageFor(featured,widget.random(),event:event);
     final id = '${hero.id}:$stage';
     final duplicate = owned.contains(id);
     final attack = divine ? 100 : CombatRules.rollAttack(stage, widget.random);

@@ -13,7 +13,7 @@ export function rollSkill(stage){
  if(!weights)throw new RangeError('Invalid Stage');
  let ticket=secureInt(1000),rarity=0;
  while(ticket>=weights[rarity]){ticket-=weights[rarity];rarity++}
- const options=SKILLS.filter(skill=>skill.rarity===RARITIES[rarity]);
+ const options=SKILLS.filter(skill=>skill.rarity===RARITIES[rarity]&&!skill.id.startsWith('D'));
  return options[secureInt(5)];
 }
 export function rollCard(featured,event=false){

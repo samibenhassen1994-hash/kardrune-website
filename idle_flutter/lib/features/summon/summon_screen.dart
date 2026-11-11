@@ -320,7 +320,7 @@ class _SummonScreenState extends State<SummonScreen>
                   fit: BoxFit.cover,
                   alignment: Alignment.center,
                 ),
-              const DecoratedBox(
+              if(section!=2) const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
@@ -333,7 +333,7 @@ class _SummonScreenState extends State<SummonScreen>
                   ),
                 ),
               ),
-              Positioned(
+              if(section!=2) Positioned(
                 left: 12,
                 right: 12,
                 bottom: height < 195 ? 7 : 12,
