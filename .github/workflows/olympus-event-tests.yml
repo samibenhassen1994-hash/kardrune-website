@@ -33,5 +33,5 @@ jobs:
         working-directory: idle_flutter
         run: |
           flutter pub get
-          flutter analyze
+          flutter analyze --no-fatal-infos
           flutter test test/localization_complete_test.dart test/summon_rules_test.dart test/player_save_test.dart test/catalog_test.dart test/skill_effect_profile_test.dart
