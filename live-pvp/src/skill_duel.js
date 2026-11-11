@@ -4,13 +4,14 @@ const baseHp=stage=>[0,240,340,430][stage]||240;
 const floor=Math.floor;
 const percent=(value,rate)=>floor(value*rate/100);
 
-export function resolveSkillDuel(cards,random=Math.random,starter=null){
+export function resolveSkillDuel(cards,random=Math.random,starter=null,blessings=[]){
  const players=cards.map(card=>({
-  card,skill:SKILL_BY_ID[card.skillId]||null,
+  card,skill:SKILL_BY_ID[card.skillId]||null,blessing:blessings[cards.indexOf(card)]??null,
   maxHp:baseHp(card.stage)+(card.skillId==='C3'?15:0),
   hp:baseHp(card.stage)+(card.skillId==='C3'?15:0),
   used:new Set(),attacks:0,successful:0,ascension:0,arcane:0,
-  shield:card.skillId==='E2'||card.skillId==='U4'?2:card.skillId==='C2'||card.skillId==='R3'?1:0,
+  shield:card.skillId==='E2'||card.skillId==='U4'?2:card.skillId==='C2'||card.skillId==='R3'||card.skillId==='D2'||card.skillId==='D4'?1:0,
+  apolloHeal:false,
   dots:[],silence:0,freeze:0,weaken:0,cursed:false,sabotaged:false,
   guaranteed:false,tenacity:false,
  }));
@@ -52,10 +53,16 @@ export function resolveSkillDuel(cards,random=Math.random,starter=null){
    if(id==='R3')amount-=percent(amount,40);
    if(id==='E2')amount-=percent(amount,30);
    if(id==='U4')amount-=percent(amount,60);
+   if(id==='D2')amount-=percent(amount,30);
+   if(id==='D4')amount-=percent(amount,25);
    defender.shield--;
    activate(target,source,{status:'shield',blocked:raw-amount,charges:defender.shield});
    event('shield',target,target,{skillId:id,blocked:raw-amount,charges:defender.shield,
     hpBefore:defender.hp,hpAfter:defender.hp,hp:defender.hp});
+  }
+  if(!ignoreShield&&defender.blessing?.type==='shield_first'&&!defender.used.has('blessing_shield')){
+   defender.used.add('blessing_shield');const previous=amount;amount-=percent(amount,defender.blessing.value);
+   activate(target,source,{status:'blessing_shield',skillId:defender.blessing.skillId,blocked:previous-amount});
   }
   if(amount>0)amount=Math.max(1,amount);
   const before=defender.hp;
@@ -64,6 +71,12 @@ export function resolveSkillDuel(cards,random=Math.random,starter=null){
   event(extra?'extra_hit':counter?'counter':'hit',source,target,{
    skillId,damage:actual,critical,hpBefore:before,hpAfter:defender.hp,hp:defender.hp,
    attackerHp:attacker.hp,extra,counter});
+  if(defender.hp>0&&actual>0&&!extra&&!counter&&!defender.apolloHeal&&
+   (defender.card.skillId==='D6'||defender.blessing?.type==='heal_after_hit')){
+    defender.apolloHeal=true;const amount=defender.card.skillId==='D6'?45:defender.blessing.value;
+    const skillId=defender.card.skillId==='D6'?'D6':defender.blessing.skillId;
+    activate(target,target,{status:'healing_light',skillId});heal(target,amount,skillId);
+  }
   if(defender.hp===0)event('knock_out',source,target,{hpBefore:before,hpAfter:0,hp:0});
   if(!extra&&!counter&&actual>0){
    if(defender.hp>0&&active(target)&&defender.card.skillId==='C4'&&!defender.used.has('C4')&&
@@ -85,6 +98,7 @@ export function resolveSkillDuel(cards,random=Math.random,starter=null){
   return {actual,critical};
  };
  for(let i=0;i<2;i++){
+  if(players[i].blessing)activate(i,i,{skillId:players[i].blessing.skillId,status:'next_card_blessing',blessing:players[i].blessing.type,value:players[i].blessing.value});
   if(players[i].card.skillId==='C3')activate(i,i,{status:'passive',hp:players[i].hp,maxHp:players[i].maxHp});
   if(players[i].card.skillId==='C5')activate(i,i,{status:'passive'});
  }
@@ -118,10 +132,16 @@ export function resolveSkillDuel(cards,random=Math.random,starter=null){
   if(self.cursed)attack-=percent(self.card.attack,25);
   attack+=percent(self.card.attack,15*self.ascension);
   if(self.weaken>0)attack-=percent(attack,10);
+  if(enabled&&id==='D1')attack+=percent(attack,22);
+  if(enabled&&id==='D5')attack+=percent(attack,12);
+  if(self.blessing?.type==='attack_pct')attack+=percent(attack,self.blessing.value);
   attack=Math.max(1,attack);
-  let critical=self.guaranteed||random()<Math.max(0,Math.min(25,self.card.crit+(id==='C5'?3:0)-(self.sabotaged?10:0)))/100;
+  let critical=self.guaranteed||random()<Math.max(0,Math.min(25,self.card.crit+(id==='C5'?3:0)-(self.sabotaged?10:0)+(self.blessing?.type==='crit_pct'?self.blessing.value:0)))/100;
   if(self.guaranteed){self.guaranteed=false;activate(turn,1-turn,{status:'guaranteed_crit'});}
   let amount=attack*(critical?2:1),normalAmount=attack,ignoreShield=false;
+  if(enabled&&id==='D1'&&self.attacks===1){amount+=18;normalAmount+=18;activate(turn,1-turn);}
+  if(enabled&&id==='D2'&&self.attacks===1){amount+=16;normalAmount+=16;activate(turn,1-turn);}
+  if(enabled&&id==='D5'&&self.attacks===1){amount+=15;normalAmount+=15;activate(turn,1-turn);}
   if(enabled&&id==='C1'&&self.attacks===1){amount+=8;normalAmount+=8;activate(turn,1-turn);}
   if(enabled&&id==='C4'&&self.tenacity){amount+=10;normalAmount+=10;self.tenacity=false;activate(turn,1-turn);}
   if(enabled&&id==='N1'&&self.hp*2<self.maxHp){
@@ -183,9 +203,10 @@ export function resolveSkillDuel(cards,random=Math.random,starter=null){
     enemy.dots.push({source:turn,skillId:'U3',amount:burn,remaining:3});activate(turn,1-turn,{status:'burn',turns:3});
     event('status_apply',turn,1-turn,{skillId:'U3',status:'burn',turns:3});
    }
-   if(id==='R1'){
-    activate(turn,turn,{status:'vampirism'});heal(turn,percent(actual,12),'R1');
+   if(id==='R1'||id==='D3'){
+    activate(turn,turn,{status:'vampirism'});heal(turn,percent(actual,12),id);
    }
+   if(self.blessing?.type==='lifesteal_pct')heal(turn,percent(actual,self.blessing.value),self.blessing.skillId);
   }
   if(players[0].hp>0&&players[1].hp>0&&enabled&&id==='E1'&&!self.used.has('E1')&&random()<.35){
    self.used.add('E1');activate(turn,1-turn,{status:'extra_hit'});

@@ -5,15 +5,15 @@ import {starterAdditions,starterSave,ensureStarterCards} from './_lib/starter_de
 import {isolateCompetitiveSave,selectVerifiedActive} from './_lib/save_policy.js';
 import {requireActiveAccount} from './_lib/account_status.js';
 import {ensureNameChoices,chosenNameFor} from './_lib/name_store.js';
-const allowed=new Set(['sam','lira','rhea','dren','tor','aria','kael','neris','nyra']);
+const allowed=new Set(['sam','lira','rhea','dren','tor','aria','kael','neris','nyra','zeus','poseidon','hades','athena','ares','apollo']);
 function validSave(v){
  if(!v||typeof v!=='object'||Array.isArray(v))return false;
- if(!Array.isArray(v.owned)||v.owned.length>27||v.owned.length===0||!v.owned.every(x=>typeof x==='string'&&allowed.has(x.split(':')[0])&&/^[a-z]+:[123]$/.test(x)))return false;
+ if(!Array.isArray(v.owned)||v.owned.length>33||v.owned.length===0||!v.owned.every(x=>typeof x==='string'&&allowed.has(x.split(':')[0])&&/^[a-z]+:[123]$/.test(x)))return false;
  if(!Number.isSafeInteger(v.shards)||v.shards<0||v.shards>999999999)return false;
  if(!v.attacks||!v.crits||typeof v.attacks!=='object'||typeof v.crits!=='object'||
   !v.skills||typeof v.skills!=='object'||Array.isArray(v.skills))return false;
  if(!v.owned.every(id=>Number.isInteger(v.attacks[id])&&v.attacks[id]>=1&&v.attacks[id]<=100&&Number.isInteger(v.crits[id])&&v.crits[id]>=0&&v.crits[id]<=25))return false;
- return typeof v.name==='string'&&v.name.length<=20;
+ return v.owned.every(id=>!['zeus','poseidon','hades','athena','ares','apollo'].includes(id.split(':')[0])||id.endsWith(':3'))&&typeof v.name==='string'&&v.name.length<=20;
 }
 async function handle({request,env},write){
  try{

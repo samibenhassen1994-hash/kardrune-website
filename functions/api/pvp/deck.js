@@ -1,7 +1,7 @@
 import {context,choice,json,failure} from '../_lib/pvp.js';
 import {ensureLegacySkills} from '../_lib/skill_store.js';
 import {ensureStarterCards,fillDeck} from '../_lib/starter_deck.js';
-import {validSkillForStage,SKILL_VERSION} from '../../../shared/skill_catalog.js';
+import {validSkillForCard,SKILL_VERSION} from '../../../shared/skill_catalog.js';
 // An existing D1 database may have 0001/0002 but not the 0003 deck table yet.
 // Initialize only this non-competitive table on first access; the rest of 0003
 // remains a separate, explicit migration for the live-match Worker.
@@ -49,7 +49,7 @@ export async function onRequestPut({request,env}){
   if(!validate(JSON.parse(row.save_json),ids))return json({error:'Deck cards do not match the latest cloud save. Wait for cloud backup and try again (9 distinct owned cards).'},422);
   const grants=await ensureLegacySkills(env,user.uid);
   if(!ids.every(id=>grants.some(g=>g.card_id===id&&g.skill_version===SKILL_VERSION&&
-    validSkillForStage(g.skill_id,Number(id.split(':')[1])))))
+    validSkillForCard(g.skill_id,Number(id.split(':')[1])))))
    return json({error:'Deck contains an unverified card. Summon online or choose a verified card.'},422);
   const write=await deckQuery(env,()=>revision===0
    ? env.DB.prepare('INSERT INTO pvp_decks(uid,cards_json,updated_at,revision) VALUES(?,?,?,1) ON CONFLICT(uid) DO NOTHING').bind(user.uid,JSON.stringify(ids),Date.now()).run()

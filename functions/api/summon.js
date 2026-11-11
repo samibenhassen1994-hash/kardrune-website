@@ -28,8 +28,9 @@ export async function onRequestPost({request,env}){
   const user=await userFromRequest(request,env);
   if(!env.DB)return json({error:'D1 not configured'},503);
   await requireActiveAccount(env,user.uid);
-  const body=await request.json();
-  if(typeof body.featured!=='boolean'||(body.free!==undefined&&typeof body.free!=='boolean')||
+  const body=await request.json();const event=body.event===true;
+  if(typeof body.featured!=='boolean'||(body.event!==undefined&&typeof body.event!=='boolean')||
+    (body.free!==undefined&&typeof body.free!=='boolean')||(event&&(body.featured||body.free===true))||
     (body.free===true&&body.featured)||!Number.isSafeInteger(body.revision)||body.revision<1||
     typeof body.rollId!=='string'||!rollPattern.test(body.rollId))return json({error:'Invalid summon request'},400);
   const old=await env.DB.prepare('SELECT state,result_json,decision_json FROM summon_rolls WHERE uid=? AND roll_id=?')
@@ -46,13 +47,13 @@ export async function onRequestPost({request,env}){
   const grants=await ensureLegacySkills(env,user.uid);
   const save=mergeGrantedSave(JSON.parse(row.save_json),grants);
   if(save.pendingDuplicate?.rollId)return json({error:'Resolve the pending duplicate first'},409);
-  const cost=body.free===true?0:body.featured?600:300;
+  const cost=body.free===true?0:event?1200:body.featured?600:300;
   if(body.free===true&&(await freeStatus(env,user.uid)).available<1)
    return json({error:'Free summons are recharging'},429);
   const wallet=await env.DB.prepare('SELECT shards FROM skill_wallets WHERE uid=?').bind(user.uid).first();
   if(!wallet||wallet.shards<cost)return json({error:'Not enough verified Shards'},400);
   save.shards=wallet.shards;
-  const card=rollCard(body.featured),duplicate=save.owned.includes(card.id);
+  const card=rollCard(body.featured,event),duplicate=save.owned.includes(card.id);
   save.shards-=cost;
   save.pulls=(Number.isSafeInteger(save.pulls)?save.pulls:0)+1;
   if(duplicate){
