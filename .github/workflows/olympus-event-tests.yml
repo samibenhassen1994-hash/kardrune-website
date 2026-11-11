@@ -20,3 +20,18 @@ jobs:
         run: |
           node idle_flutter/tool/generate_skill_catalog.mjs
           git diff --exit-code -- idle_flutter/lib/game/skill_catalog.dart
+
+  flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Flutter analyze and focused tests
+        working-directory: idle_flutter
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test test/localization_complete_test.dart test/summon_rules_test.dart test/player_save_test.dart test/catalog_test.dart test/skill_effect_profile_test.dart
