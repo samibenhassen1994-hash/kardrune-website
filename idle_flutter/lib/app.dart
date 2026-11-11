@@ -902,6 +902,7 @@ class _IdleShellState extends State<IdleShell> {
                                   accountKey: _cloud?.identity?.uid ?? 'guest',
                                   loadFreeStatus: _freeSummonStatus,
                                   onSummon: _summon,
+                                   onEventSummon: () => _summon(false,event:true),
                                   onFreeSummon: () =>
                                       _summon(false, free: true),
                                 ),
@@ -1101,17 +1102,17 @@ class _IdleShellState extends State<IdleShell> {
     return [];
   }
 
-  Future<void> _summon(bool featured, {bool free = false}) async {
+  Future<void> _summon(bool featured, {bool free = false,bool event=false}) async {
     if (_pendingDuplicate != null) {
       _resumeDuplicate();
       return;
     }
     if (_summonOpen ||
         _summonRequestPending ||
-        (!free && shards < SummonRules.cost(featured))) {
+        (!free && shards < SummonRules.cost(featured,event:event))) {
       return;
     }
-    if (free && (featured || (await _freeSummonStatus())['available'] == 0)) {
+    if (free && (featured || event || (await _freeSummonStatus())['available'] == 0)) {
       return;
     }
     if (!mounted) return;
@@ -1126,24 +1127,26 @@ class _IdleShellState extends State<IdleShell> {
         );
         return;
       }
-      await _summonOnline(featured, free: free);
+      await _summonOnline(featured, free: free,event:event);
       return;
     }
-    final stage = SummonRules.stageFor(featured, widget.random());
-    final index = SummonRules.heroIndex(
-      featured,
-      widget.random(),
-      widget.random(),
-    );
-    final hero = KardRuneCatalog.heroes[index];
+    final divine = event && SummonRules.isOlympusPull(widget.random());
+    final hero = divine
+        ? KardRuneCatalog.heroes.firstWhere((h) => h.id ==
+            const ['zeus','poseidon','hades','athena','ares','apollo'][(widget.random()*6).floor().clamp(0,5)])
+        : KardRuneCatalog.heroes[SummonRules.heroIndex(
+            featured || event, widget.random(), widget.random())];
+    final stage = divine ? 3 : SummonRules.stageFor(featured,widget.random(),event:event);
     final id = '${hero.id}:$stage';
     final duplicate = owned.contains(id);
-    final attack = CombatRules.rollAttack(stage, widget.random);
-    final crit = CombatRules.rollCrit(stage, widget.random);
-    final skill = SkillCatalog.roll(stage, widget.random(), widget.random());
+    final attack = divine ? 100 : CombatRules.rollAttack(stage, widget.random);
+    final crit = divine ? 25 : CombatRules.rollCrit(stage, widget.random);
+    final skill = divine
+        ? SkillCatalog.byId(SkillCatalog.olympusSkills[hero.id])!
+        : SkillCatalog.roll(stage, widget.random(), widget.random());
     setState(() {
       if (!free) {
-        shards -= SummonRules.cost(featured);
+        shards -= SummonRules.cost(featured,event:event);
       }
       pulls++;
       if (duplicate) {
@@ -1181,7 +1184,7 @@ class _IdleShellState extends State<IdleShell> {
     return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
   }
 
-  Future<void> _summonOnline(bool featured, {bool free = false}) async {
+  Future<void> _summonOnline(bool featured, {bool free = false,bool event=false}) async {
     final cloud = _cloud!;
     final accountUid = cloud.identity?.uid;
     _summonRequestPending = true;
@@ -1192,6 +1195,7 @@ class _IdleShellState extends State<IdleShell> {
       }
       final result = await cloud.api.post('/api/summon', {
         'featured': featured,
+        'event': event,
         'free': free,
         'revision': cloud.revision,
         'rollId': rollId,
@@ -1290,6 +1294,7 @@ class _IdleShellState extends State<IdleShell> {
         },
         freeDuplicate: _pendingDuplicate?['free'] == true,
         heroName: hero.name,
+        eventHero: KardRuneCatalog.isOlympus(hero.id),
         stage: stage,
         asset: hero.cardAsset(hero.stages[stage - 1]),
         hp: CombatRules.hpForStage(stage),
@@ -1801,7 +1806,7 @@ class _CardsState extends State<_Cards> {
   Widget build(BuildContext context) {
     final all = [
       for (final h in KardRuneCatalog.heroes)
-        for (var s = 1; s <= 3; s++) MapEntry(h, s),
+        for (final s in (KardRuneCatalog.isOlympus(h.id) ? const [3] : const [1,2,3])) MapEntry(h, s),
     ];
     final found = all.where((card) {
       final id = '${card.key.id}:${card.value}';
@@ -2193,7 +2198,7 @@ class _CardsState extends State<_Cards> {
         isOwned = owned.contains(id),
         isSelected = active == id;
     return Semantics(
-      label: '${hero.name} Stage $stage',
+      label: KardRuneCatalog.isOlympus(hero.id) ? '${hero.name} Ultra' : '${hero.name} Stage $stage',
       button: true,
       selected: isSelected,
       child: GestureDetector(
@@ -2299,7 +2304,7 @@ class _CardsState extends State<_Cards> {
                           const SizedBox(width: 42),
                           Expanded(
                             child: Text(
-                              '${hero.name.toString().toUpperCase()} · ${_t('STAGE', 'STAGE')} $stage',
+                              KardRuneCatalog.isOlympus(hero.id) ? '${hero.name.toString().toUpperCase()} · ULTRA' : '${hero.name.toString().toUpperCase()} · ${_t('STAGE', 'STAGE')} $stage',
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 fontFamily: 'Georgia',
@@ -2377,7 +2382,7 @@ class _CardsState extends State<_Cards> {
                           style: const TextStyle(color: Color(0xffa9bdd4), fontSize: 10),
                         ),
                         Text(
-                          '${_t('STAGE', 'STAGE')} $stage: ${(SkillCatalog.weights[stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% ${_t('PER EVOCAZIONE', 'PER PULL')}',
+                          KardRuneCatalog.isOlympus(hero.id) ? 'GODS OF OLYMPUS · 1.67% PER PULL' : '${_t('STAGE', 'STAGE')} $stage: ${(SkillCatalog.weights[stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% ${_t('PER EVOCAZIONE', 'PER PULL')}',
                           style: const TextStyle(color: Color(0xffa9bdd4), fontSize: 10),
                         ),
                         const SizedBox(height: 8),

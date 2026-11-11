@@ -554,7 +554,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'STAGE ${card.stage}  ·  ATK ${card.attack}  ·  CRIT ${card.crit}%  ·  HP ${CombatRules.hpForStage(card.stage)}',
+                    '${KardRuneCatalog.isOlympus(card.hero) ? 'ULTRA' : 'STAGE ${card.stage}'}  ·  ATK ${card.attack}  ·  CRIT ${card.crit}%  ·  HP ${CombatRules.hpForStage(card.stage)}',
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white),
                   ),
@@ -585,7 +585,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                       ),
                     ),
                     Text(
-                      'Stage ${card.stage}: ${(SkillCatalog.weights[card.stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% per pull',
+                      KardRuneCatalog.isOlympus(card.hero) ? 'GODS OF OLYMPUS · 1.67% per pull' : 'Stage ${card.stage}: ${(SkillCatalog.weights[card.stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% per pull',
                       style: const TextStyle(
                         color: Color(0xffa9bdd4),
                         fontSize: 10,

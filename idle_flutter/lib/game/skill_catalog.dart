@@ -55,7 +55,21 @@ abstract final class SkillCatalog {
     SkillDefinition(id: "U3", name: "Fiamma cosmica", rarity: "ultra", description: "Il primo colpo applica bruciatura del 10% HP massimi per 3 azioni.", trigger: "Primo colpo riuscito", limit: "Max 35 per tick; 3 tick", vfx: "burn"),
     SkillDefinition(id: "U4", name: "Scudo divino", rarity: "ultra", description: "Riduce del 60% i primi 2 danni diretti ricevuti.", trigger: "Colpo diretto in arrivo", limit: "2 cariche", vfx: "shield"),
     SkillDefinition(id: "U5", name: "Ascensione", rarity: "ultra", description: "Dopo ogni attacco, ATK cresce del 15% fino a +60%.", trigger: "Fine di ogni attacco", limit: "4 stack; fino a fine duello", vfx: "ascend"),
+    SkillDefinition(id: "D1", name: "Giudizio Divino", rarity: "ultra", description: "Zeus: +22% ATK e +18 al primo attacco. Prossima carta: +15% ATK.", trigger: "Attacchi e carta successiva", limit: "Per un duello", vfx: "storm"),
+    SkillDefinition(id: "D2", name: "Marea Sovrana", rarity: "ultra", description: "Poseidone: primo colpo +16, primo danno ricevuto -30%. Prossima carta: -20% al primo danno.", trigger: "Primo colpo e carta successiva", limit: "Una volta per effetto", vfx: "shield"),
+    SkillDefinition(id: "D3", name: "Patto delle Ombre", rarity: "ultra", description: "Ade cura il 12% dei danni diretti inflitti. Prossima carta: cura l'8% dei danni diretti.", trigger: "Ogni colpo diretto", limit: "Massimo HP, un duello", vfx: "heal"),
+    SkillDefinition(id: "D4", name: "Egida della Saggezza", rarity: "ultra", description: "Atena: -25% al primo danno subito. Prossima carta: +3 punti CRIT.", trigger: "Primo danno e carta successiva", limit: "Un colpo, CRIT massimo 25%", vfx: "shield"),
+    SkillDefinition(id: "D5", name: "Furia di Guerra", rarity: "ultra", description: "Ares: +12% ATK e +15 al primo attacco. Prossima carta: +10% ATK.", trigger: "Ogni attacco e carta successiva", limit: "Per un duello", vfx: "power"),
+    SkillDefinition(id: "D6", name: "Luce Guaritrice", rarity: "ultra", description: "Apollo cura 45 HP dopo il primo danno. Prossima carta: cura 60 HP dopo il primo danno.", trigger: "Primo danno subito", limit: "Una cura, massimo HP", vfx: "heal"),
   ];
+  static const olympusSkills = <String,String>{'zeus':'D1','poseidon':'D2','hades':'D3','athena':'D4','ares':'D5','apollo':'D6'};
+  static bool validForCard(String id,String? skillId,int stage) {
+    final parts=id.split(':');
+    if(parts.length!=2)return false;
+    final fixed=olympusSkills[parts.first];
+    if(fixed!=null)return stage==3&&parts.last=='3'&&fixed==skillId;
+    return validForStage(skillId,stage)&&!(skillId?.startsWith('D')??false);
+  }
   static SkillDefinition? byId(String? id) {
     for (final skill in skills) { if (skill.id == id) return skill; }
     return null;
@@ -73,7 +87,7 @@ abstract final class SkillCatalog {
       ticket -= table[rarity];
       rarity++;
     }
-    final options = skills.where((s) => s.rarity == rarities[rarity]).toList();
+    final options = skills.where((s) => s.rarity == rarities[rarity] && !s.id.startsWith('D')).toList();
     return options[(skillRoll.clamp(0.0, .999999999) * 5).floor()];
   }
 }

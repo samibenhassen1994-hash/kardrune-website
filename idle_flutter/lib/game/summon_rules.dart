@@ -5,8 +5,11 @@ class DuplicateDecision {
 }
 
 abstract final class SummonRules {
-  static int cost(bool featured) => featured ? 600 : 300;
-  static int stageFor(bool featured, double roll) => featured
+  static int cost(bool featured, {bool event=false}) => event ? 1200 : featured ? 600 : 300;
+  static bool isOlympusPull(double roll) => roll < .10;
+  static int stageFor(bool featured, double roll, {bool event=false}) => event
+      ? (roll < .55 ? 1 : roll < .85 ? 2 : 3)
+      : featured
       ? (roll < .60
             ? 1
             : roll < .90

@@ -22,6 +22,7 @@ class SummonResult extends StatefulWidget {
     required this.onContinue,
     this.onVideoComplete,
     this.freeDuplicate = false,
+    this.eventHero = false,
     this.allowVideoWithReducedMotion = false,
     this.oldAttack,
     this.oldCrit,
@@ -29,6 +30,7 @@ class SummonResult extends StatefulWidget {
     this.newSkillId,
   });
   final bool freeDuplicate;
+  final bool eventHero;
   final bool allowVideoWithReducedMotion;
   final String heroName, asset;
   final int stage, hp, newAttack, newCrit;
@@ -105,7 +107,7 @@ class _SummonResultState extends State<SummonResult>
       ),
       const SizedBox(height: 4),
       Text(
-        '${widget.heroName.toUpperCase()} · ${context.tr('STAGE')} ${widget.stage}',
+        widget.eventHero ? '${widget.heroName.toUpperCase()} · ULTRA' : '${widget.heroName.toUpperCase()} · ${context.tr('STAGE')} ${widget.stage}',
         style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w800,

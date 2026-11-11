@@ -18,6 +18,7 @@ class SummonScreen extends StatefulWidget {
     required this.loadFreeStatus,
     required this.onSummon,
     required this.onFreeSummon,
+    this.onEventSummon,
   });
   final int shards;
   final Widget header;
@@ -26,6 +27,7 @@ class SummonScreen extends StatefulWidget {
   final Future<Map<String, dynamic>> Function() loadFreeStatus;
   final Future<void> Function(bool featured) onSummon;
   final Future<void> Function() onFreeSummon;
+  final Future<void> Function()? onEventSummon;
 
   @override
   State<SummonScreen> createState() => _SummonScreenState();
@@ -103,12 +105,14 @@ class _SummonScreenState extends State<SummonScreen>
     }
   }
 
-  Future<void> _pull({required bool featured, bool free = false}) async {
+  Future<void> _pull({required bool featured, bool free = false,bool event=false}) async {
     if (busy) return;
     setState(() => busy = true);
     try {
       if (free) {
         await widget.onFreeSummon();
+      } else if(event) {
+        await widget.onEventSummon?.call();
       } else {
         await widget.onSummon(featured);
       }
@@ -252,11 +256,7 @@ class _SummonScreenState extends State<SummonScreen>
     final title = switch (section) {
       0 => 'STANDARD PORTAL',
       1 => 'DREN · FEATURED SUMMON',
-      _ => 'COMING SOON',
-    };
-    final emptyKey = switch (section) {
-      0 => const Key('summon-banner-empty-standard'),
-      _ => const Key('summon-banner-empty-event'),
+      _ => 'GODS OF OLYMPUS',
     };
     return Container(
       key: const Key('summon-banner-frame'),
@@ -314,14 +314,11 @@ class _SummonScreenState extends State<SummonScreen>
                   opacity: const AlwaysStoppedAnimation(.9),
                 )
               else
-                DecoratedBox(
-                  key: emptyKey,
-                  decoration: const BoxDecoration(
-                    gradient: RadialGradient(
-                      colors: [Color(0xff162a47), Color(0xff07101f)],
-                      radius: 1.15,
-                    ),
-                  ),
+                Image.asset(
+                  'assets/idle/summon/banners/Banner_Gods_of_olympus.webp',
+                  key: const Key('summon-banner-art-event'),
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
                 ),
               const DecoratedBox(
                 decoration: BoxDecoration(
@@ -464,9 +461,10 @@ class _SummonScreenState extends State<SummonScreen>
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       _title(context.tr('EVENT SUMMON')),
-      _info(
-        'No event banner is active. Rates and featured heroes will appear here when an event is configured.',
-      ),
+      _info(context.tr('Olympus: 10% total (1.67% each). Otherwise, featured-style heroes with extra Stage 3 chance.')),
+      const SizedBox(height: 8),
+      _button(context.tr('OLYMPUS PULL  ◆ 1200'),widget.shards>=1200&&!busy&&widget.onEventSummon!=null,
+        ()=>_pull(featured:false,event:true),key:const Key('summon-event-button')),
     ],
   );
 
@@ -575,9 +573,12 @@ class _SummonScreenState extends State<SummonScreen>
                           _info('Stage 1: 60% · Stage 2: 30% · Stage 3: 10%'),
                           _info('Dren: 42.22%; each other hero: 7.22%.'),
                         ] else
-                          _info(
-                            'No event is active. No event odds or cost are defined.',
-                          ),
+                          Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                            _info(context.tr('Cost: 1200 Shards. Six Olympus gods: 10% total; 1.67% each.')),
+                            _info(context.tr('Other heroes: 90%. Dren featured rate-up.')),
+                            _info(context.tr('Fallback stages: Stage 1 55%, Stage 2 30%, Stage 3 15%.')),
+                            _info(context.tr('Olympus cards: one form, Ultra fixed skills, ATK 100, CRIT 25%, HP 430.')),
+                          ]),
                         if (section != 2) ...[
                           _info('ATK: 1–100 · CRIT: 0–25% · 1 skill per card.'),
                           _info(

@@ -713,7 +713,7 @@ class _DeckBuilderState extends State<DeckBuilder> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        '${hero.name.toUpperCase()} · S${id.split(':').last}',
+                                        KardRuneCatalog.isOlympus(hero.id) ? '${hero.name.toUpperCase()} · ULTRA' : '${hero.name.toUpperCase()} · S${id.split(':').last}',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(
