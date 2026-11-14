@@ -8,25 +8,25 @@ export function secureInt(max){
  do{crypto.getRandomValues(bytes)}while(bytes[0]>=limit);
  return bytes[0]%max;
 }
-export function rollSkill(stage){
+export function rollSkill(stage,random=secureInt){
  const weights=SKILL_WEIGHTS[stage];
  if(!weights)throw new RangeError('Invalid Stage');
- let ticket=secureInt(1000),rarity=0;
+ let ticket=random(1000),rarity=0;
  while(ticket>=weights[rarity]){ticket-=weights[rarity];rarity++}
  const options=SKILLS.filter(skill=>skill.rarity===RARITIES[rarity]&&!skill.id.startsWith('D'));
- return options[secureInt(5)];
+ return options[random(5)];
 }
-export function rollCard(featured,event=false){
- if(event&&secureInt(1000)<OLYMPUS_RATE_PER_1000){
-  const hero=OLYMPUS_IDS[secureInt(6)];return {id:`${hero}:3`,attack:OLYMPUS_CAP.attack,crit:OLYMPUS_CAP.crit,skill:SKILL_BY_ID[OLYMPUS_HEROES[hero].skillId]};
+export function rollCard(featured,event=false,random=secureInt){
+ if(event&&random(1000)<OLYMPUS_RATE_PER_1000){
+  const hero=OLYMPUS_IDS[random(6)];return {id:`${hero}:3`,attack:OLYMPUS_CAP.attack,crit:OLYMPUS_CAP.crit,skill:SKILL_BY_ID[OLYMPUS_HEROES[hero].skillId]};
  }
- const stageTicket=secureInt(1000),stage=event
+ const stageTicket=random(1000),stage=event
   ?stageTicket<550?1:stageTicket<850?2:3
   :featured?stageTicket<600?1:stageTicket<900?2:3
   :stageTicket<780?1:stageTicket<970?2:3;
  const heroes=['sam','lira','rhea','dren','tor','aria','kael','neris','nyra'];
- const hero=(featured||event)&&secureInt(100)<35?'dren':heroes[secureInt(9)];
- return {id:`${hero}:${stage}`,...rollCardStats(stage,secureInt),skill:rollSkill(stage)};
+ const hero=(featured||event)&&random(100)<35?'dren':heroes[random(9)];
+ return {id:`${hero}:${stage}`,...rollCardStats(stage,random),skill:rollSkill(stage,random)};
 }
 export async function grantsFor(env,uid){
  const rows=await env.DB.prepare('SELECT card_id,attack,crit,skill_id,rarity,skill_version,source FROM skill_grants WHERE uid=?').bind(uid).all();

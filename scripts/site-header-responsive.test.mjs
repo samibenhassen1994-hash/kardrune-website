@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const read = path => readFileSync(new URL('../'+path,import.meta.url),'utf8');
 test('signed-in account joins header install actions instead of squeezing logo',()=>{
   const js = read('site-account-nav.js');
-  assert.match(js,/header\.querySelector\('\.home-top-actions'\)/);
+  assert.match(js,/header\.querySelector\(':scope > \.home-top-actions'\)/);
   assert.match(js,/\(actions \|\| header\)\.append\(host\)/);
   assert.match(js,/oldAccountLink\?\.remove\(\)/);
 });

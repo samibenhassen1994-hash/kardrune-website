@@ -2,6 +2,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_kardrune/models/player_save.dart';
 
 void main() {
+  test('Olympus cloud cards survive reload as single forms with fixed skills', () {
+    const gods = ['zeus','poseidon','hades','athena','ares','apollo'];
+    final json = PlayerSave.initial().toJson();
+    json['owned'] = ['sam:1', for(final h in gods) '$h:3', 'zeus:1', 'athena:2'];
+    json['attacks'] = {'sam:1':49, for(final h in gods) '$h:3':100};
+    json['crits'] = {'sam:1':7, for(final h in gods) '$h:3':25};
+    json['skills'] = {for(var i=0;i<gods.length;i++) '${gods[i]}:3':{'id':'D${i+1}','rarity':'ultra','v':1}};
+    final save = PlayerSave.fromJson(json);
+    expect(save.owned.length,7);
+    expect(save.attacks['sam:1'],49);
+    for(var i=0;i<gods.length;i++) {
+      expect(save.skills['${gods[i]}:3'],'D${i+1}');
+      expect(save.attacks['${gods[i]}:3'],100);
+      expect(save.crits['${gods[i]}:3'],25);
+    }
+    expect(PlayerSave.fromJson(save.toJson()).owned,save.owned);
+  });
   test('initial save is byte-schema compatible', () {
     final save = PlayerSave.initial();
     expect(save.toJson(), {

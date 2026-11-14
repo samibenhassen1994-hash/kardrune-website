@@ -91,6 +91,7 @@ export class PvpLobby {
  startMatch(waiting,player){
    clearTimeout(waiting.botTimer);clearTimeout(player.botTimer);
    waiting.used=[];player.used=[];
+   waiting.nextBlessing=null;player.nextBlessing=null;
    const initiative=rollInitiative(secureRandom);
    const match={id:crypto.randomUUID(),players:[waiting,player],round:0,scores:[0,0],selectTimer:null,readyTimer:null,awaiting:null,initiative,initializing:true};
    waiting.match=match;player.match=match;this.matches.set(match.id,match);
