@@ -55,6 +55,7 @@ class PlayerSave {
       if (p.length == 2 &&
           heroIds.contains(p[0]) &&
           ['1', '2', '3'].contains(p[1]) &&
+          (!KardRuneCatalog.isOlympus(p[0]) || p[1] == '3') &&
           !owned.contains(id)) {
         owned.add(id);
       }

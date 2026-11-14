@@ -1876,7 +1876,7 @@ class _CardsState extends State<_Cards> {
                       ),
                     ),
                     Text(
-                      '${owned.length}/27 ${_t('possedute', 'owned')} · ${deck.length}/9 ${_t('nel mazzo', 'in deck')}',
+                      '${owned.length}/33 ${_t('possedute', 'owned')} · ${deck.length}/9 ${_t('nel mazzo', 'in deck')}',
                       style: const TextStyle(
                         color: Color(0xffaabbd2),
                         fontSize: 11,

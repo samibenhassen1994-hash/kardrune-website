@@ -114,9 +114,10 @@ void main() {
 
     await tester.tap(find.text('EVENT'));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('summon-banner-empty-event')), findsOneWidget);
+    expect(find.byKey(const Key('summon-banner-art-event')), findsOneWidget);
     expect(find.byKey(const Key('summon-banner-art-featured')), findsNothing);
-    expect(find.text('COMING SOON'), findsOneWidget);
+    expect(find.byKey(const Key('summon-event-button')), findsOneWidget);
+    expect(find.text('COMING SOON'), findsNothing);
     expect(tester.takeException(), isNull);
   });
   for (final size in const [Size(320, 568), Size(375, 620), Size(393, 690)]) {
@@ -217,7 +218,7 @@ void main() {
     final glass = glassCard.decoration! as BoxDecoration;
     final glassGradient = glass.gradient! as LinearGradient;
     expect(glassGradient.colors.every((color) => color.a < 1), isTrue);
-    expect(find.textContaining('1/27'), findsOneWidget);
+    expect(find.textContaining('1/33'), findsOneWidget);
     await tester.tap(find.text('SUMMON').last);
     await tester.pumpAndSettle();
     expect(find.text('1,500'), findsOneWidget);

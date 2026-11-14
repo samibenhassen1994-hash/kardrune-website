@@ -2,7 +2,35 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SKILL_BY_ID,OLYMPUS_HEROES,OLYMPUS_IDS,fixedOlympusSkill,validSkillForCard,OLYMPUS_COST,OLYMPUS_RATE_PER_1000} from '../../shared/skill_catalog.js';
 import {resolveDuelFromStarter} from '../src/rules.js';
+import {rollCard,mergeGrantedSave} from '../../functions/api/_lib/skill_store.js';
+import {forgeAttempt} from '../../functions/api/_lib/forge.js';
 const card=(hero,skillId,attack=100)=>({id:`${hero}:3`,hero,stage:3,attack,crit:0,skillId});
+test('server event draws use exact 10% boundary, fixed gods and boosted normal stages',()=>{
+ let divine=0;
+ for(let n=0;n<1000;n++){
+  const values=[n,0,0,0,0,0,0,0];
+  const result=rollCard(false,true,()=>values.shift()??0);
+  if(result.skill.id.startsWith('D'))divine++;
+ }
+ assert.equal(divine,100);
+ for(let i=0;i<6;i++){
+  const values=[99,i];const c=rollCard(false,true,()=>values.shift()??0);
+  assert.equal(c.id,`${OLYMPUS_IDS[i]}:3`);assert.equal(c.attack,100);assert.equal(c.crit,25);
+  assert.equal(c.skill.id,OLYMPUS_HEROES[OLYMPUS_IDS[i]].skillId);
+ }
+ for(const [ticket,stage] of [[0,1],[549,1],[550,2],[849,2],[850,3],[999,3]]){
+  const values=[100,ticket,34];const c=rollCard(false,true,()=>values.shift()??0);
+  assert.equal(c.id,`dren:${stage}`);assert.ok(!c.skill.id.startsWith('D'));
+ }
+});
+test('divine grants survive cloud merge and cannot enter Forge',async()=>{
+ const grants=OLYMPUS_IDS.map(hero=>({card_id:`${hero}:3`,attack:100,crit:25,
+  skill_id:OLYMPUS_HEROES[hero].skillId,skill_version:1}));
+ const save=mergeGrantedSave({owned:['sam:1'],attacks:{'sam:1':49},crits:{'sam:1':7}},grants);
+ assert.equal(save.owned.length,7);assert.equal(save.attacks['sam:1'],49);
+ for(const g of grants){assert.equal(save.skills[g.card_id].id,g.skill_id);
+  await assert.rejects(forgeAttempt({},'u',{requestId:'a'.repeat(32),cardId:g.card_id,color:'red',stat:'SKILL',revision:1}),/FORGE_INVALID/);}
+});
 test('all six Olympus heroes are immutable Ultra cards at cap and have unique fixed skills',()=>{
  assert.equal(OLYMPUS_IDS.length,6);
  assert.equal(OLYMPUS_COST,1200);

@@ -23,7 +23,12 @@ on:
       - fix/remove-idle-pvp-slash-animation
     paths:
       - 'idle_flutter/**'
+      - 'shared/**'
+      - 'scripts/**'
       - '.github/workflows/idle-flutter-summon.yml'
+  pull_request:
+    branches: [main]
+    paths: ['idle_flutter/**', 'shared/**', 'scripts/**', '.github/workflows/idle-flutter-summon.yml']
   workflow_dispatch:
 concurrency:
   group: idle-flutter-${{ github.ref }}
@@ -38,8 +43,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify generated skill catalog
+        run: |
+          node idle_flutter/tool/generate_skill_catalog.mjs
+          git diff --exit-code -- idle_flutter/lib/game/skill_catalog.dart
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.47.5'
           channel: stable
           cache: true
       - name: Install, analyze and run deterministic tests
@@ -73,6 +86,7 @@ jobs:
         run: |
           node scripts/stamp-idle-release.mjs "$(git rev-parse --short HEAD)" idle_flutter/build/web
       - name: Verify and commit compiled frontend
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           test -f idle_flutter/build/web/main.dart.js

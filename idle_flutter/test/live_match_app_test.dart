@@ -59,12 +59,13 @@ void main() {
     final storage = _Storage(),
         local = LocalSaveService(storage),
         socket = _Socket();
+    const deck = ['sam:1','lira:1','rhea:1','dren:1','tor:1','aria:1','kael:1','neris:1','nyra:1'];
     local.save(PlayerSave.initial().copyWith(
-      owned: ['sam:1', 'lira:1', 'rhea:1'],
-      attacks: {'sam:1': 40, 'lira:1': 46, 'rhea:1': 50},
-      crits: {'sam:1': 4, 'lira:1': 5, 'rhea:1': 6},
+      owned: deck,
+      attacks: {for (final id in deck) id: 25},
+      crits: {for (final id in deck) id: 0},
     ));
-    local.saveDeck(['sam:1', 'lira:1', 'rhea:1']);
+    local.saveDeck(deck);
     final match = LiveMatchCoordinator(
       repository: PvpRepository(ApiClient(_Auth(), _Transport())),
       connect: (url, ticket) => socket,
@@ -84,8 +85,10 @@ void main() {
         score: [0, 0],
         hand: [
           PvpCard(id: 'sam:1', hero: 'sam', stage: 1, attack: 40, crit: 4),
+          PvpCard(id: 'lira:1', hero: 'lira', stage: 1, attack: 25, crit: 0),
+          PvpCard(id: 'rhea:1', hero: 'rhea', stage: 1, attack: 25, crit: 0),
         ],
-        deckSize: 1,
+        deckSize: 9,
         usedCount: 0,
         durationMs: 30000,
         deadline: 1,
