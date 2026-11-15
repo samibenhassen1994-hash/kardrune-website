@@ -32,6 +32,8 @@ void main() {
     'important UI sections are translated in every non-English language',
     () {
       const keys = [
+        'ADMIN_TEST_RESOURCES','ADMIN_MIGRATION_REQUIRED','KEYS_EACH_COLOR',
+        'OLYMPUS_PITY','OLYMPUS_PROGRESSIVE_INFO','OLYMPUS_OTHER_INFO','OLYMPUS_RANDOM_INFO',
         'ADD NINE CARDS TO YOUR DECK', 'GRAVEYARD',
         'DUPLICATE CARD', 'NEW HERO UNLOCKED', 'Compare both cards, then choose which one to keep.',
         'KEEP CURRENT · +100', 'REPLACE', 'KEEP = +100 SHARDS  ·  REPLACE = NEW STATS',

@@ -19,6 +19,7 @@ import 'features/summon/summon_result.dart';
 import 'features/summon/summon_screen.dart';
 import 'features/summon/free_pull_notifications.dart';
 import 'features/profile/cloud_account_controller.dart';
+import 'features/profile/admin_test_tools.dart';
 import 'features/pvp/live_match_coordinator.dart';
 import 'features/pvp/live_pvp_arena.dart';
 import 'features/pvp/flame_battle_audio.dart';
@@ -1137,8 +1138,8 @@ class _IdleShellState extends State<IdleShell> {
             featured || event, widget.random(), widget.random())];
     final id = '${hero.id}:$stage';
     final duplicate = owned.contains(id);
-    final attack = divine ? 100 : CombatRules.rollAttack(stage, widget.random);
-    final crit = divine ? 25 : CombatRules.rollCrit(stage, widget.random);
+    final attack = CombatRules.rollAttack(stage, widget.random);
+    final crit = CombatRules.rollCrit(stage, widget.random);
     final skill = divine
         ? SkillCatalog.byId(SkillCatalog.olympusSkills[hero.id])!
         : SkillCatalog.roll(stage, widget.random(), widget.random());
@@ -2380,7 +2381,7 @@ class _CardsState extends State<_Cards> {
                           style: const TextStyle(color: Color(0xffa9bdd4), fontSize: 10),
                         ),
                         Text(
-                          KardRuneCatalog.isOlympus(hero.id) ? 'GODS OF OLYMPUS · 1.67% PER PULL' : '${_t('STAGE', 'STAGE')} $stage: ${(SkillCatalog.weights[stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% ${_t('PER EVOCAZIONE', 'PER PULL')}',
+                          KardRuneCatalog.isOlympus(hero.id) ? 'GODS OF OLYMPUS · ULTRA' : '${_t('STAGE', 'STAGE')} $stage: ${(SkillCatalog.weights[stage]![SkillCatalog.rarities.indexOf(skill.rarity)] / 50).toStringAsFixed(2)}% ${_t('PER EVOCAZIONE', 'PER PULL')}',
                           style: const TextStyle(color: Color(0xffa9bdd4), fontSize: 10),
                         ),
                         const SizedBox(height: 8),
@@ -2654,7 +2655,7 @@ class _Profile extends StatelessWidget {
                 children: [
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Text(
+                    child: Row(children: [Text(
                       context.tr('ACCOUNT'),
                       style: const TextStyle(
                         color: Color(0xffeac981),
@@ -2662,7 +2663,7 @@ class _Profile extends StatelessWidget {
                         letterSpacing: 1.1,
                         fontWeight: FontWeight.w800,
                       ),
-                    ),
+                    ), const Spacer(), if(cloud?.identity!=null) AdminTestTools(key:ValueKey(cloud!.identity!.uid),cloud:cloud!)]),
                   ),
                   if (cloud == null) ...[
                     Text(

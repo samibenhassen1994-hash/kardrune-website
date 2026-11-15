@@ -61,7 +61,8 @@ export const OLYMPUS_HEROES=Object.freeze({
  apollo:{name:'Apollo',skillId:'D6',blessing:{type:'heal_after_hit',value:60}},
 });
 export const OLYMPUS_IDS=Object.freeze(Object.keys(OLYMPUS_HEROES));
-export const OLYMPUS_COST=1200,OLYMPUS_RATE_PER_1000=100;
+export const OLYMPUS_COST=1200,OLYMPUS_RATE_PER_1000=200;
+export const OLYMPUS_PITY_RATES=Object.freeze([200,220,250,300,350,400,500,600,750,1000]);
 export const OLYMPUS_CAP=Object.freeze({stage:3,attack:100,crit:25,hp:430});
 export const isOlympusHero=hero=>Object.hasOwn(OLYMPUS_HEROES,hero);
 export const fixedOlympusSkill=id=>typeof id==='string'&&id.endsWith(':3')?OLYMPUS_HEROES[id.split(':')[0]]?.skillId??null:null;
