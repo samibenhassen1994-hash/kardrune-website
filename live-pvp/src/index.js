@@ -34,7 +34,7 @@ export default {
    if(!save.owned?.includes(id)||!['sam','lira','rhea','dren','tor','aria','kael','neris','nyra','zeus','poseidon','hades','athena','ares','apollo'].includes(hero)||![1,2,3].includes(stage)||!Number.isInteger(attack)||attack<1||attack>100||!Number.isInteger(crit)||crit<0||crit>25)
     return new Response('Invalid card',{status:400});
    if(grant.skill_version!==SKILL_VERSION||!validSkillForCard(id,skillId,stage))return new Response('Skill grant unavailable',{status:409});
-   if(OLYMPUS_HEROES[hero]&&(stage!==3||attack!==100||crit!==25))return new Response('Invalid divine card',{status:400});
+   if(OLYMPUS_HEROES[hero]&&(stage!==3||attack<60||crit<8))return new Response('Invalid divine card',{status:400});
    const effective=effectiveCardStats(stage,attack,crit);
    deck.push({id,hero,stage,...effective,skillId,skillRarity:SKILL_BY_ID[skillId].rarity,skillVersion:SKILL_VERSION});
   }

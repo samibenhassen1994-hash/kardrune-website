@@ -2,6 +2,7 @@ import {userFromRequest,failure,json} from './_lib/auth.js';
 import {ensureLegacySkills,mergeGrantedSave,rollCard,currentAccount} from './_lib/skill_store.js';
 import {SKILL_VERSION} from '../../shared/skill_catalog.js';
 import {requireActiveAccount} from './_lib/account_status.js';
+import {olympusPity} from './_lib/olympus_pity.js';
 
 const rollPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const freeWindowMs=12*60*60*1000;
@@ -19,7 +20,7 @@ export async function onRequestGet({request,env}){
   const user=await userFromRequest(request,env);
   if(!env.DB)return json({error:'D1 not configured'},503);
   await requireActiveAccount(env,user.uid);
-  return json(await freeStatus(env,user.uid));
+  return json({...await freeStatus(env,user.uid),olympus:await olympusPity(env,user.uid)});
  }catch(error){return failure(error)}
 }
 
@@ -53,7 +54,8 @@ export async function onRequestPost({request,env}){
   const wallet=await env.DB.prepare('SELECT shards FROM skill_wallets WHERE uid=?').bind(user.uid).first();
   if(!wallet||wallet.shards<cost)return json({error:'Not enough verified Shards'},400);
   save.shards=wallet.shards;
-  const card=rollCard(body.featured,event),duplicate=save.owned.includes(card.id);
+  const pity=event?await olympusPity(env,user.uid):null;
+  const card=rollCard(body.featured,event,undefined,pity?.completed??0),duplicate=save.owned.includes(card.id);
   save.shards-=cost;
   save.pulls=(Number.isSafeInteger(save.pulls)?save.pulls:0)+1;
   if(duplicate){

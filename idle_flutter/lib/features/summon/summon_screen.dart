@@ -36,6 +36,7 @@ class SummonScreen extends StatefulWidget {
 class _SummonScreenState extends State<SummonScreen>
     with SingleTickerProviderStateMixin {
   int section = 0, available = 0;
+  int? eventPull, eventRate;
   int? nextAt;
   DateTime now = DateTime.now();
   Timer? ticker;
@@ -86,12 +87,16 @@ class _SummonScreenState extends State<SummonScreen>
   }
 
   Future<void> _refresh() async {
+    final account = widget.accountKey;
     try {
       final status = await widget.loadFreeStatus();
-      if (!mounted) return;
+      if (!mounted || account != widget.accountKey) return;
       setState(() {
         available = (status['available'] as num?)?.toInt().clamp(0, 2) ?? 0;
         nextAt = (status['nextAt'] as num?)?.toInt();
+        final pity=status['olympus'] as Map?;
+        eventPull=(pity?['nextPull'] as num?)?.toInt();
+        eventRate=(pity?['rate'] as num?)?.toInt();
         now = DateTime.now();
       });
       _scheduleNotification();
@@ -100,6 +105,7 @@ class _SummonScreenState extends State<SummonScreen>
         setState(() {
           available = 0;
           nextAt = null;
+          eventPull = eventRate = null;
         });
       }
     }
@@ -461,9 +467,9 @@ class _SummonScreenState extends State<SummonScreen>
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       _title(context.tr('EVENT SUMMON')),
-      _info(context.tr('Olympus: 10% total (1.67% each). Otherwise, featured-style heroes with extra Stage 3 chance.')),
+      _info('${context.tr('OLYMPUS_PITY')}: ${eventPull ?? '—'}/10 · ${eventRate ?? '—'}%'),
       const SizedBox(height: 8),
-      _button(context.tr('OLYMPUS PULL  ◆ 1200'),widget.shards>=1200&&!busy&&widget.onEventSummon!=null,
+      _button(context.tr('OLYMPUS PULL  ◆ 1200'),widget.accountKey!='guest'&&eventPull!=null&&widget.shards>=1200&&!busy&&widget.onEventSummon!=null,
         ()=>_pull(featured:false,event:true),key:const Key('summon-event-button')),
     ],
   );
@@ -574,10 +580,10 @@ class _SummonScreenState extends State<SummonScreen>
                           _info('Dren: 42.22%; each other hero: 7.22%.'),
                         ] else
                           Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-                            _info(context.tr('Cost: 1200 Shards. Six Olympus gods: 10% total; 1.67% each.')),
-                            _info(context.tr('Other heroes: 90%. Dren featured rate-up.')),
+                            _info(context.tr('OLYMPUS_PROGRESSIVE_INFO')),
+                            _info(context.tr('OLYMPUS_OTHER_INFO')),
                             _info(context.tr('Fallback stages: Stage 1 55%, Stage 2 30%, Stage 3 15%.')),
-                            _info(context.tr('Olympus cards: one form, Ultra fixed skills, ATK 100, CRIT 25%, HP 430.')),
+                            _info(context.tr('OLYMPUS_RANDOM_INFO')),
                           ]),
                         if (section != 2) ...[
                           _info('ATK: 1–100 · CRIT: 0–25% · 1 skill per card.'),

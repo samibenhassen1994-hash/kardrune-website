@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:idle_kardrune/app.dart';
 import 'package:idle_kardrune/features/profile/cloud_account_controller.dart';
+import 'package:idle_kardrune/features/profile/admin_test_tools.dart';
 import 'package:idle_kardrune/models/player_save.dart';
 import 'package:idle_kardrune/services/api_client.dart';
 import 'package:idle_kardrune/services/local_save_service.dart';
@@ -76,6 +77,25 @@ class _SequenceTransport implements ApiTransport {
 }
 
 void main() {
+ for(final admin in [false,true]) {
+  testWidgets('admin resource controls enforce server visibility: $admin',(tester) async {
+   final auth=_Auth(),transport=_Transport(),local=LocalSaveService(_Storage());
+   final cloud=CloudAccountController(auth:auth,api:ApiClient(auth,transport),local:local)
+    ..identity=const CloudIdentity(uid:'admin')..revision=1;
+   transport.responses['GET /api/admin/test-resources']=ApiResponse(admin?200:403,admin?'[{"admin":true}]':'{}');
+   if(admin)transport.responses['GET /api/admin/test-resources']=const ApiResponse(200,'{"admin":true,"enabled":true}');
+   transport.responses['POST /api/admin/test-resources']=ApiResponse(200,jsonEncode({'revision':2,'save':PlayerSave.initial().copyWith(shards:13500).toJson(),'granted':true}));
+   await tester.pumpWidget(MaterialApp(home:Scaffold(body:AdminTestTools(cloud:cloud))));await tester.pumpAndSettle();
+   expect(find.byKey(const Key('admin-test-resources')),admin?findsOneWidget:findsNothing);
+   if(admin){await tester.tap(find.byKey(const Key('admin-test-resources')));await tester.pumpAndSettle();
+    await tester.tap(find.text('CONFIRM'));await tester.pumpAndSettle();
+    final body=jsonDecode(transport.requests.singleWhere((r)=>r.method=='POST').body!) as Map;
+    expect(body['shards'],12000);expect(body['keysEach'],50);expect(body.containsKey('uid'),false);
+    expect(body['requestId'],matches(RegExp(r'^[a-f0-9]{32}$')));expect(local.load().shards,13500);expect(cloud.revision,2);
+   }
+   await tester.pumpWidget(const SizedBox());cloud.dispose();
+  });
+ }
   test(
     'mobile handoff loads remote Arena progress without uploading local save',
     () async {

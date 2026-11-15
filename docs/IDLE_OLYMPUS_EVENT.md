@@ -1,13 +1,12 @@
 # Gods of Olympus — Idle KardRune event (implementation notes)
 
 The six divine heroes are **single-form**, with a single internal `:3` ID to
-reuse existing Stage-3 combat limits. The UI never calls them Stage 3. They
-have immutable `ATK 100 / CRIT 25% / HP 430` and one fixed **Ultra** skill.
+reuse existing Stage-3 combat limits. The UI never calls them Stage 3. New cards roll `ATK 60–100 / CRIT 8–25%`, keep `HP 430` and one fixed **Ultra** skill. Existing cards are preserved.
 
 ## Server-authoritative event summon (1200 Shards)
 
-- Overall divine: **10%**, equal chance per god (**1/60 ≈ 1.6667%**).
-- Remaining **90%**: standard roster with Featured Dren rate-up:
+- Divine chance increases over a ten-pull Event cycle: **20/22/25/30/35/40/50/60/75/100%**, equal chance per god. Reset only after pull ten; earlier gods do not reset the cycle.
+- Remaining probability: standard roster with Featured Dren rate-up:
   conditional Dren 42.2222%; each other hero 7.2222%.
 - Non-divine stage odds (conditional on non-divine): **S1 55% / S2 30% / S3 15%**.
 - Non-divine skills roll from the existing Stage-specific rarities, excluding D1–D6.
@@ -38,3 +37,5 @@ The source image `Ares.jpg` must be converted to `ares.webp` preserving the
 art. Run Flutter analyzer/tests and Node tests, then build the web frontend
 and deploy the Cloudflare Pages + live-PvP Worker versions together.
 Releasing only the frontend or only the Worker would cause invalid-card errors.
+
+See `IDLE_OLYMPUS_PITY_ADMIN.md` for the persistent cycle, random stats and migration 0017 admin tools.
