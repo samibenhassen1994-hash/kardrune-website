@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {PvpLobby} from '../src/index.js';
 import {generateBotDeck} from '../src/bot_policy.js';
 import {buildHand} from '../src/rules.js';
+import {OLYMPUS_HEROES} from '../../shared/skill_catalog.js';
 
 function setup(t,ready=true){
  t.mock.timers.enable({apis:['setTimeout','setInterval']});
@@ -18,14 +19,14 @@ function setup(t,ready=true){
  t.after(()=>{clearInterval(lobby.heartbeat);for(const m of lobby.matches.values())lobby.clearTimers(m);});
  return {lobby,a,human,writes,jobs,values,setReady:v=>{ready=v;}};
 }
-test('divine blessing is consumed in the next round and cleared for a new match',async t=>{
+for(const [hero,divine] of Object.entries(OLYMPUS_HEROES)) test(`${hero} blessing is consumed once, isolated and cleared for a new match`,async t=>{
  const {lobby,a,human}=setup(t);const b=human('b');lobby.sockets.set('b',b);
- a.deck[0]={id:'athena:3',hero:'athena',stage:3,attack:100,crit:25,skillId:'D4'};
+ a.deck[0]={id:`${hero}:3`,hero,stage:3,attack:60,crit:8,skillId:divine.skillId};
  a.nextBlessing={skillId:'D1',type:'attack_pct',value:15};
  await lobby.startMatch(a,b);assert.equal(a.nextBlessing,null);
  const match=a.match;
  lobby.play(a,a.deck[0].id);lobby.play(b,b.deck[0].id);
- assert.equal(a.nextBlessing.type,'crit_pct');assert.equal(a.nextBlessing.value,3);
+ assert.deepEqual(a.nextBlessing,{skillId:divine.skillId,...divine.blessing});assert.equal(b.nextBlessing,null);
  lobby.ready(a);lobby.ready(b);
  lobby.play(a,buildHand(a.deck,a.used)[0].id);lobby.play(b,buildHand(b.deck,b.used)[0].id);
  const replay=a.ws.messages.filter(m=>m.type==='round_result').at(-1);
@@ -34,6 +35,9 @@ test('divine blessing is consumed in the next round and cleared for a new match'
  match.scores=[1,1];lobby.ready(a);lobby.ready(b);
  lobby.play(a,buildHand(a.deck,a.used)[0].id);lobby.play(b,buildHand(b.deck,b.used)[0].id);
  assert.equal(a.ws.messages.filter(m=>m.type==='round_result').at(-1).log.some(e=>e.status==='next_card_blessing'),false);
+ await lobby.finish(match,'completed');
+ a.nextBlessing={skillId:divine.skillId,...divine.blessing};
+ await lobby.startMatch(a,b);assert.equal(a.nextBlessing,null);assert.equal(b.nextBlessing,null);
 });
 test('complete bot match uses D20, skill replay, automatic readiness and persists exactly once',async t=>{
  const {lobby,a,writes,jobs}=setup(t);await lobby.matchBot(a);

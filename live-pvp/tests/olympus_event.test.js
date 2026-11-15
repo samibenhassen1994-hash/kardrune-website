@@ -68,3 +68,29 @@ test('next card receives once-only CRIT buff, hit protection, healing or ATK buf
  const r=resolveDuelFromStarter(a,b,0,()=>.99,[{skillId:'D1',type:'attack_pct',value:15},null]);
  assert.equal(r.log.find(e=>e.kind==='hit'&&e.actor===0).damage,69);
 });
+
+test('all six divine effects and inherited bonuses have exact server values',()=>{
+ const enemy=card('sam',null,100);
+ const duel=(hero,blessing=null,crit=0,rng=()=>.99)=>resolveDuelFromStarter({...card(hero,OLYMPUS_HEROES[hero]?.skillId??null),crit},enemy,1,rng,[blessing,null]);
+ const hits=(r,actor)=>r.log.filter(e=>e.kind==='hit'&&e.actor===actor);
+ assert.equal(hits(duel('poseidon'),0)[0].damage,116);
+ assert.deepEqual(hits(duel('poseidon'),1).slice(0,2).map(e=>e.damage),[70,100]);
+ assert.equal(duel('hades').log.find(e=>e.kind==='heal'&&e.source===0).heal,12);
+ assert.equal(hits(duel('ares'),0)[0].damage,127);
+ assert.deepEqual(hits(duel('athena'),1).slice(0,2).map(e=>e.damage),[75,100]);
+ for(const hero of OLYMPUS_IDS){
+  const blessing={skillId:OLYMPUS_HEROES[hero].skillId,...OLYMPUS_HEROES[hero].blessing};
+  const r=duel('lira',blessing);
+  assert.equal(r.log.filter(e=>e.status==='next_card_blessing').length,1);
+  if(hero==='zeus')assert.equal(hits(r,0)[0].damage,115);
+  if(hero==='ares')assert.equal(hits(r,0)[0].damage,110);
+  if(hero==='poseidon')assert.deepEqual(hits(r,1).slice(0,2).map(e=>e.damage),[80,100]);
+  if(hero==='hades')assert.equal(r.log.find(e=>e.kind==='heal'&&e.source===0).heal,8);
+  if(hero==='apollo'){const heals=r.log.filter(e=>e.kind==='heal'&&e.source===0);assert.equal(heals.length,1);assert.equal(heals[0].heal,60);}
+  if(hero==='athena'){
+   assert.equal(hits(duel('lira',blessing,0,()=>.02),0)[0].critical,true);
+   assert.equal(hits(duel('lira',null,0,()=>.02),0)[0].critical,false);
+   assert.equal(hits(duel('lira',blessing,25,()=>.26),0)[0].critical,false);
+  }
+ }
+});

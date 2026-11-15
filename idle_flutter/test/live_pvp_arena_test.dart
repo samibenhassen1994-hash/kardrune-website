@@ -10,6 +10,21 @@ const cards = [
   PvpCard(id: 'dren:1', hero: 'dren', stage: 1, attack: 65, crit: 7),
 ];
 void main() {
+ for(final self in [0,1]) {
+  test('Olympus replay displays all divine skills and blessings for seat $self',() async {
+   final c=ArenaViewController(hitDuration:Duration.zero);
+   for(var n=1;n<=6;n++) {
+    await c.replay({'round':n,'selfIndex':self,'winner':0,'score':[1,0],
+     'log':[{'kind':'skill','source':self,'target':self,'skillId':'D$n','status':'next_card_blessing'},
+      {'kind':'heal','source':self,'target':self,'skillId':'D$n','heal':8,'hp':400}]});
+    expect(c.lastSkillId,'D$n');expect(c.skillActor,0);expect(c.playerHp,400);
+    expect(SkillCatalog.byId('D$n')!.rarity,'ultra');
+    expect(c.battleLog.any((e)=>e['skillId']=='D$n'),true);
+   }
+   c.dispose();
+  });
+ }
+
  testWidgets('server hand shows all three cards despite stale local history', (tester) async {
   final c = ArenaViewController();
   c.used.addAll(['sam:1', 'lira:1']);
