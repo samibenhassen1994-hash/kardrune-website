@@ -5,7 +5,7 @@ reuse existing Stage-3 combat limits. The UI never calls them Stage 3. New cards
 
 ## Server-authoritative event summon (1200 Shards)
 
-- Divine chance increases over a ten-pull Event cycle: **20/22/25/30/35/40/50/60/75/100%**, equal chance per god. Reset only after pull ten; earlier gods do not reset the cycle.
+- Divine chance increases over a ten-pull Event cycle: **20/22/25/30/35/40/50/60/75/100%**, equal chance per god. Reset after every god, including duplicates; guaranteed by pull ten.
 - Remaining probability: standard roster with Featured Dren rate-up:
   conditional Dren 42.2222%; each other hero 7.2222%.
 - Non-divine stage odds (conditional on non-divine): **S1 55% / S2 30% / S3 15%**.

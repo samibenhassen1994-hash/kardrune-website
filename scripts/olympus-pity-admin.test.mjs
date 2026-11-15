@@ -15,20 +15,26 @@ test('all ten progressive rates are exact; tenth guarantees a god with Stage 3 r
  const seq=[999,5,40,17];const max=rollCard(false,true,()=>seq.shift()??0,9);
  assert.equal(max.id,'apollo:3');assert.equal(max.attack,100);assert.equal(max.crit,25);
 });
-test('pity is persisted, account-specific, ignores standard pulls and resets only after ten',async()=>{
- const db=new DatabaseSync(':memory:');db.exec('CREATE TABLE summon_rolls(uid TEXT,roll_id TEXT,result_json TEXT,PRIMARY KEY(uid,roll_id))');
+test('pity is persisted, account-specific, ignores standard pulls and resets after every god including duplicates',async()=>{
+ const db=new DatabaseSync(':memory:');db.exec('CREATE TABLE summon_rolls(uid TEXT,roll_id TEXT,result_json TEXT,base_revision INTEGER,PRIMARY KEY(uid,roll_id))');
  const env={DB:{prepare:sql=>({bind:(...args)=>({first:async()=>db.prepare(sql).get(...args)})})}};
- const put=db.prepare('INSERT INTO summon_rolls VALUES(?,?,?)');
+ const put=db.prepare('INSERT INTO summon_rolls VALUES(?,?,?,?)');
  for(let i=0;i<10;i++){
   const before=await olympusPity(env,'admin');assert.equal(before.nextPull,i+1);
-  put.run('admin',String(i),JSON.stringify({cost:1200,card:{id:i===1?'zeus:3':'sam:1'}}));
-  put.run('other',String(i),JSON.stringify({cost:1200}));
-  put.run('admin','standard'+i,JSON.stringify({cost:300}));
+  put.run('admin',String(i),JSON.stringify({cost:1200,card:{id:i===9?'zeus:3':'sam:1'}}),i);
+  put.run('other',String(i),JSON.stringify({cost:1200}),i);
+  put.run('admin','standard'+i,JSON.stringify({cost:300}),i);
  }
  assert.equal((await olympusPity(env,'admin')).nextPull,1);
  assert.equal((await olympusPity(env,'new')).nextPull,1);
- assert.throws(()=>put.run('admin','0','{"cost":1200}'),/UNIQUE/);
- assert.equal((await olympusPity(env,'admin')).completed,0);db.close();
+ assert.throws(()=>put.run('admin','0','{"cost":1200}',0),/UNIQUE/);
+ assert.equal((await olympusPity(env,'admin')).completed,0);
+ put.run('admin','miss',JSON.stringify({cost:1200,card:{id:'sam:1'}}),10);
+ assert.equal((await olympusPity(env,'admin')).completed,1);
+ put.run('admin','duplicate',JSON.stringify({cost:1200,duplicate:true,card:{id:'athena:3'}}),11);
+ assert.equal((await olympusPity(env,'admin')).completed,0);
+ put.run('admin','next',JSON.stringify({cost:1200,card:{id:'sam:1'}}),12);
+ assert.equal((await olympusPity(env,'admin')).nextPull,2);db.close();
 });
 test('admin grants are atomic, role checked, isolated, bounded and cannot be replayed',()=>{
  const db=new DatabaseSync(':memory:');db.exec(`PRAGMA foreign_keys=ON;

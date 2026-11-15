@@ -2,9 +2,9 @@
 
 ## Rules
 
-Event costs 1,200 Shards. God chances for pulls 1–10 are 20%, 22%, 25%, 30%, 35%, 40%, 50%, 60%, 75%, 100%. All six gods are equally likely. The cycle resets only after pull ten; an earlier god or duplicate does not reset it. Normal fallback stages and Dren rate-up are unchanged.
+Event costs 1,200 Shards. God chances for pulls 1–10 are 20%, 22%, 25%, 30%, 35%, 40%, 50%, 60%, 75%, 100%. All six gods are equally likely. The pity resets after every divine pull, including duplicates; the tenth consecutive pull without a god is guaranteed. Normal fallback stages and Dren rate-up are unchanged.
 
-The server derives the position from the authenticated user's existing immutable Event summon receipts (cost 1200). Historical Event pulls count. Standard/Featured/free pulls do not count. Duplicate decisions do not consume another pull, and retrying a roll ID cannot advance the counter. Existing revision guards serialize competing summons. No pity migration or writable client counter is needed.
+The server derives the position from the authenticated user's existing immutable Event summon receipts (cost 1200). Historical Event misses since the latest divine pull count. Standard/Featured/free pulls do not count. Duplicate decisions do not consume another pull, and retrying a roll ID cannot advance the counter. Existing revision guards serialize competing summons. No pity migration or writable client counter is needed.
 
 New gods roll ATK 60–100 and CRIT 8–25 inclusive using the same secure Stage 3 RNG as regular cards. HP stays 430, one form and the fixed Ultra skill remain unchanged. Existing cards are not rewritten. The Worker accepts the entire Stage 3 interval, including previous max-stat grants.
 
