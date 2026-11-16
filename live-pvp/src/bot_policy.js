@@ -1,5 +1,5 @@
 import {CARD_STAT_LIMITS,effectiveCardStats} from '../../shared/card_stat_limits.js';
-import {SKILLS,SKILL_WEIGHTS,RARITIES,SKILL_VERSION} from '../../shared/skill_catalog.js';
+import {SKILLS,SKILL_WEIGHTS,RARITIES,SKILL_VERSION,OLYMPUS_IDS,OLYMPUS_HEROES} from '../../shared/skill_catalog.js';
 import {leagueFor} from '../../functions/api/_lib/ranked_leagues.js';
 
 const heroes=['sam','lira','rhea','dren','tor','aria','kael','neris','nyra'];
@@ -74,6 +74,14 @@ export function generateBotDeck(points,rng){
    const skill=pick(SKILLS.filter(s=>s.rarity===RARITIES[rarity]&&!s.id.startsWith('D')),rng);
    deck.push({id:`${hero}:${stage}`,hero,stage,...effectiveCardStats(stage,roll(CARD_STAT_LIMITS[stage].attack),roll(CARD_STAT_LIMITS[stage].crit)),skillId:skill.id,skillRarity:skill.rarity,skillVersion:SKILL_VERSION});
   }
+ }
+ // Olympus replaces existing Stage 3 slots only, preserving rolled stats.
+ const divinePool=[...OLYMPUS_IDS],chance=[0,0,0,.06,.10,.14][index];
+ let divineCount=0;
+ for(const card of deck){
+  if(card.stage!==3||divineCount>=[0,0,0,1,2,3][index]||rng()>=chance)continue;
+  const hero=divinePool.splice(Math.floor(rng()*divinePool.length),1)[0];
+  Object.assign(card,{id:`${hero}:3`,hero,skillId:OLYMPUS_HEROES[hero].skillId,skillRarity:'ultra'});divineCount++;
  }
  for(let i=deck.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
  return deck;

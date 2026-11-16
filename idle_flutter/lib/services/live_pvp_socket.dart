@@ -50,6 +50,7 @@ sealed class PvpEvent {
         return HandEvent(
           round: j['round'] as int,
           opponent: j['opponent'] as String,
+          nextBlessing: (j['nextBlessing'] as Map?)?.cast<String, dynamic>(),
           playerName: j['playerName'] as String?,
           playerAvatar: j['playerAvatar'] as String?,
           opponentAvatar: j['opponentAvatar'] as String?,
@@ -116,6 +117,7 @@ class HandEvent extends PvpEvent {
   const HandEvent({
     required this.round,
     required this.opponent,
+    this.nextBlessing,
     this.playerName,
     this.playerAvatar,
     this.opponentAvatar,
@@ -128,6 +130,7 @@ class HandEvent extends PvpEvent {
     required this.matchId,
   });
   final int round, deckSize, usedCount, durationMs, deadline;
+  final Map<String,dynamic>? nextBlessing;
   final String opponent, matchId;
   final String? playerName, playerAvatar, opponentAvatar;
   final List<int> score;

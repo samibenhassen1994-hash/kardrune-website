@@ -39,3 +39,11 @@ and deploy the Cloudflare Pages + live-PvP Worker versions together.
 Releasing only the frontend or only the Worker would cause invalid-card errors.
 
 See `IDLE_OLYMPUS_PITY_ADMIN.md` for the persistent cycle, random stats and migration 0017 admin tools.
+
+## Battle visibility and bot roster
+
+The client consumes the server hand's nextBlessing field and replay activation events. The arena notice identifies the owner and skill, distinguishes the pending next-card bonus from the bonus active on the current card, and resets between rounds/matches. Labels are localized in seven languages.
+
+Bots keep the existing stage distribution and stat rolls. Bronze–Gold have no Stage 3 slots and therefore no gods. Platinum/Diamond/Legend replace an existing Stage 3 slot with a random unique god at 6%/10%/14% per eligible slot, capped at 1/2/3 gods per deck. Fixed Ultra skills and normal combat/bonus rules apply; no outcome or combat RNG manipulation.
+
+Seeded balance simulations now include inherited blessings. Holdout player win rates: 79.60%, 70.80%, 66.93%, 59.03%, 51.93%, 47.87% (Bronze through Legend), within the established targets. Deploy the updated PvP Worker to activate the new bot roster; no migration is required.

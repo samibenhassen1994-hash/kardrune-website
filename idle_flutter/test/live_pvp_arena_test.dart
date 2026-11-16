@@ -10,6 +10,25 @@ const cards = [
   PvpCard(id: 'dren:1', hero: 'dren', stage: 1, attack: 65, crit: 7),
 ];
 void main() {
+ testWidgets('Olympus notice shows server blessing and both sides at 320px',(tester) async {
+  tester.view.physicalSize=const Size(320,568);tester.view.devicePixelRatio=1;
+  addTearDown(tester.view.resetPhysicalSize);addTearDown(tester.view.resetDevicePixelRatio);
+  final c=ArenaViewController();
+  final e=PvpEvent.decode({'type':'hand','round':2,'opponent':'Rival','score':[1,0],
+   'hand':[],'deckSize':9,'usedCount':3,'durationMs':30000,'deadline':30000,'matchId':'olympus',
+   'nextBlessing':{'skillId':'D4','type':'crit_pct','value':3}}) as HandEvent;
+  c.startHand(e);
+  await tester.pumpWidget(MaterialApp(home:SizedBox(width:296,child:OlympusBattleNotice(controller:c,playerName:'Sam'))));
+  expect(find.textContaining('+3% CRIT'),findsOneWidget);
+  c.divineNext[1]='D1';
+  await tester.pumpWidget(MaterialApp(home:SizedBox(width:296,child:OlympusBattleNotice(controller:c,playerName:'Sam'))));
+  expect(find.textContaining('+15% ATK'),findsOneWidget);expect(tester.takeException(),isNull);
+  await tester.pumpWidget(MaterialApp(home:LivePvpArena(controller:c,onPlay:(_){},onReady:(){})));
+  await tester.pump(const Duration(milliseconds:1100));expect(tester.takeException(),isNull);
+  await tester.pumpWidget(const SizedBox.shrink());
+  c.resetMatch();expect(c.divineNext,isEmpty);expect(c.divineActive,isEmpty);c.dispose();
+ });
+
  for(final self in [0,1]) {
   test('Olympus replay displays all divine skills and blessings for seat $self',() async {
    final c=ArenaViewController(hitDuration:Duration.zero);

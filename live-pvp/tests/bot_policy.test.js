@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {generateBotDeck,chooseBotCard,allocateBotName,botWaitMs,lossPenalty} from '../src/bot_policy.js';
-import {validSkillForStage} from '../../shared/skill_catalog.js';
+import {validSkillForStage,validSkillForCard} from '../../shared/skill_catalog.js';
 import {CARD_STAT_LIMITS} from '../../shared/card_stat_limits.js';
 const seeded=()=>{let s=42;return()=>((s=Math.imul(s,1664525)+1013904223>>>0)/4294967296)};
 test('legal decks and decisions across all leagues',()=>{
@@ -30,4 +30,15 @@ test('waiting and league penalty boundaries',()=>{
  assert.equal(botWaitMs(()=>.5),17500);
  assert.equal(new Set([0,.25,.5,.75,.999999].map(v=>botWaitMs(()=>v))).size,5);
  assert.deepEqual([0,100,250,500,900,1500].map(lossPenalty),[0,5,10,15,20,20]);
+});
+
+test('Olympus bot availability follows league and keeps fixed verified skills',()=>{
+ const rng=seeded(),counts=[];
+ for(const points of [0,100,250,500,900,1500]){
+  let gods=0;
+  for(let n=0;n<1000;n++)for(const c of generateBotDeck(points,rng))if(c.skillId.startsWith('D')){gods++;assert.equal(c.stage,3);assert.ok(validSkillForCard(c.id,c.skillId,c.stage));}
+  counts.push(gods);
+ }
+ assert.deepEqual(counts.slice(0,3),[0,0,0]);
+ assert.ok(counts[3]>0);assert.ok(counts[4]>counts[3]);assert.ok(counts[5]>counts[4]);
 });

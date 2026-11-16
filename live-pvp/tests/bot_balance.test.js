@@ -1,3 +1,4 @@
+import {OLYMPUS_HEROES} from '../../shared/skill_catalog.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {generateBotDeck,chooseBotCard} from '../src/bot_policy.js';
@@ -38,13 +39,15 @@ test('independent player cohorts with realistic choices and reproducible seeds',
   for(let n=0;n<3000;n++){
    const cohort=n%10<2?0:n%10<8?1:2;
    const decks=[playerDeck(league,cohort,rng),generateBotDeck(points,rng)];
+   let blessings=[null,null];
    const used=[[],[]],scores=[0,0],initiative=rollInitiative(rng);
    for(let round=1;round<=3&&!scores.includes(2);round++){
     const hands=decks.map((d,i)=>buildHand(d,used[i]));
     const choice=chooseBotCard({hand:hands[1],remaining:decks[1].filter(c=>!used[1].includes(c.id)),points,score:[scores[1],scores[0]],style:['aggressive','defensive','strategic'][n%3]},rng);
     const cards=[playerChoice(hands[0],cohort,round,scores,rng),hands[1].find(c=>c.id===choice)];
     hands.forEach((hand,i)=>used[i].push(...hand.map(c=>c.id)));
-    const result=resolveDuelFromStarter(...cards,starterForRound(initiative.starter,round),rng);
+    const result=resolveDuelFromStarter(...cards,starterForRound(initiative.starter,round),rng,blessings);
+    blessings=cards.map(c=>{const d=OLYMPUS_HEROES[c.hero];return d?{skillId:d.skillId,...d.blessing}:null;});
     assert.ok(result.log.length>0);assert.ok(result.hp.every(Number.isFinite));
     if(result.winner!=='draw')scores[result.winner]++;
    }

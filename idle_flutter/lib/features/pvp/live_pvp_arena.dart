@@ -46,6 +46,8 @@ class ArenaViewController extends ChangeNotifier {
   bool matchFinished = false;
   int skillSerial = 0, skillActor = -1, skillTarget = -1;
   String? lastSkillId;
+  final Map<int,String> divineNext = {};
+  final Map<int,String> divineActive = {};
   final Map<int, String> runtimeSkillState = {};
   String? runtimeFor(PvpCard card) {
     if (identical(card, playerCard)) return runtimeSkillState[0];
@@ -120,6 +122,7 @@ class ArenaViewController extends ChangeNotifier {
     skillSerial = 0;
     lastSkillId = null;
     runtimeSkillState.clear();
+    divineNext.clear(); divineActive.clear();
     lastDamage = 0;
     lastCritical = false;
     actionText = '';
@@ -238,6 +241,12 @@ class ArenaViewController extends ChangeNotifier {
           log['target'] as int? ?? log['actor'] as int? ?? 0,
         );
         lastSkillId = log['skillId'] as String?;
+        if (log['status']=='next_card_blessing' && lastSkillId!=null) {
+          divineActive[skillActor]=lastSkillId!;
+        } else if (lastSkillId?.startsWith('D')==true &&
+            lastSkillId==(skillActor==0?playerCard:opponentCard)?.skillId) {
+          divineNext[skillActor]=lastSkillId!;
+        }
         runtimeSkillState[skillActor] = log['charges'] == 0
             ? 'CONSUMATA'
             : (log['status'] as String? ?? 'ATTIVA').toUpperCase();
@@ -383,6 +392,7 @@ class ArenaViewController extends ChangeNotifier {
     hand = null;
     score = [0, 0];
     used.clear();
+    divineNext.clear(); divineActive.clear();
     lockedCard = popup = effect = null;
     playerCard = opponentCard = null;
     playerHp = opponentHp = 240;
@@ -822,6 +832,7 @@ class _LivePvpArenaState extends State<LivePvpArena> {
                         ],
                       ),
                     ),
+                    OlympusBattleNotice(controller:c,playerName:widget.playerName),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(12, 7, 12, 5),
@@ -1901,4 +1912,29 @@ class BattleEventLog extends StatelessWidget {
         )),
     ]),
   );
+}
+
+class OlympusBattleNotice extends StatelessWidget {
+ const OlympusBattleNotice({super.key,required this.controller,required this.playerName});
+ final ArenaViewController controller;final String playerName;
+ @override Widget build(BuildContext context){
+  final c=controller;
+  final active={...c.divineActive};
+  if(!c.battleStarted && c.hand?.nextBlessing?['skillId'] is String)active[0]=c.hand!.nextBlessing!['skillId'] as String;
+  final rows=<Widget>[];
+  for(final side in [0,1]){
+   final next=c.divineNext[side],received=active[side];
+   if(next==null&&received==null)continue;
+   final name=side==0?c.hand?.playerName??playerName:c.hand?.opponent??context.tr('OPPONENT');
+   final id=next??received!,skill=SkillCatalog.byId(id)?.localized(context);
+   final messages=[if(received!=null)'${context.tr('OLYMPUS_ACTIVE')}: ${context.tr('OLYMPUS_BONUS_$received')}',if(next!=null)'${context.tr('OLYMPUS_NEXT')}: ${context.tr('OLYMPUS_BONUS_$next')}'];
+   rows.add(SizedBox(width:double.infinity,child:FittedBox(fit:BoxFit.scaleDown,child:Text('$name · ${skill?.name??id}\n${messages.join(' · ')}',
+    textAlign:TextAlign.center,style:TextStyle(fontSize:11,fontWeight:FontWeight.w800,color:side==0?const Color(0xff8cdbff):const Color(0xffff9999))))));
+  }
+  if(rows.isEmpty||c.matchFinished)return const SizedBox.shrink();
+  return Container(key:const Key('olympus-battle-notice'),width:double.infinity,
+   margin:const EdgeInsets.symmetric(horizontal:12,vertical:3),padding:const EdgeInsets.all(5),
+   decoration:BoxDecoration(color:const Color(0xdd211b35),border:Border.all(color:const Color(0xffffd16a)),borderRadius:BorderRadius.circular(8)),
+   child:Column(mainAxisSize:MainAxisSize.min,children:rows));
+ }
 }
