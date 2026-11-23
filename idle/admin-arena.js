@@ -1,25 +1,65 @@
-import {initializeApp,getApps} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
-import {getAuth,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
-const link=document.querySelector('#admin-arena');
-const endpoint='/api/admin/arena-access';
-async function init() {
-  const {firebase:f}=await (await fetch('/api/config',{cache:'no-store'})).json();
-  const name='idle-kardrune-cloud';
-  const app=getApps().find(a=>a.name===name)||initializeApp({...f,appId:f.appId||'idle-kardrune-web'},name);
-  const auth=getAuth(app);
-  const access=async (user,method)=>fetch(endpoint,{method,cache:'no-store',headers:{Authorization:'Bearer '+await user.getIdToken()}});
-  onAuthStateChanged(auth,async user=>{
-    link.hidden=true;
-    if (!user) {await fetch(endpoint,{method:'DELETE'});return;}
-    try {const result=await access(user,'GET');link.hidden=!(result.ok && user===auth.currentUser);}
-    catch {link.hidden=true;}
-  });
-  link.onclick=async event=>{
+const link = document.querySelector('#admin-arena');
+const endpoint = '/api/admin/arena-access';
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+async function gameAuth() {
+  // FlutterFire initializes this named app and chooses its persistence.
+  // Calling getAuth before initializeAuth would initialize a competing provider.
+  while (true) {
+    const app = window.firebase_core?.getApps().find(a => a.name === 'idle-kardrune-cloud');
+    if (app?.container?.getProvider('auth').isInitialized() && window.firebase_auth) {
+      return window.firebase_auth.getAuth(app);
+    }
+    await sleep(500);
+  }
+}
+
+async function mount() {
+  const auth = await gameAuth();
+  let generation = 0;
+  let confirmedUid;
+  async function access(user, method) {
+    for (const refresh of [false, true]) {
+      const token = await user.getIdToken(refresh);
+      const result = await fetch(endpoint, {method, cache:'no-store', headers:{Authorization:'Bearer '+token}});
+      if (result.status !== 401 || refresh) return result;
+    }
+  }
+  async function verify(user) {
+    const run = ++generation;
+    if (!user || confirmedUid !== user.uid) link.hidden = true;
+    if (!user) {
+      confirmedUid = undefined;
+      await fetch(endpoint,{method:'DELETE'}).catch(()=>{});
+      return;
+    }
+    for (const delay of [0, 1000, 3000]) {
+      if (delay) await sleep(delay);
+      if (run !== generation || user !== auth.currentUser) return;
+      try {
+        const r = await access(user,'GET');
+        if (run !== generation || user !== auth.currentUser) return;
+        if (r.ok || r.status === 401 || r.status === 403) {
+          confirmedUid = r.ok ? user.uid : undefined;
+          link.hidden = !r.ok;
+          return;
+        }
+      } catch {}
+    }
+  }
+  auth.onIdTokenChanged(verify);
+  window.addEventListener('focus', () => verify(auth.currentUser));
+  link.onclick = async event => {
     event.preventDefault();
-    const user=auth.currentUser;
-    try {if(user && (await access(user,'POST')).ok && user===auth.currentUser) {location.assign(link.href);return;}}
-    catch {}
-    link.hidden=true;
+    const user = auth.currentUser;
+    if (!user || confirmedUid !== user.uid) return;
+    try {
+      const r = await access(user,'POST');
+      if (user !== auth.currentUser) return;
+      if (r.ok) {location.assign(link.href);return;}
+      if (r.status === 401 || r.status === 403) {await verify(user);return;}
+    } catch {}
+    if (user === auth.currentUser) window.alert('Apertura temporaneamente non riuscita. Riprova.');
   };
 }
-init().catch(()=>{link.hidden=true;});
+mount().catch(()=>{link.hidden=true;});
