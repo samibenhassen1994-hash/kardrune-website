@@ -1,14 +1,16 @@
 <!doctype html>
-<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KardRune · Giudizio Divino</title>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>KardRune · Arena degli dei</title>
 <link rel="stylesheet" href="duel.css"><script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script></head>
 <body><main>
-<header><a href="../" aria-label="Torna al gioco">K<span>R</span></a><div><small>KARDRUNE · ARENA DI PROVA</small><h1>Il giudizio dell’Olimpo</h1></div><button id="focus">OSSERVA ZEUS</button></header>
+<header><a href="../" aria-label="Torna al gioco">‹</a><div><small>KARDRUNE · ARENA 3D</small><h1>Il duello degli dei</h1></div><button id="focus">OSSERVA</button></header>
+<section class="roster" aria-label="Selezione combattenti"><label>Sfidante<select id="left" aria-label="Sfidante"></select></label><span>VS</span><label>Avversario<select id="right" aria-label="Avversario"></select></label><a hidden id="back-game" href="../">Gioco</a></section>
 <section class="arena" aria-label="Battaglia 3D"><canvas aria-label="Combattenti nell’arena"></canvas>
-<div class="scoreboard"><article id="hero-card"><small>LO SFIDANTE</small><h2>Sam</h2><div class="bar"><i id="hero-bar"></i></div><p id="hero-hp">240 / 240</p></article><div class="round"><small id="round">TURNO 1</small><b>VS</b><span id="turn">Caricamento…</span></div><article id="zeus-card"><small>AVVERSARIO</small><h2>Zeus <span>ϟ</span></h2><div class="bar"><i id="zeus-bar"></i></div><p id="zeus-hp">260 / 260</p></article></div>
+<div class="scoreboard"><article id="hero-card"><h2>Sam</h2><div class="bar"><i id="hero-bar"></i></div><p id="hero-hp">240 / 240</p></article><div class="round"><small id="round">TURNO 1</small><span id="turn">Caricamento…</span></div><article id="zeus-card"><h2>Zeus</h2><div class="bar"><i id="zeus-bar"></i></div><p id="zeus-hp">260 / 260</p></article></div>
 <div id="loading" role="status">Evocazione dei combattenti…</div><div id="announcement" aria-live="polite"></div><div id="damage"></div>
-<div class="arena-foot"><span>OLIMPO / SALA DEL TUONO</span><span id="quality">3D · RIG ANIMATI</span></div>
+<div class="arena-foot"><span>OLIMPO · ARENA REALE</span><span id="quality">DEMO 3D</span></div>
 </section>
-<section class="controls"><a id="back-game" href="../">Torna al gioco</a><label>Sfidante <select id="left"></select></label><label>Avversario <select id="right"></select></label></section><section class="controls"><div class="turn-description"><small id="actor-label">SCEGLI LA TUA AZIONE</small><h3 id="action-title">Turno dell’avventuriero</h3><p id="hint">Ogni azione passa il turno all’avversario.</p></div>
-<div class="actions"><button id="attack" disabled><b>⚔</b><span>ATTACCO<small>Colpo fisico</small></span></button><button id="guard" disabled><b>◇</b><span>PARATA<small>−50% al prossimo colpo</small></span></button><button hidden style="display:none" id="judgment" disabled><b>ϟ</b><span>GIUDIZIO DIVINO<small>Zeus · potere della tempesta</small></span></button><button id="reset">RICOMINCIA</button></div></section>
-<section class="controls"><strong>Attacco</strong><label>Abilità <select id="skill"></select></label><button id="previewSkill" disabled>Mostra animazione</button></section><section class="details"><div><small>CRONACA DEL DUELLO</small><ol id="log" aria-live="polite"><li>L’arena attende il primo attacco.</li></ol></div><aside id="info"></aside></section>
+<section class="controls" aria-label="Comandi di combattimento"><div class="command-head"><div><small id="actor-label">ATTACCO</small><h3 id="action-title">Preparazione del duello</h3></div><div class="utilities"><button id="guard" disabled title="Dimezza il prossimo danno ricevuto">◇ Parata</button><button id="reset" title="Ricomincia il duello e l’ingresso">↻ Reset</button></div></div>
+<div class="actions" id="ability-buttons"><button id="attack" disabled><b>⚔</b><span>ATTACCO<small>Colpo fisico</small></span></button></div>
+<p id="hint"></p><select hidden id="skill" aria-label="Abilità"></select><button hidden id="previewSkill" disabled>Anteprima</button><button hidden id="judgment" disabled>Giudizio Divino</button><aside hidden id="info"></aside></section>
+<section class="details" aria-label="Ultima azione"><ol id="log" aria-live="polite"><li>Scegli i combattenti e prova le loro abilità.</li></ol></section>
 </main><script type="module">import('./duel-viewer.mjs').then(m=>m.mount()).catch(e=>{document.querySelector('#loading').textContent='Caricamento non riuscito. Ricarica la pagina.';console.error(e);});</script></body></html>

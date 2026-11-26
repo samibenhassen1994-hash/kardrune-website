@@ -2,13 +2,18 @@
 export class Duel {
  constructor(roster={hero:"sam",zeus:"zeus"}){this.roster=roster;this.skills={};this.serial=0;this.reset();}
  maximum(id){return (id==='hero'?240:260)+(this.skills[id]==='C3'||id==='hero'&&this.skill==='C3'?15:0);}
- reset(skill=this.skill){this.skill=skill;this.used=false;this.spent={};this.serial++;this.hp={hero:this.maximum("hero"),zeus:this.maximum("zeus")};this.turn='hero';this.round=1;this.guarding={hero:false,zeus:false};this.firstZeus=true;this.firstAres={hero:true,zeus:true};this.pending=null;this.winner=null;}
+ reset(skill=this.skill){this.skill=skill;this.used=false;this.spent={};this.serial++;this.hp={hero:this.maximum("hero"),zeus:this.maximum("zeus")};this.turn='hero';this.round=1;this.guarding={hero:false,zeus:false};this.firstZeus={hero:true,zeus:true};this.firstAttack={hero:true,zeus:true};this.firstDamage={hero:true,zeus:true};this.firstAres={hero:true,zeus:true};this.pending=null;this.winner=null;}
  begin(kind){
   if(this.pending||this.winner||!['attack','guard','judgment'].includes(kind)||kind==='judgment'&&this.roster[this.turn]!=='zeus')return null;
   const actor=this.turn,target=actor==='hero'?'zeus':'hero';let damage=0;
   // D1 is Zeus's passive catalog bonus; judgment makes its storm VFX explicit.
-  if(kind!=='guard')damage=this.roster[actor]!=='zeus'?38:Math.round(29*1.22)+(this.firstZeus?18:0);
+  if(kind!=='guard')damage=this.roster[actor]!=='zeus'?38:Math.round(29*1.22)+(this.firstZeus[actor]?18:0);
   if(kind!=='guard' && this.roster[actor]==='ares')damage=Math.round(38*1.12)+(this.firstAres[actor]?15:0);
+  if(kind!=='guard' && this.roster[actor]==='poseidon' && this.firstAttack[actor])damage+=16;
+  if(kind!=='guard' && this.firstDamage[target]){
+   if(this.roster[target]==='poseidon')damage=Math.round(damage*.7);
+   if(this.roster[target]==='atena')damage=Math.round(damage*.75);
+  }
   const skill=id=>this.skills[id] || (id==='hero'?this.skill:null);
   let triggered=false,owner;
   if(kind!=='guard'){
@@ -27,7 +32,8 @@ export class Duel {
   if(a.owner && this.skills[a.owner]!=='C5')this.spent[a.owner]=true;
   if(a.triggered && this.skill!=='C5')this.used=true;
   if(a.kind==='guard')this.guarding[a.actor]=true;
-  else {this.firstAres[a.actor]=false;a.beforeHp=this.hp[a.target];this.hp[a.target]=Math.max(0,this.hp[a.target]-a.damage);this.guarding[a.target]=false;if(this.roster[a.actor]==='zeus')this.firstZeus=false;
+  else {this.firstAres[a.actor]=false;this.firstAttack[a.actor]=false;a.beforeHp=this.hp[a.target];this.hp[a.target]=Math.max(0,this.hp[a.target]-a.damage);this.guarding[a.target]=false;if(this.roster[a.actor]==='zeus')this.firstZeus[a.actor]=false;
+   if(this.roster[a.target]==='apollo' && this.firstDamage[a.target] && this.hp[a.target]>0){a.targetHealed=Math.min(45,this.maximum(a.target)-this.hp[a.target]);this.hp[a.target]+=a.targetHealed;}this.firstDamage[a.target]=false;
    if(this.roster[a.actor]==='ade'){const cap=this.maximum(a.actor);const heal=Math.round(Math.min(a.damage,a.beforeHp)*.12);a.healed=Math.min(cap-this.hp[a.actor],heal);this.hp[a.actor]+=a.healed;}}
   if(!this.hp[a.target])this.winner=a.actor;
   this.pending=null;this.turn=a.target;if(this.turn==='hero')this.round++;return a;
