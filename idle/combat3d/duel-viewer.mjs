@@ -26,7 +26,7 @@ export async function mount(){
   ['Cast6','Fiamma sacra',0xff9237],['Cast7','Impulso celeste',0xad9cff],
   ['Cast8','Lampo dorato',0xffeb98]
  ];
- const choices={atena:spells,ade:[['Stomp','Patto delle Ombre']],zeus:[['Attack','Colpo fisico'],['DivineJudgment','Giudizio Divino']],sam:[['Attack','Colpo fisico'],['C1','Colpo preciso'],['C2','Pelle dura'],['C3','Resistenza'],['C4','Tenacia'],['C5','Mira stabile']]};
+ const choices={atena:spells,ade:[['Attack','Attacco normale'],['ShadowPact','Patto delle Ombre']],zeus:[['Attack','Colpo fisico'],['DivineJudgment','Giudizio Divino']],sam:[['Attack','Colpo fisico'],['C1','Colpo preciso'],['C2','Pelle dura'],['C3','Resistenza'],['C4','Tenacia'],['C5','Mira stabile']]};
  const selected=Object.fromEntries(Object.keys(ids).map(slot=>[slot,choices[ids[slot]][0][0]]));
  let displayedTurn;
  const hintFor=id=>ids[id]==='ade'?'Patto delle Ombre recupera il 12% del danno diretto inflitto.':'Scegli unâ€™abilitÃ  sotto Attacco, oppure para.';
@@ -41,12 +41,6 @@ export async function mount(){
  for(const [pos,color,power] of [[[0,7,5],0xffe6c6,3],[[-5,4,1],0x95baff,2],[[3,5,-4],0x4fa5ff,4]]){const l=new T.DirectionalLight(color,power);l.position.set(...pos);scene.add(l);}
 
  const flash=new T.PointLight(0x74ceff,0,14);flash.position.set(1,3,1);scene.add(flash);
-
- const floor=new T.Mesh(new T.CylinderGeometry(5,5.15,.16,96),new T.MeshStandardMaterial({color:0x253449,metalness:.3,roughness:.55}));floor.position.y=-.10;scene.add(floor);
-
- for(const radius of [4.6,4.8]){const ring=new T.Mesh(new T.TorusGeometry(radius,.013,5,96),new T.MeshBasicMaterial({color:0x728694}));ring.rotation.x=Math.PI/2;ring.position.y=.001;scene.add(ring);}
-
- for(let i=0;i<16;i++){const a=i*Math.PI/8;const rune=new T.Mesh(new T.BoxGeometry(.035,.014,.24),new T.MeshBasicMaterial({color:0x678599}));rune.position.set(Math.sin(a)*4.3,0,Math.cos(a)*4.3);rune.rotation.y=a;scene.add(rune);}
 
  const fighters={};let preview=0;let active=null,disposed=false,raf=0,last=0,fxTime=0,bolts=new T.Group();scene.add(bolts);
 
@@ -125,7 +119,7 @@ export async function mount(){
  const halo=new T.Mesh(new T.TorusGeometry(.35,.035,8,36),spark.material.clone());
  flare.add(spark,halo);scene.add(flare);flare.visible=false;
  function spellEffect(id,time,impact,slot){
-  if(id==='Stomp' && Math.abs(time-impact)<.65){
+  if(id==='ShadowPact' && Math.abs(time-impact)<.65){
    const phase=(time-impact+.65)/1.3;
    flare.visible=true;flare.position.set(fighters[slot].model.position.x,.09,0);
    spark.scale.setScalar(.01);halo.rotation.set(-Math.PI/2,0,0);halo.scale.setScalar(.4+phase*8);
@@ -206,6 +200,7 @@ export async function mount(){
 
  try{
 
+  const arena=await new GLTFLoader().loadAsync('RoyalArena.glb');scene.add(arena.scene);
   $('focus').textContent='OSSERVA '+label('zeus');
   for(const [id,x,rotation] of [['hero',-1.55,Math.PI/2],['zeus',1.4,-Math.PI/2]]){
    const [,url,height]=roster[ids[id]];
