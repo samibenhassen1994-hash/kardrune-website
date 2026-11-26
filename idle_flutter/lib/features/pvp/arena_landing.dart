@@ -3,6 +3,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../combat3d/open_arena.dart';
+
 import '../../localization/kr_localizations.dart';
 
 /// Illustrated entrance to the existing live matchmaking flow.
@@ -286,6 +288,29 @@ final quotaHeight = renderedArtHeight * .034;
                       child: InkWell(key:const Key('arena-clans'),customBorder:const CircleBorder(),onTap:widget.onClans,
                         child: const SizedBox(width:48,height:48,child:Icon(Icons.shield_outlined,color:Color(0xffffd38a),size:28))),
                     )),
+                  ),
+
+                if (arenaAvailable)
+                  Positioned(
+                    top: imageTop + imageHeight * .415 + 112,
+                    right: artWidth * .018,
+                    child: Tooltip(
+                      message: 'Arena 3D',
+                      child: Material(
+                        color: const Color(0xe8171830),
+                        elevation: 8,
+                        shape: const CircleBorder(side: BorderSide(color: Color(0xffedc27e), width: 2)),
+                        child: InkWell(
+                          key: const Key('arena-3d'),
+                          customBorder: const CircleBorder(),
+                          onTap: openTrialArena,
+                          child: const SizedBox(
+                            width: 48, height: 48,
+                            child: Icon(Icons.view_in_ar, color: Color(0xffffd38a), size: 28),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
 
               ],
