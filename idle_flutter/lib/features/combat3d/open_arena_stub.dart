@@ -1,2 +1,3 @@
+import 'package:flutter/widgets.dart';
 const bool arenaAvailable = false;
-void openTrialArena() {}
+void openTrialArena(BuildContext context) {}

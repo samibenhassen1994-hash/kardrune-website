@@ -9,8 +9,9 @@ const $=id=>document.getElementById(id);
 export async function mount(){
 
  const canvas=document.querySelector('canvas'),stage=document.querySelector('.arena');
- const roster={atena:['Atena','Athena.glb',3.4],ade:['Ade','Hades.glb',3.8],zeus:['Zeus','ZeusCombat.glb',4.15],sam:['Sam','SamCombat.glb',2.8]};
+ const roster={ares:['Ares','Ares.glb',3.7],atena:['Atena','Athena.glb',3.4],ade:['Ade','Hades.glb',3.8],zeus:['Zeus','ZeusCombat.glb',4.15],sam:['Sam','SamCombat.glb',2.8]};
  const params=new URLSearchParams(location.search);
+ if(params.get('embedded')==='1'){document.querySelector('header').hidden=true;$('back-game').hidden=true;}
  const pick=(key,fallback)=>Object.hasOwn(roster,params.get(key))?params.get(key):fallback;
  const ids={hero:pick('hero','atena'),zeus:pick('opponent','zeus')};
  const game=new Duel(ids);
@@ -26,10 +27,10 @@ export async function mount(){
   ['Cast6','Fiamma sacra',0xff9237],['Cast7','Impulso celeste',0xad9cff],
   ['Cast8','Lampo dorato',0xffeb98]
  ];
- const choices={atena:spells,ade:[['Attack','Attacco normale'],['ShadowPact','Patto delle Ombre']],zeus:[['Attack','Colpo fisico'],['DivineJudgment','Giudizio Divino']],sam:[['Attack','Colpo fisico'],['C1','Colpo preciso'],['C2','Pelle dura'],['C3','Resistenza'],['C4','Tenacia'],['C5','Mira stabile']]};
+ const choices={ares:[['Attack','Attacco normale'],['WarFury','Furia di Guerra'],['Crouch_and_Step_Back','Passo evasivo'],['Jump_with_Arms_and_Legs_Open','Assalto in salto']],atena:spells,ade:[['Attack','Attacco normale'],['ShadowPact','Patto delle Ombre']],zeus:[['Attack','Colpo fisico'],['DivineJudgment','Giudizio Divino']],sam:[['Attack','Colpo fisico'],['C1','Colpo preciso'],['C2','Pelle dura'],['C3','Resistenza'],['C4','Tenacia'],['C5','Mira stabile']]};
  const selected=Object.fromEntries(Object.keys(ids).map(slot=>[slot,choices[ids[slot]][0][0]]));
  let displayedTurn;
- const hintFor=id=>ids[id]==='ade'?'Patto delle Ombre recupera il 12% del danno diretto inflitto.':'Scegli unâ€™abilitÃ  sotto Attacco, oppure para.';
+ const hintFor=id=>ids[id]==='ares'?'Furia di Guerra: +12% ATK e +15 danni al primo attacco.':ids[id]==='ade'?'Patto delle Ombre recupera il 12% del danno diretto inflitto.':'Scegli unâ€™abilitÃ  sotto Attacco, oppure para.';
  const scene=new T.Scene();scene.fog=new T.FogExp2(0x121e30,.025);
 
  const camera=new T.PerspectiveCamera(34,1,.1,80);let focused=false;
@@ -119,11 +120,11 @@ export async function mount(){
  const halo=new T.Mesh(new T.TorusGeometry(.35,.035,8,36),spark.material.clone());
  flare.add(spark,halo);scene.add(flare);flare.visible=false;
  function spellEffect(id,time,impact,slot){
-  if(id==='ShadowPact' && Math.abs(time-impact)<.65){
+  if((id==='ShadowPact'||id==='WarFury') && Math.abs(time-impact)<.65){
    const phase=(time-impact+.65)/1.3;
    flare.visible=true;flare.position.set(fighters[slot].model.position.x,.09,0);
    spark.scale.setScalar(.01);halo.rotation.set(-Math.PI/2,0,0);halo.scale.setScalar(.4+phase*8);
-   halo.material.color.setHex(0xc15dff);halo.material.opacity=Math.sin(Math.PI*phase);return;
+   halo.material.color.setHex(id==='WarFury'?0xff5225:0xc15dff);halo.material.opacity=Math.sin(Math.PI*phase);return;
   }
   const spell=spells.find(([key])=>key===id);
   if(!spell || time>impact+.42)return;
@@ -208,7 +209,10 @@ export async function mount(){
 
    const gltf=await new GLTFLoader().parseAsync(await response.arrayBuffer(),location.href);if(disposed){free(gltf.scene);return;}
 
-   const model=gltf.scene,box=new T.Box3().setFromObject(model);model.scale.setScalar(height/(box.max.y-box.min.y));model.position.set(x,-box.min.y*model.scale.x,0);model.rotation.y=rotation;scene.add(model);
+   const model=gltf.scene;
+   // Scale the body independently of the removable sword.
+   const body=model.getObjectByName('Mesh_0') || model;
+   const box=new T.Box3().setFromObject(body);model.scale.setScalar(height/(box.max.y-box.min.y));model.position.set(x,-box.min.y*model.scale.x,0);model.rotation.y=rotation;scene.add(model);
 
    const mixer=new T.AnimationMixer(model),actions={};for(const c of gltf.animations)actions[c.name]=mixer.clipAction(c);
 

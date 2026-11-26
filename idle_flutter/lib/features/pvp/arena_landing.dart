@@ -303,7 +303,7 @@ final quotaHeight = renderedArtHeight * .034;
                         child: InkWell(
                           key: const Key('arena-3d'),
                           customBorder: const CircleBorder(),
-                          onTap: openTrialArena,
+                          onTap: () => openTrialArena(context),
                           child: const SizedBox(
                             width: 48, height: 48,
                             child: Icon(Icons.view_in_ar, color: Color(0xffffd38a), size: 28),
