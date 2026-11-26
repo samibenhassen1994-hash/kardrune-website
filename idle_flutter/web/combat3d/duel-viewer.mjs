@@ -53,13 +53,19 @@ export async function mount(){
 
  function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setPixelRatio(Math.min(devicePixelRatio,1.5,Math.sqrt(1400000/(w*h))));renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();frameCamera();}
 
- function frameCamera(){if(fighters.hero)fighters.hero.model.visible=!focused;if(focused){camera.position.set(3.7,3.7,6.0);camera.lookAt(1.35,2.95,0);}else{const mobile=camera.aspect<1;camera.position.set(0,mobile?5.1:4.1,mobile?15.7:11.6);camera.lookAt(0,1.85,0);}camera.updateProjectionMatrix();}
+ function frameCamera(){if(fighters.hero)fighters.hero.model.visible=!focused;if(focused){camera.position.set(3.7,3.7,6.0);camera.lookAt(1.35,2.95,0);}else{const mobile=camera.aspect<1;camera.position.set(0,mobile?7.4:6.5,mobile?16.4:12.5);camera.lookAt(0,1.85,0);}camera.updateProjectionMatrix();}
 
  const observer=new ResizeObserver(resize);observer.observe(stage);
 
+ function clipSpeed(id,name){
+  return ids[id]==='ares' && ['Attack','WarFury','Crouch_and_Step_Back','Jump_with_Arms_and_Legs_Open','Parry'].includes(name)?1.7:1;
+ }
+ function clipDuration(id,name){
+  return fighters[id].actions[name].getClip().duration/clipSpeed(id,name);
+ }
  function play(id,name){const f=fighters[id];if(!f)return;if(name==='Idle'&&(id!==game.turn||!f.actions.Idle))name='Waiting';
 
-  const next=f.actions[name],loop=name==='Idle'||name==='Waiting';f.mixer.stopAllAction();next.reset().setLoop(loop?T.LoopRepeat:T.LoopOnce,loop?Infinity:1);next.clampWhenFinished=!loop;next.play();f.current=name;document.body.dataset[id+'Clip']=name;}
+  const next=f.actions[name],loop=name==='Idle'||name==='Waiting';f.mixer.stopAllAction();next.reset().setEffectiveTimeScale(clipSpeed(id,name)).setLoop(loop?T.LoopRepeat:T.LoopOnce,loop?Infinity:1);next.clampWhenFinished=!loop;next.play();f.current=name;document.body.dataset[id+'Clip']=name;}
 
  function ui(){const busy=preview>0||!!active||!fighters.zeus||!fighters.hero;const end=!!game.winner;
 
@@ -87,11 +93,11 @@ export async function mount(){
  function start(kind){if(active||disposed)return;if(focused){focused=false;frameCamera();$('focus').textContent='OSSERVA '+label('zeus');}const a=game.begin(kind);if(!a)return;
 
   const clip=kind==='guard'?'Parry':selected[a.actor];
-  const length=fighters[a.actor].actions[clip].getClip().duration;
+  const length=clipDuration(a.actor,clip);
 
   const impact=kind==='judgment'?1.28:length*.45;
 
-  active={...a,clip,time:0,impact,duration:kind==='guard'?length:Math.max(length,impact+fighters[a.target].actions.Hit.getClip().duration),done:false};
+  active={...a,clip,time:0,impact,duration:kind==='guard'?length:Math.max(length,impact+clipDuration(a.target,'Hit')),done:false};
 
   play(a.actor,clip);play(a.target,'Waiting');
 
@@ -144,7 +150,7 @@ export async function mount(){
   for(const f of Object.values(fighters))f.mixer.update(dt);
 
   flare.visible=false;
-  if(preview>0){const f=fighters[game.turn];const len=f.actions[f.current].getClip().duration;spellEffect(f.current,len-preview,len*.45,game.turn);}
+  if(preview>0){const f=fighters[game.turn];const len=clipDuration(game.turn,f.current);spellEffect(f.current,len-preview,len*.45,game.turn);}
   if(preview>0){preview=Math.max(0,preview-dt);if(!preview){play(game.turn,'Idle');$('announcement').textContent='';ui();}}
 
   if(active){active.time+=dt;const a=active; spellEffect(a.clip,a.time,a.impact,a.actor);
@@ -193,7 +199,7 @@ export async function mount(){
 
  function skillName(id){return Array.from($('skill').options).find(o=>o.value===id)?.textContent||'';}
 
- function showSkill(id){if(!id||active||preview)return;if(focused)$('focus').click();play(game.turn,id);preview=fighters[game.turn].actions[id].getClip().duration;$('announcement').textContent=skillName(id);ui();}
+ function showSkill(id){if(!id||active||preview)return;if(focused)$('focus').click();play(game.turn,id);preview=clipDuration(game.turn,id);$('announcement').textContent=skillName(id);ui();}
 
  $('skill').onchange=()=>{const id=game.turn,oldMax=game.maximum(id);selected[id]=$('skill').value;game.skills[id]=selected[id];game.hp[id]=Math.max(1,game.hp[id]+game.maximum(id)-oldMax);ui();};
  $('previewSkill').onclick=()=>showSkill(selected[game.turn]);
