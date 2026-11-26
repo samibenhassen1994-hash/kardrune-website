@@ -8,25 +8,28 @@ const $=id=>document.getElementById(id);
 
 export async function mount(){
 
- const game=new Duel(),canvas=document.querySelector('canvas'),stage=document.querySelector('.arena');
-
- const athena=new URLSearchParams(location.search).get('hero')==='atena';
-
- const heroName=athena?'Atena':'Sam';
-
+ const canvas=document.querySelector('canvas'),stage=document.querySelector('.arena');
+ const roster={atena:['Atena','Athena.glb',3.4],ade:['Ade','Hades.glb',3.8],zeus:['Zeus','ZeusCombat.glb',4.15],sam:['Sam','SamCombat.glb',2.8]};
+ const params=new URLSearchParams(location.search);
+ const pick=(key,fallback)=>Object.hasOwn(roster,params.get(key))?params.get(key):fallback;
+ const ids={hero:pick('hero','atena'),zeus:pick('opponent','zeus')};
+ const game=new Duel(ids);
+ const label=id=>roster[ids[id]][0];
+ for(const [select,slot,key] of [['left','hero','hero'],['right','zeus','opponent']]){
+  $(select).replaceChildren(...Object.entries(roster).map(([id,[name]])=>new Option(name,id)));
+  $(select).value=ids[slot];$(select).onchange=()=>{params.set(key,$(select).value);location.search=params;};
+  $(slot+'-card').querySelector('h2').textContent=label(slot);
+ }
  const spells=[
   ['Cast2','Dardo solare',0xffb645],['Cast3','Luce dello zaffiro',0x64ddff],
-  ['Cast4','Sigillo di Atena',0xffda70],['Cast5','Giudizio dell’aurora',0xff866f],
+  ['Cast4','Sigillo di Atena',0xffda70],['Cast5','Giudizio dellâ€™aurora',0xff866f],
   ['Cast6','Fiamma sacra',0xff9237],['Cast7','Impulso celeste',0xad9cff],
   ['Cast8','Lampo dorato',0xffeb98]
  ];
- if(athena){
-  game.reset('Cast2');
-  $('skill').replaceChildren(...spells.map(([id,label])=>new Option(label,id)));
-  $('skillLabel').textContent='Abilità di Atena';$('hero-card').querySelector('h2').textContent='Atena';
-  $('challenger').textContent='Gioca con Sam';$('challenger').href='?hero=sam';
-  $('equipSkill').textContent='Ricomincia con questa abilità';
- }
+ const choices={atena:spells,ade:[['Stomp','Patto delle Ombre']],zeus:[['Attack','Colpo fisico'],['DivineJudgment','Giudizio Divino']],sam:[['Attack','Colpo fisico'],['C1','Colpo preciso'],['C2','Pelle dura'],['C3','Resistenza'],['C4','Tenacia'],['C5','Mira stabile']]};
+ const selected=Object.fromEntries(Object.keys(ids).map(slot=>[slot,choices[ids[slot]][0][0]]));
+ let displayedTurn;
+ const hintFor=id=>ids[id]==='ade'?'Patto delle Ombre recupera il 12% del danno diretto inflitto.':'Scegli unâ€™abilitÃ  sotto Attacco, oppure para.';
  const scene=new T.Scene();scene.fog=new T.FogExp2(0x121e30,.025);
 
  const camera=new T.PerspectiveCamera(34,1,.1,80);let focused=false;
@@ -65,28 +68,30 @@ export async function mount(){
 
  function ui(){const busy=preview>0||!!active||!fighters.zeus||!fighters.hero;const end=!!game.winner;
 
-  for(const id of ['hero','zeus']){$(id+'-hp').textContent=`${game.hp[id]} / ${id==='hero'?(game.skill==='C3'?255:240):260}`;$(id+'-bar').style.width=(100*game.hp[id]/(id==='hero'?(game.skill==='C3'?255:240):260))+'%';$(id+'-card').classList.toggle('active',game.turn===id&&!end);}
+  for(const id of ['hero','zeus']){$(id+'-hp').textContent=`${game.hp[id]} / ${game.maximum(id)}`;$(id+'-bar').style.width=(100*game.hp[id]/(game.maximum(id)))+'%';$(id+'-card').classList.toggle('active',game.turn===id&&!end);}
 
   $('attack').disabled=busy||end;$('guard').disabled=busy||end;$('judgment').disabled=busy||end||game.turn!=='zeus';
 
-  $('turn').textContent=end?'DUELLO CONCLUSO':busy?'AZIONE IN CORSO':game.turn==='hero'?heroName.toUpperCase():'ZEUS';$('round').textContent='TURNO '+game.round;
-
-  $('action-title').textContent=end?(game.winner==='hero'?'Vince l’avventuriero':'Zeus trionfa'):busy?'Azione in corso…':game.turn==='hero'?'Turno dell’avventuriero':'Turno di Zeus';
-
-  $('hint').textContent=end?'Ricomincia per provare una strategia diversa.':game.turn==='zeus'?'Attiva Giudizio Divino per scatenare la tempesta.':'Attacca oppure para il prossimo colpo di Zeus.';
-
-  $('previewSkill').disabled=busy||!$('skill').value;$('equipSkill').disabled=busy;$('skill').disabled=busy;
-
+  const turn=game.turn;
+  if(displayedTurn!==turn){
+   $('skill').replaceChildren(...choices[ids[turn]].map(([id,name])=>new Option(name,id)));
+   $('skill').value=selected[turn];displayedTurn=turn;
+  }
+  $('turn').textContent=end?'DUELLO CONCLUSO':busy?'AZIONE IN CORSO':label(turn);
+  $('round').textContent='TURNO '+game.round;
+  $('action-title').textContent=end?'Vince '+label(game.winner):busy?'Azione in corsoâ€¦':'Turno di '+label(turn);
+  $('hint').textContent=hintFor(turn);$('info').textContent=Object.values(ids).includes('ade')?hintFor(Object.keys(ids).find(id=>ids[id]==='ade')):'';
+  $('previewSkill').disabled=busy||end;$('skill').disabled=busy||end;
+  $('attack').querySelector('small').textContent=skillName(selected[turn]);
   document.body.dataset.turn=game.turn;document.body.dataset.busy=String(!!active);document.body.dataset.winner=game.winner||'';
 
  }
 
  function log(text){const li=document.createElement('li');li.textContent=text;$('log').prepend(li);while($('log').children.length>6)$('log').lastChild.remove();}
 
- function start(kind){if(active||disposed)return;if(focused){focused=false;frameCamera();$('focus').textContent='OSSERVA ZEUS';}const a=game.begin(kind);if(!a)return;
+ function start(kind){if(active||disposed)return;if(focused){focused=false;frameCamera();$('focus').textContent='OSSERVA '+label('zeus');}const a=game.begin(kind);if(!a)return;
 
-  const clip=athena&&a.actor==='hero'&&kind==='attack'?$('skill').value:a.triggered&&a.actor==='hero'?game.skill:kind==='judgment'?'DivineJudgment':kind==='guard'?'Parry':'Attack';
-
+  const clip=kind==='guard'?'Parry':selected[a.actor];
   const length=fighters[a.actor].actions[clip].getClip().duration;
 
   const impact=kind==='judgment'?1.28:length*.45;
@@ -95,13 +100,13 @@ export async function mount(){
 
   play(a.actor,clip);play(a.target,'Waiting');
 
-  $('announcement').textContent=kind==='judgment'?'GIUDIZIO DIVINO':kind==='guard'?'GUARDIA ALZATA':athena&&a.actor==='hero'?skillName(clip):'';document.body.dataset.action=kind;ui();
+  $('announcement').textContent=kind==='judgment'?'GIUDIZIO DIVINO':kind==='guard'?'GUARDIA ALZATA':skillName(clip);document.body.dataset.action=kind;ui();
 
  }
 
  function lightning(){clearBolts();const target=fighters[active.target].model.position;const start=new T.Vector3(1.05,3.35,.12);const end=new T.Vector3(target.x,1.55,.12);
 
-  for(let branch=0;branch<4;branch++){fighters.zeus.hands[branch%2].getWorldPosition(start);const pts=[];for(let i=0;i<15;i++){const t=i/14;const p=start.clone().lerp(end,t);if(i&&i<14){p.x+=(Math.random()-.5)*.3;p.y+=(Math.random()-.5)*.55;p.z+=(Math.random()-.5)*.32;}pts.push(p);}
+  for(let branch=0;branch<4;branch++){fighters[active.actor].hands[branch%2].getWorldPosition(start);const pts=[];for(let i=0;i<15;i++){const t=i/14;const p=start.clone().lerp(end,t);if(i&&i<14){p.x+=(Math.random()-.5)*.3;p.y+=(Math.random()-.5)*.55;p.z+=(Math.random()-.5)*.32;}pts.push(p);}
 
    const c=new T.CatmullRomCurve3(pts,false,'catmullrom',.02);for(const [r,color,opacity] of [[.014,0xeaffff,1],[.045,0x1d8fff,.23]]){const m=new T.Mesh(new T.TubeGeometry(c,30,r,4,false),new T.MeshBasicMaterial({color,transparent:opacity<1,opacity,depthWrite:false,blending:T.AdditiveBlending}));bolts.add(m);}
 
@@ -119,11 +124,17 @@ export async function mount(){
  const spark=new T.Mesh(new T.IcosahedronGeometry(.16,1),new T.MeshBasicMaterial({blending:T.AdditiveBlending,transparent:true,depthWrite:false}));
  const halo=new T.Mesh(new T.TorusGeometry(.35,.035,8,36),spark.material.clone());
  flare.add(spark,halo);scene.add(flare);flare.visible=false;
- function spellEffect(id,time,impact){
+ function spellEffect(id,time,impact,slot){
+  if(id==='Stomp' && Math.abs(time-impact)<.65){
+   const phase=(time-impact+.65)/1.3;
+   flare.visible=true;flare.position.set(fighters[slot].model.position.x,.09,0);
+   spark.scale.setScalar(.01);halo.rotation.set(-Math.PI/2,0,0);halo.scale.setScalar(.4+phase*8);
+   halo.material.color.setHex(0xc15dff);halo.material.opacity=Math.sin(Math.PI*phase);return;
+  }
   const spell=spells.find(([key])=>key===id);
   if(!spell || time>impact+.42)return;
-  const hero=fighters.hero,hand=hero.hands[0];if(!hand)return;
-  const from=hand.getWorldPosition(new T.Vector3()),to=new T.Vector3(fighters.zeus.baseX,2.15,.25);
+  const hero=fighters[slot],hand=hero.hands[0];if(!hand)return;
+  const from=hand.getWorldPosition(new T.Vector3()),to=new T.Vector3(fighters[slot==="hero"?"zeus":"hero"].baseX,2.15,.25);
   const travel=Math.min(.42,impact*.55),t=T.MathUtils.clamp((time-impact+travel)/travel,0,1);
   const burst=Math.max(0,(time-impact)/.42);
   flare.visible=true;flare.position.copy(from).lerp(to,t);flare.position.y+=.45*Math.sin(Math.PI*t);
@@ -131,21 +142,21 @@ export async function mount(){
   spark.scale.setScalar((.65+.35*Math.sin(time*12)**2)*(1-burst));halo.scale.setScalar(.7+burst*3);
   halo.quaternion.copy(camera.quaternion);halo.rotateZ(time*5);halo.material.opacity=1-burst;
  }
- function reset(){flare.visible=false;preview=0;game.reset();active=null;clearBolts();for(const id of ['hero','zeus']){if(fighters[id]){fighters[id].model.rotation.z=0;fighters[id].model.position.x=fighters[id].baseX;fighters[id].model.rotation.y=fighters[id].baseYaw;play(id,'Idle');}}$('announcement').textContent='';$('damage').textContent='';$('log').replaceChildren();log('Nouveau duel : l’avventuriero apre lo scontro.'.replace('Nouveau duel','Nuovo duello'));document.body.dataset.action='';ui();}
+ function reset(){flare.visible=false;preview=0;game.reset();active=null;clearBolts();for(const id of ['hero','zeus']){if(fighters[id]){fighters[id].model.rotation.z=0;fighters[id].model.position.x=fighters[id].baseX;fighters[id].model.rotation.y=fighters[id].baseYaw;play(id,'Idle');}}$('announcement').textContent='';$('damage').textContent='';$('log').replaceChildren();log(label('hero')+' apre lo scontro.');document.body.dataset.action='';ui();}
 
  function tick(now){if(disposed||document.hidden)return;const dt=last?Math.min((now-last)/1000,.05):0;last=now;
 
   for(const f of Object.values(fighters))f.mixer.update(dt);
 
   flare.visible=false;
-  if(preview>0 && athena){const f=fighters.hero;const len=f.actions[f.current].getClip().duration;spellEffect(f.current,len-preview,len*.45);}
-  if(preview>0){preview=Math.max(0,preview-dt);if(!preview){play('hero','Idle');$('announcement').textContent='';ui();}}
+  if(preview>0){const f=fighters[game.turn];const len=f.actions[f.current].getClip().duration;spellEffect(f.current,len-preview,len*.45,game.turn);}
+  if(preview>0){preview=Math.max(0,preview-dt);if(!preview){play(game.turn,'Idle');$('announcement').textContent='';ui();}}
 
-  if(active){active.time+=dt;const a=active; if(athena&&a.actor==='hero')spellEffect(a.clip,a.time,a.impact);
+  if(active){active.time+=dt;const a=active; spellEffect(a.clip,a.time,a.impact,a.actor);
 
    const actor=fighters[a.actor];const wave=Math.sin(Math.PI*Math.min(1,a.time/a.duration))**2;
 
-   if(a.kind==='attack'){actor.model.position.x=actor.baseX+(a.actor==='hero'?1.15:-.85)*wave;actor.model.rotation.y=actor.baseYaw+((a.actor==='hero'?1.2:-1.2)-actor.baseYaw)*wave;}
+   if(a.kind==='attack'){actor.model.position.x=actor.baseX+(a.actor==='hero'?1.15:-.85)*wave;}
 
 
 
@@ -153,19 +164,19 @@ export async function mount(){
 
    if(!a.done&&a.time>=a.impact){a.done=true;const result=game.resolve(a.id);if(result){
 
-    if(a.triggered)log(heroName+' � '+skillName(game.skill));
+    if(a.healed)log(label(a.actor)+' recupera '+a.healed+' PS');
 
     if(a.kind!=='guard'){
 
-     play(a.target,athena&&a.triggered&&a.target==='hero'?'D4':'Hit');const p=new T.Vector3(fighters[a.target].model.position.x,2.4,.3).project(camera);$('damage').style.left=(p.x*.5+.5)*stage.clientWidth+'px';$('damage').style.top=(-p.y*.5+.5)*stage.clientHeight+'px';$('damage').textContent='−'+a.damage;
+     play(a.target,'Hit');const p=new T.Vector3(fighters[a.target].model.position.x,2.4,.3).project(camera);$('damage').style.left=(p.x*.5+.5)*stage.clientWidth+'px';$('damage').style.top=(-p.y*.5+.5)*stage.clientHeight+'px';$('damage').textContent='âˆ’'+a.damage;
 
-     log(`${a.actor==='zeus'?'Zeus':heroName} · ${a.kind==='judgment'?'Giudizio Divino':'attacco'}: ${a.damage} danni.`);
+     log(`${label(a.actor)} Â· ${choices[ids[a.actor]].find(([clip])=>clip===a.clip)?.[1] || 'attacco'}: ${a.damage} danni.`);
 
-    }else log((a.actor==='hero'?heroName:'Zeus')+' in guardia: prossimo danno dimezzato.');ui();
+    }else log((label(a.actor))+' in guardia: prossimo danno dimezzato.');ui();
 
    }}
 
-   if(a.time>=a.duration){active=null;clearBolts();$('damage').textContent='';$('announcement').textContent=game.winner?(game.winner==='hero'?'VITTORIA DELL’AVVENTURIERO':'ZEUS TRIONFA'):'';for(const id of ['hero','zeus']){fighters[id].model.position.x=fighters[id].baseX;fighters[id].model.rotation.y=fighters[id].baseYaw;play(id,game.winner?(id===game.winner?'Victory':'Defeat'):'Idle');}ui();}
+   if(a.time>=a.duration){active=null;clearBolts();$('damage').textContent='';$('announcement').textContent=game.winner?('VITTORIA DI '+label(game.winner)):'';for(const id of ['hero','zeus']){fighters[id].model.position.x=fighters[id].baseX;fighters[id].model.rotation.y=fighters[id].baseYaw;play(id,game.winner?(id===game.winner?'Victory':'Defeat'):'Idle');}ui();}
 
   }
 
@@ -187,18 +198,17 @@ export async function mount(){
 
  function skillName(id){return Array.from($('skill').options).find(o=>o.value===id)?.textContent||'';}
 
- function showSkill(id){if(!id||active||preview)return;if(focused)$('focus').click();play('hero',id);preview=fighters.hero.actions[id].getClip().duration;$('announcement').textContent=skillName(id);ui();}
+ function showSkill(id){if(!id||active||preview)return;if(focused)$('focus').click();play(game.turn,id);preview=fighters[game.turn].actions[id].getClip().duration;$('announcement').textContent=skillName(id);ui();}
 
- $('skill').onchange=ui;$('previewSkill').onclick=()=>showSkill($('skill').value);
-
- $('equipSkill').onclick=()=>{game.skill=$('skill').value;reset();if(game.skill){log(heroName+' equipaggia '+skillName(game.skill));showSkill(game.skill);}};
-
- $('attack').onclick=()=>start('attack');$('guard').onclick=()=>start('guard');$('judgment').onclick=()=>start('judgment');$('reset').onclick=reset;$('focus').onclick=()=>{focused=!focused;frameCamera();$('focus').textContent=focused?'TORNA ALL’ARENA':'OSSERVA ZEUS';};
+ $('skill').onchange=()=>{const id=game.turn,oldMax=game.maximum(id);selected[id]=$('skill').value;game.skills[id]=selected[id];game.hp[id]=Math.max(1,game.hp[id]+game.maximum(id)-oldMax);ui();};
+ $('previewSkill').onclick=()=>showSkill(selected[game.turn]);
+ $('attack').onclick=()=>start(selected[game.turn]==='DivineJudgment'?'judgment':'attack');$('guard').onclick=()=>start('guard');$('judgment').onclick=()=>start('judgment');$('reset').onclick=reset;$('focus').onclick=()=>{focused=!focused;frameCamera();$('focus').textContent=focused?'TORNA ALLâ€™ARENA':'OSSERVA '+label('zeus');};
 
  try{
 
-  for(const [id,url,height,x,rotation] of [['hero',athena?'Athena.glb':'SamCombat.glb',athena?3.4:2.8,-1.55,.32],['zeus','ZeusCombat.glb',4.15,1.4,-.94]]){
-
+  $('focus').textContent='OSSERVA '+label('zeus');
+  for(const [id,x,rotation] of [['hero',-1.55,Math.PI/2],['zeus',1.4,-Math.PI/2]]){
+   const [,url,height]=roster[ids[id]];
    const response=await fetch(url,{signal:abort.signal});if(!response.ok)throw Error(`Asset ${id}: HTTP ${response.status}`);
 
    const gltf=await new GLTFLoader().parseAsync(await response.arrayBuffer(),location.href);if(disposed){free(gltf.scene);return;}
@@ -207,9 +217,9 @@ export async function mount(){
 
    const mixer=new T.AnimationMixer(model),actions={};for(const c of gltf.animations)actions[c.name]=mixer.clipAction(c);
 
-   for(const name of id==='hero'?(athena?['Waiting','Parry','Hit','Victory','Defeat',...spells.map(([id])=>id)]:['Idle','Attack','Parry','C1','C2','C3','C4','C5']):['DivineJudgment'])if(!actions[name])throw Error(`Clip ${name} mancante per ${id}`);
+   for(const name of ['Waiting','Parry','Hit','Victory','Defeat',...choices[ids[id]].map(([clip])=>clip)])if(!actions[name])throw Error(`Clip ${name} mancante per ${id}`);
 
-   const hands=[];model.traverse(o=>{if(o.isBone&&/(Left|Right)Hand$/i.test(o.name))hands.push(o);});if(id==='zeus'&&hands.length!==2)throw Error('Mani Mixamo mancanti');fighters[id]={model,mixer,actions,hands,baseX:x,baseYaw:rotation};play(id,'Idle');
+   const hands=[];model.traverse(o=>{if(o.isBone&&/(Left|Right)Hand$/i.test(o.name))hands.push(o);});if(ids[id]==='zeus'&&hands.length!==2)throw Error('Mani Mixamo mancanti');fighters[id]={model,mixer,actions,hands,baseX:x,baseYaw:rotation};play(id,'Idle');
 
   }
 
