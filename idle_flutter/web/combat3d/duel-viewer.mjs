@@ -11,7 +11,7 @@ const $=id=>document.getElementById(id);
 export async function mount(){
 
  const canvas=document.querySelector('canvas'),stage=document.querySelector('.arena');
- const roster={poseidon:['Poseidone','Poseidon.glb',3.8],apollo:['Apollo','Apollo.glb',3.7],ares:['Ares','Ares.glb?v=60fps',3.7],atena:['Atena','Athena.glb',3.4],ade:['Ade','Hades.glb',3.8],zeus:['Zeus','ZeusCombat.glb',4.15],sam:['Sam','SamCombat.glb',2.8]};
+ const roster={neris:['Neris','Neris.glb',3.25],nyra:['Nyra','Nyra.glb',3.15],poseidon:['Poseidone','Poseidon.glb',3.8],apollo:['Apollo','Apollo.glb',3.7],ares:['Ares','Ares.glb?v=60fps',3.7],atena:['Atena','Athena.glb',3.4],ade:['Ade','Hades.glb',3.8],zeus:['Zeus','ZeusCombat.glb',4.15],sam:['Sam','SamCombat.glb?v=20261127-new',3.1]};
  const params=new URLSearchParams(location.search);
  if(params.get('embedded')==='1'){document.querySelector('header').hidden=true;$('back-game').hidden=true;}
  const pick=(key,fallback)=>Object.hasOwn(roster,params.get(key))?params.get(key):fallback;
@@ -29,7 +29,7 @@ export async function mount(){
   ['Cast6','Fiamma sacra',0xff9237],['Cast7','Impulso celeste',0xad9cff],
   ['Cast8','Lampo dorato',0xffeb98]
  ];
- const choices={poseidon:[['Attack','Attacco del tridente'],['SovereignTide','Marea Sovrana']],apollo:[['Attack','Dardo di luce'],['HealingLight','Luce Guaritrice']],ares:[['Attack','Attacco normale'],['WarFury','Furia di Guerra'],['Crouch_and_Step_Back','Passo evasivo'],['Jump_with_Arms_and_Legs_Open','Assalto in salto']],atena:spells,ade:[['Attack','Attacco normale'],['ShadowPact','Patto delle Ombre']],zeus:[['Attack','Colpo fisico'],['DivineJudgment','Giudizio Divino']],sam:[['Attack','Colpo fisico'],['C1','Colpo preciso'],['C2','Pelle dura'],['C3','Resistenza'],['C4','Tenacia'],['C5','Mira stabile']]};
+ const choices={neris:[['Attack','Dardo spirituale'],['SpiritBond','Richiamo dello spirito']],nyra:[['Attack','Calcio circolare'],['FlowerDance','Danza floreale']],poseidon:[['Attack','Attacco del tridente'],['SovereignTide','Marea Sovrana']],apollo:[['Attack','Dardo di luce'],['HealingLight','Luce Guaritrice']],ares:[['Attack','Attacco normale'],['WarFury','Furia di Guerra'],['Crouch_and_Step_Back','Passo evasivo'],['Jump_with_Arms_and_Legs_Open','Assalto in salto']],atena:spells,ade:[['Attack','Attacco normale'],['ShadowPact','Patto delle Ombre']],zeus:[['Attack','Colpo fisico'],['DivineJudgment','Giudizio Divino']],sam:[['Attack','Colpo fisico'],['C1','Colpo preciso'],['C2','Pelle dura'],['C3','Resistenza'],['C4','Tenacia'],['C5','Mira stabile']]};
  const selected=Object.fromEntries(Object.keys(ids).map(slot=>[slot,choices[ids[slot]][0][0]]));
  let displayedTurn;
  const hintFor=id=>ids[id]==='poseidon'?'Marea Sovrana: +16 al primo attacco, −30% al primo colpo subito.':ids[id]==='apollo'?'Luce Guaritrice: cura fino a 45 PS dopo il primo colpo subito, se sopravvive.':ids[id]==='ares'?'Furia di Guerra: +12% ATK e +15 danni al primo attacco.':ids[id]==='ade'?'Patto delle Ombre recupera il 12% del danno diretto inflitto.':'Scegli un’abilità sotto Attacco, oppure para.';
@@ -49,7 +49,7 @@ export async function mount(){
 
  const flash=new T.PointLight(0x74ceff,0,14);flash.position.set(1,3,1);scene.add(flash);
 
- const fighters={};let intro=null,walkData=null;let preview=0;let active=null,disposed=false,raf=0,last=0,fxTime=0,bolts=new T.Group();scene.add(bolts);
+ const fighters={},companions={};let companionTime=0;let intro=null,walkData=null;let preview=0;let active=null,disposed=false,raf=0,last=0,fxTime=0,bolts=new T.Group();scene.add(bolts);
 
  const abort=new AbortController();
 
@@ -156,9 +156,9 @@ export async function mount(){
    spark.scale.setScalar(.01);halo.rotation.set(-Math.PI/2,0,0);halo.scale.setScalar(.4+phase*8);
    halo.material.color.setHex(id==='WarFury'?0xff5225:0xc15dff);halo.material.opacity=Math.sin(Math.PI*phase);return;
   }
-  const spell=spells.find(([key])=>key===id) || (ids[slot]==='apollo'?[id,'Luce',0xffec88]:ids[slot]==='poseidon'?[id,'Acqua',0x40dfff]:null);
+  const spell=spells.find(([key])=>key===id) || (ids[slot]==='neris'?[id,'Spirito',0x9ef4ec]:ids[slot]==='nyra'?[id,'Fiore',0xffafd9]:null) || (ids[slot]==='apollo'?[id,'Luce',0xffec88]:ids[slot]==='poseidon'?[id,'Acqua',0x40dfff]:null);
   if(!spell || time>impact+.42)return;
-  const hero=fighters[slot],hand=hero.hands[0];if(!hand)return;
+  const hero=fighters[slot],hand=id==='SpiritBond'&&companions[slot]?companions[slot]:hero.hands[0];if(!hand)return;
   const from=hand.getWorldPosition(new T.Vector3()),to=new T.Vector3(fighters[slot==="hero"?"zeus":"hero"].baseX,2.15,.25);
   const travel=Math.min(.42,impact*.55),t=T.MathUtils.clamp((time-impact+travel)/travel,0,1);
   const burst=Math.max(0,(time-impact)/.42);
@@ -198,9 +198,17 @@ export async function mount(){
   healing.children.forEach((m,i)=>{const a=i*Math.PI/6+t*2;m.position.set(Math.cos(a)*.65,.3+t*2.6+(i%3)*.12,Math.sin(a)*.65);m.material.opacity=1-t;m.rotation.y=t*5;});
   if(t>=1){healBurst=null;healing.visible=false;}
  }
- function reset(){intro=null;healBurst=null;healing.visible=false;flare.visible=false;preview=0;game.reset();active=null;clearBolts();for(const id of ['hero','zeus']){if(fighters[id]){fighters[id].model.rotation.z=0;fighters[id].model.position.x=fighters[id].baseX;fighters[id].model.rotation.y=fighters[id].baseYaw;play(id,'Idle');}}$('announcement').textContent='';$('damage').textContent='';$('log').replaceChildren();log(label('hero')+' apre lo scontro.');document.body.dataset.action='';beginIntro();ui();}
+ function updateCompanions(dt){
+  companionTime+=dt;
+  for(const [slot,spirit] of Object.entries(companions)){
+    const f=fighters[slot];spirit.visible=f.model.visible&&(!game.winner||game.winner===slot);
+    spirit.position.set(f.model.position.x+(slot==='hero'?-.82:.82),.85+Math.sin(companionTime*2)*.065,f.model.position.z+.7);
+    spirit.rotation.y=f.baseYaw;
+  }
+ }
+ function reset(){companionTime=0;intro=null;healBurst=null;healing.visible=false;flare.visible=false;preview=0;game.reset();active=null;clearBolts();for(const id of ['hero','zeus']){if(fighters[id]){fighters[id].model.rotation.z=0;fighters[id].model.position.x=fighters[id].baseX;fighters[id].model.rotation.y=fighters[id].baseYaw;play(id,'Idle');}}$('announcement').textContent='';$('damage').textContent='';$('log').replaceChildren();log(label('hero')+' apre lo scontro.');document.body.dataset.action='';beginIntro();ui();}
 
- function tick(now){if(disposed||document.hidden)return;if(params.get('review')==='1'){renderer.render(scene,camera);raf=requestAnimationFrame(tick);return;}const dt=last?Math.min((now-last)/1000,.05):0;last=now;
+ function tick(now){if(disposed||document.hidden)return;if(params.get('review')==='1'){updateCompanions(0);renderer.render(scene,camera);raf=requestAnimationFrame(tick);return;}const dt=last?Math.min((now-last)/1000,.05):0;last=now;
 
   for(const f of Object.values(fighters))f.mixer.update(dt);
   if(intro)updateIntro(dt);
@@ -238,7 +246,7 @@ export async function mount(){
 
   }
 
-  updateHealing(dt);art?.update(fighters);renderer.render(scene,camera);raf=requestAnimationFrame(tick);
+  updateHealing(dt);updateCompanions(dt);art?.update(fighters);renderer.render(scene,camera);raf=requestAnimationFrame(tick);
 
  }
 
@@ -288,10 +296,19 @@ export async function mount(){
    model.traverse(b=>{if(!b.isBone)return;const key=b.name.toLowerCase().replace('mixamorig','').replace(/^[:_]+/,'');const aliases={body:'spine2',arml:'leftarm',armr:'rightarm',wristl:'leftforearm',wristr:'rightforearm',legl:'leftupleg',legr:'rightupleg'};
     walkBones.push({bone:b,key:aliases[key]||key,local:b.quaternion.clone(),rest:rootQ.clone().multiply(b.getWorldQuaternion(new T.Quaternion()))});});
    fighters[id]={model,mixer,actions,hands,walkBones,baseX:x,baseYaw:rotation};play(id,'Idle');
+   if(ids[id]==='neris'){
+    const spiritAsset=await new GLTFLoader().loadAsync('NerisSpirit.glb');
+    if(disposed){free(spiritAsset.scene);return;}
+    const spirit=spiritAsset.scene;const bounds=new T.Box3().setFromObject(spirit);
+    spirit.scale.setScalar(1.35/(bounds.max.y-bounds.min.y));
+    art?.characters(spirit);scene.add(spirit);companions[id]=spirit;
+    document.body.dataset[id+'Companion']='neris-spirit';
+   }
+
 
   }
 
-  $('loading').hidden=true;document.body.dataset.ready='true';resize();
+  updateCompanions(0);$('loading').hidden=true;document.body.dataset.ready='true';resize();
   if(params.get('review')==='1'){
     // Deterministic still: same camera, pose and assets for both art directions.
     for(const f of Object.values(fighters))f.mixer.setTime(0);
