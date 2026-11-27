@@ -1,0 +1,115 @@
+{
+  "grid": [
+    8,
+    8
+  ],
+  "cell": [
+    128,
+    128
+  ],
+  "frames": 64,
+  "bottom_inset": 0.1133,
+  "source": "thunder_impact_01_add_1024.png",
+  "id": "thunder_impact_01",
+  "element": "thunder",
+  "form": "impact",
+  "fps": 30,
+  "loop": false,
+  "blend": "additive",
+  "pivot": [
+    0.5,
+    0.5
+  ],
+  "alpha": "none (colour premultiplied on black)",
+  "version": "1.0.0",
+  "credit": "VFX: KanaWorks_AI (@KanaWorks_AI)",
+  "license": "KanaWorks_AI VFX Asset License (see LICENSE.md)",
+  "homepage": "https://github.com/kanaworksai-hue/kanaworks-sakuga-vfx",
+  "category": "impact",
+  "style": "classic",
+  "base_id": "thunder_impact_01",
+  "anchor": "center",
+  "orientation": "billboard",
+  "world_size_m": 2.0,
+  "duration_s": 2.13,
+  "contact_frame": 1,
+  "loop_range": null,
+  "pairs": {
+    "cast": null,
+    "projectile": null,
+    "impact": null
+  },
+  "tags": [
+    "classic",
+    "electric",
+    "impact",
+    "lightning",
+    "thunder"
+  ],
+  "use_cases": [
+    "shock hit",
+    "stun hit",
+    "hit effect",
+    "projectile impact",
+    "melee hit",
+    "explosion",
+    "on-hit feedback"
+  ],
+  "fx": {
+    "flash": {
+      "color": "#e5d4ff",
+      "size": 1.5,
+      "frames": 3
+    },
+    "ring": {
+      "color": "#cfaeff",
+      "size": 2.2,
+      "duration": 0.4,
+      "plane": "view"
+    },
+    "sparks": {
+      "count": 26,
+      "speed": 9.0,
+      "color": "#c49cff",
+      "gravity": 0.3,
+      "drag": 4.0,
+      "size": 0.05,
+      "life": 0.3,
+      "direction": "radial"
+    },
+    "debris": null,
+    "smoke": null,
+    "decal": {
+      "texture": "decal_thunder.png",
+      "size": 1.8,
+      "life": 3.0,
+      "tint": "#ffffff"
+    },
+    "light": {
+      "color": "#b583ff",
+      "intensity": 6.0,
+      "range": 4.4,
+      "curve": [
+        0.0,
+        1.0,
+        0.08,
+        0.7,
+        0.35,
+        0.15,
+        0.6,
+        0.0
+      ]
+    },
+    "trail": null,
+    "shake": {
+      "amplitude": 0.16,
+      "duration": 0.28
+    },
+    "hit_stop_s": 0.08,
+    "sfx": {
+      "cast": null,
+      "loop": null,
+      "impact": "thunder_impact.wav"
+    }
+  }
+}

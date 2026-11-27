@@ -1,6 +1,6 @@
 <!doctype html>
-<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>KardRune · Arena degli dei</title>
-<link rel="stylesheet" href="duel.css?v=20261126-compact2"><script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script></head>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="icon" href="data:,"><title>KardRune · Arena degli dei</title>
+<link rel="stylesheet" href="skill-cinematics.css"><link rel="stylesheet" href="duel.css?v=20261126-compact2"><script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script></head>
 <body><main>
 <header hidden style="display:none"><a href="../" aria-label="Torna al gioco">‹</a><div><small>KARDRUNE · ARENA 3D</small><h1>Il duello degli dei</h1></div><button id="focus">OSSERVA</button></header>
 <section class="roster" aria-label="Selezione combattenti"><label>Sfidante<select id="left" aria-label="Sfidante"></select></label><span>VS</span><label>Avversario<select id="right" aria-label="Avversario"></select></label><a hidden id="back-game" href="../">Gioco</a></section>
@@ -13,4 +13,4 @@
 <div class="actions" id="ability-buttons"><button id="attack" disabled><b>⚔</b><span>ATTACCO<small>Colpo fisico</small></span></button></div>
 <p hidden style="display:none" id="hint"></p><select hidden id="skill" aria-label="Abilità"></select><button hidden id="previewSkill" disabled>Anteprima</button><button hidden id="judgment" disabled>Giudizio Divino</button><aside hidden id="info"></aside></section>
 <section hidden style="display:none" class="details" aria-label="Ultima azione"><ol id="log" aria-live="polite"><li>Scegli i combattenti e prova le loro abilità.</li></ol></section>
-</main><script type="module">import('./duel-viewer.mjs?v=20261127-roster2').then(m=>m.mount()).catch(e=>{document.querySelector('#loading').textContent='Caricamento non riuscito. Ricarica la pagina.';console.error(e);});</script></body></html>
+</main><script type="module">import('./duel-viewer.mjs?v=20261127-combat-audio').then(m=>m.mount()).catch(e=>{document.querySelector('#loading').textContent='Caricamento non riuscito. Ricarica la pagina.';console.error(e);});</script></body></html>

@@ -1,0 +1,1182 @@
+{
+  "frames": {
+    "thunder_aura_01_000": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_001": {
+      "frame": {
+        "x": 112,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_002": {
+      "frame": {
+        "x": 224,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_003": {
+      "frame": {
+        "x": 336,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_004": {
+      "frame": {
+        "x": 448,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_005": {
+      "frame": {
+        "x": 560,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_006": {
+      "frame": {
+        "x": 672,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_007": {
+      "frame": {
+        "x": 784,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_008": {
+      "frame": {
+        "x": 0,
+        "y": 200,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_009": {
+      "frame": {
+        "x": 112,
+        "y": 200,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_010": {
+      "frame": {
+        "x": 224,
+        "y": 200,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_011": {
+      "frame": {
+        "x": 336,
+        "y": 200,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_012": {
+      "frame": {
+        "x": 448,
+        "y": 200,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_013": {
+      "frame": {
+        "x": 560,
+        "y": 200,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_014": {
+      "frame": {
+        "x": 672,
+        "y": 200,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_015": {
+      "frame": {
+        "x": 784,
+        "y": 200,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_016": {
+      "frame": {
+        "x": 0,
+        "y": 400,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_017": {
+      "frame": {
+        "x": 112,
+        "y": 400,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_018": {
+      "frame": {
+        "x": 224,
+        "y": 400,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_019": {
+      "frame": {
+        "x": 336,
+        "y": 400,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_020": {
+      "frame": {
+        "x": 448,
+        "y": 400,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_021": {
+      "frame": {
+        "x": 560,
+        "y": 400,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_022": {
+      "frame": {
+        "x": 672,
+        "y": 400,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_023": {
+      "frame": {
+        "x": 784,
+        "y": 400,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_024": {
+      "frame": {
+        "x": 0,
+        "y": 600,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_025": {
+      "frame": {
+        "x": 112,
+        "y": 600,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_026": {
+      "frame": {
+        "x": 224,
+        "y": 600,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_027": {
+      "frame": {
+        "x": 336,
+        "y": 600,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_028": {
+      "frame": {
+        "x": 448,
+        "y": 600,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_029": {
+      "frame": {
+        "x": 560,
+        "y": 600,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_030": {
+      "frame": {
+        "x": 672,
+        "y": 600,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_031": {
+      "frame": {
+        "x": 784,
+        "y": 600,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_032": {
+      "frame": {
+        "x": 0,
+        "y": 800,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_033": {
+      "frame": {
+        "x": 112,
+        "y": 800,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_034": {
+      "frame": {
+        "x": 224,
+        "y": 800,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_035": {
+      "frame": {
+        "x": 336,
+        "y": 800,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_036": {
+      "frame": {
+        "x": 448,
+        "y": 800,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_037": {
+      "frame": {
+        "x": 560,
+        "y": 800,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_038": {
+      "frame": {
+        "x": 672,
+        "y": 800,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    },
+    "thunder_aura_01_039": {
+      "frame": {
+        "x": 784,
+        "y": 800,
+        "w": 112,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 112,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 112,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.935
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.935
+      }
+    }
+  },
+  "animations": {
+    "thunder_aura_01": [
+      "thunder_aura_01_000",
+      "thunder_aura_01_001",
+      "thunder_aura_01_002",
+      "thunder_aura_01_003",
+      "thunder_aura_01_004",
+      "thunder_aura_01_005",
+      "thunder_aura_01_006",
+      "thunder_aura_01_007",
+      "thunder_aura_01_008",
+      "thunder_aura_01_009",
+      "thunder_aura_01_010",
+      "thunder_aura_01_011",
+      "thunder_aura_01_012",
+      "thunder_aura_01_013",
+      "thunder_aura_01_014",
+      "thunder_aura_01_015",
+      "thunder_aura_01_016",
+      "thunder_aura_01_017",
+      "thunder_aura_01_018",
+      "thunder_aura_01_019",
+      "thunder_aura_01_020",
+      "thunder_aura_01_021",
+      "thunder_aura_01_022",
+      "thunder_aura_01_023",
+      "thunder_aura_01_024",
+      "thunder_aura_01_025",
+      "thunder_aura_01_026",
+      "thunder_aura_01_027",
+      "thunder_aura_01_028",
+      "thunder_aura_01_029",
+      "thunder_aura_01_030",
+      "thunder_aura_01_031",
+      "thunder_aura_01_032",
+      "thunder_aura_01_033",
+      "thunder_aura_01_034",
+      "thunder_aura_01_035",
+      "thunder_aura_01_036",
+      "thunder_aura_01_037",
+      "thunder_aura_01_038",
+      "thunder_aura_01_039"
+    ]
+  },
+  "meta": {
+    "app": "https://github.com/kanaworksai-hue/kanaworks-sakuga-vfx",
+    "version": "1.0.0",
+    "image": "thunder_aura_01_add_1024.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 896,
+      "h": 1000
+    },
+    "scale": "1",
+    "fps": 30,
+    "loop": true,
+    "credit": "VFX: KanaWorks_AI (@KanaWorks_AI)"
+  }
+}

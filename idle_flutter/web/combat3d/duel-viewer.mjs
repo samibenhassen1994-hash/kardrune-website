@@ -4,6 +4,10 @@ import {GLTFLoader} from './vendor/GLTFLoader.js';
 
 import {createStylizedRenderer} from './stylized-renderer.mjs';
 
+import {createSkillDirector,SKILL_CINEMATICS} from './skill-cinematics.mjs';
+
+import {createCombatAudio,animationRate,COMBAT_RATE} from './combat-audio.mjs';
+
 import {Duel} from './duel-state.mjs';
 
 const $=id=>document.getElementById(id);
@@ -49,6 +53,8 @@ export async function mount(){
 
  const flash=new T.PointLight(0x74ceff,0,14);flash.position.set(1,3,1);scene.add(flash);
 
+ const cinematic=Object.values(ids).includes('zeus')?createSkillDirector({scene,camera,renderer,stage}):null;
+ const sfx=createCombatAudio(document.querySelector('.utilities'),stage);
  const fighters={},companions={};let companionTime=0;let intro=null,walkData=null;let preview=0;let active=null,disposed=false,raf=0,last=0,fxTime=0,bolts=new T.Group();scene.add(bolts);
 
  const abort=new AbortController();
@@ -57,21 +63,22 @@ export async function mount(){
 
  function clearBolts(){for(const o of [...bolts.children]){free(o);bolts.remove(o);}flash.intensity=0;document.body.dataset.lightning='false';}
 
- function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setPixelRatio(Math.min(devicePixelRatio,1.5,Math.sqrt(1400000/(w*h))));renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();frameCamera();}
+ function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setPixelRatio(Math.min(devicePixelRatio,1.5,Math.sqrt(1400000/(w*h))));renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();frameCamera();cinematic?.rebase();}
 
  function frameCamera(){if(fighters.hero)fighters.hero.model.visible=!focused;if(focused){camera.position.set(3.7,3.7,6.0);camera.lookAt(1.35,2.95,0);}else{const mobile=camera.aspect<1;camera.position.set(0,mobile?7.4:6.5,mobile?16.4:12.5);camera.lookAt(0,1.85,0);}camera.updateProjectionMatrix();}
 
  const observer=new ResizeObserver(resize);observer.observe(stage);
 
  function clipSpeed(id,name){
-  return 1; // Preserve the source animation duration (60 fps / 30 fps).
+  if(name==='DivineJudgment')return SKILL_CINEMATICS.DivineJudgment.animationRate;
+  return animationRate(name);
  }
  function clipDuration(id,name){
   return fighters[id].actions[name].getClip().duration/clipSpeed(id,name);
  }
- function play(id,name){const f=fighters[id];if(!f)return;if(name==='Idle'&&(id!==game.turn||!f.actions.Idle))name='Waiting';
+ function play(id,name,fade=0){const f=fighters[id];if(!f)return;if(name==='Idle'&&(id!==game.turn||!f.actions.Idle))name='Waiting';
 
-  const next=f.actions[name],loop=['Idle','Waiting','Walking'].includes(name);f.mixer.stopAllAction();next.reset().setEffectiveTimeScale(clipSpeed(id,name)).setLoop(loop?T.LoopRepeat:T.LoopOnce,loop?Infinity:1);next.clampWhenFinished=!loop;next.play();f.current=name;document.body.dataset[id+'Clip']=name;}
+  const next=f.actions[name],loop=['Idle','Waiting','Walking'].includes(name);if(fade){for(const action of Object.values(f.actions))if(action.isRunning())action.fadeOut(fade);}else f.mixer.stopAllAction();next.reset().setEffectiveTimeScale(clipSpeed(id,name)).setLoop(loop?T.LoopRepeat:T.LoopOnce,loop?Infinity:1);next.clampWhenFinished=!loop;if(fade)next.fadeIn(fade);next.play();f.current=name;document.body.dataset[id+'Clip']=name;document.body.dataset[id+'Rate']=String(clipSpeed(id,name));}
 
  function ui(){const busy=!!intro||preview>0||!!active||!fighters.zeus||!fighters.hero;const end=!!game.winner;
 
@@ -79,7 +86,7 @@ export async function mount(){
 
   $('attack').disabled=busy||end;$('guard').disabled=busy||end;$('judgment').disabled=busy||end||game.turn!=='zeus';
 
-  const turn=game.turn;
+  const turn=active?.actor??game.turn;
   if(displayedTurn!==turn){
    $('skill').replaceChildren(...choices[ids[turn]].map(([id,name])=>new Option(name,id)));
    $('skill').value=selected[turn];displayedTurn=turn;
@@ -107,34 +114,18 @@ export async function mount(){
 
  function log(text){const li=document.createElement('li');li.textContent=text;$('log').prepend(li);while($('log').children.length>6)$('log').lastChild.remove();}
 
- function start(kind){if(active||intro||preview||disposed||!fighters.hero||!fighters.zeus)return;if(focused){focused=false;frameCamera();$('focus').textContent='OSSERVA '+label('zeus');}const a=game.begin(kind);if(!a)return;
+ function start(kind){if(active||intro||preview||disposed||!fighters.hero||!fighters.zeus)return;if(focused){focused=false;frameCamera();$('focus').textContent='OSSERVA '+label('zeus');}sfx.unlock();const a=game.begin(kind);if(!a)return;
 
   const clip=kind==='guard'?'Parry':selected[a.actor];
   const length=clipDuration(a.actor,clip);
 
-  const impact=kind==='judgment'?Math.min(1.28,length*.45):length*.45;
+  const impact=kind==='judgment'?SKILL_CINEMATICS.DivineJudgment.impact:length*.45;
 
-  active={...a,clip,time:0,impact,duration:kind==='guard'?length:Math.max(length,impact+clipDuration(a.target,'Hit')),done:false};
+  active={...a,clip,time:0,impact,duration:kind==='judgment'?SKILL_CINEMATICS.DivineJudgment.duration:kind==='guard'?length:Math.max(length,impact+Math.min(.8,clipDuration(a.target,'Hit'))),done:false};
 
-  play(a.actor,clip);play(a.target,'Waiting');
+  sfx.begin({...active,actor:ids[a.actor]});play(a.actor,clip);play(a.target,'Waiting');if(kind==='judgment')cinematic?.start(clip,fighters[a.actor],fighters[a.target]);
 
   $('announcement').textContent=kind==='judgment'?'GIUDIZIO DIVINO':kind==='guard'?'GUARDIA ALZATA':skillName(clip);document.body.dataset.action=kind;ui();
-
- }
-
- function lightning(){clearBolts();const target=fighters[active.target].model.position;const start=new T.Vector3(1.05,3.35,.12);const end=new T.Vector3(target.x,1.55,.12);
-
-  for(let branch=0;branch<4;branch++){fighters[active.actor].hands[branch%2].getWorldPosition(start);const pts=[];for(let i=0;i<15;i++){const t=i/14;const p=start.clone().lerp(end,t);if(i&&i<14){p.x+=(Math.random()-.5)*.3;p.y+=(Math.random()-.5)*.55;p.z+=(Math.random()-.5)*.32;}pts.push(p);}
-
-   const c=new T.CatmullRomCurve3(pts,false,'catmullrom',.02);for(const [r,color,opacity] of [[.014,0xeaffff,1],[.045,0x1d8fff,.23]]){const m=new T.Mesh(new T.TubeGeometry(c,30,r,4,false),new T.MeshBasicMaterial({color,transparent:opacity<1,opacity,depthWrite:false,blending:T.AdditiveBlending}));bolts.add(m);}
-
-  }
-
-  // Descending bolt makes the divine cast legible even on narrow viewports.
-
-  const points=[new T.Vector3(target.x+.5,7,0),new T.Vector3(target.x-.25,5.2,.1),new T.Vector3(target.x+.2,4.5,0),new T.Vector3(target.x-.15,3.2,.1),end];
-
-  bolts.add(new T.Line(new T.BufferGeometry().setFromPoints(points),new T.LineBasicMaterial({color:0xc5f8ff})));flash.intensity=8;document.body.dataset.lightning='true';
 
  }
 
@@ -172,7 +163,7 @@ export async function mount(){
  function beginIntro(){
   if(!fighters.hero||!fighters.zeus)return;
   focused=false;frameCamera();
-  intro={time:0,duration:matchMedia('(prefers-reduced-motion: reduce)').matches?.6:3.2,near:camera.position.clone(),far:new T.Vector3(0,12,27)};
+  intro={time:0,duration:matchMedia('(prefers-reduced-motion: reduce)').matches?.6:3.2/COMBAT_RATE,near:camera.position.clone(),far:new T.Vector3(0,12,27)};
   for(const [id,f] of Object.entries(fighters)){f.model.visible=true;f.model.position.x=f.baseX+(id==='hero'?-4.6:4.6);if(f.actions.Walking)play(id,'Walking');else f.mixer.stopAllAction();}
   $('announcement').textContent=label('hero')+'  VS  '+label('zeus');ui();
  }
@@ -182,7 +173,7 @@ export async function mount(){
   for(const [id,f] of Object.entries(fighters)){
    f.model.position.x=f.baseX+(id==='hero'?-4.6:4.6)*(1-t);
    if(!f.actions.Walking){
-    const frame=walkData.frames[Math.floor(intro.time*walkData.fps)%walkData.frames.length];
+    const frame=walkData.frames[Math.floor(intro.time*walkData.fps*COMBAT_RATE)%walkData.frames.length];
     for(const b of f.walkBones){if(!frame[b.key])continue;const q=basisQ.clone().multiply(new T.Quaternion().fromArray(frame[b.key])).multiply(basisQ.clone().invert());
      b.bone.quaternion.copy(b.local).multiply(b.rest.clone().invert().multiply(q).multiply(b.rest));}
    }
@@ -206,7 +197,7 @@ export async function mount(){
     spirit.rotation.y=f.baseYaw;
   }
  }
- function reset(){companionTime=0;intro=null;healBurst=null;healing.visible=false;flare.visible=false;preview=0;game.reset();active=null;clearBolts();for(const id of ['hero','zeus']){if(fighters[id]){fighters[id].model.rotation.z=0;fighters[id].model.position.x=fighters[id].baseX;fighters[id].model.rotation.y=fighters[id].baseYaw;play(id,'Idle');}}$('announcement').textContent='';$('damage').textContent='';$('log').replaceChildren();log(label('hero')+' apre lo scontro.');document.body.dataset.action='';beginIntro();ui();}
+ function reset(){sfx.unlock();sfx.reset();cinematic?.stop();companionTime=0;intro=null;healBurst=null;healing.visible=false;flare.visible=false;preview=0;game.reset();active=null;clearBolts();for(const id of ['hero','zeus']){if(fighters[id]){fighters[id].model.rotation.z=0;fighters[id].model.position.x=fighters[id].baseX;fighters[id].model.rotation.y=fighters[id].baseYaw;play(id,'Idle');}}$('announcement').textContent='';$('damage').textContent='';$('log').replaceChildren();log(label('hero')+' apre lo scontro.');document.body.dataset.action='';beginIntro();ui();}
 
  function tick(now){if(disposed||document.hidden)return;if(params.get('review')==='1'){updateCompanions(0);renderer.render(scene,camera);raf=requestAnimationFrame(tick);return;}const dt=last?Math.min((now-last)/1000,.05):0;last=now;
 
@@ -217,7 +208,7 @@ export async function mount(){
   if(preview>0){const f=fighters[game.turn];const len=clipDuration(game.turn,f.current);spellEffect(f.current,len-preview,len*.45,game.turn);}
   if(preview>0){preview=Math.max(0,preview-dt);if(!preview){play(game.turn,'Idle');$('announcement').textContent='';ui();}}
 
-  if(active){active.time+=dt;const a=active; spellEffect(a.clip,a.time,a.impact,a.actor);
+  if(active){active.time+=dt;sfx.update(active.time);const a=active; spellEffect(a.clip,a.time,a.impact,a.actor);
 
    const actor=fighters[a.actor];const wave=Math.sin(Math.PI*Math.min(1,a.time/a.duration))**2;
 
@@ -225,10 +216,15 @@ export async function mount(){
 
 
 
-   if(a.kind==='judgment'&&a.time>a.impact-.15&&a.time<a.impact+.28){fxTime+=dt;if(fxTime>.07){lightning();fxTime=0;}}else clearBolts();
+   if(a.kind==='judgment'){
+    cinematic?.update(a.time);
+    const recoil=(a.time-a.impact)/.32;
+    fighters[a.target].model.position.x=fighters[a.target].baseX+(a.target==='hero'?-.14:.14)*(recoil>0&&recoil<1?Math.sin(recoil*Math.PI):0);
+   }else clearBolts();
 
    if(!a.done&&a.time>=a.impact){a.done=true;const result=game.resolve(a.id);if(result){
 
+    if(result.healed||result.targetHealed)sfx.heal();
     if(result.healed)log(label(a.actor)+' recupera '+result.healed+' PS');
     if(result.targetHealed){healBurst={slot:a.target,time:0};log(label(a.target)+' · Luce Guaritrice: +'+result.targetHealed+' PS');}
 
@@ -242,7 +238,7 @@ export async function mount(){
 
    }}
 
-   if(a.time>=a.duration){active=null;clearBolts();$('damage').textContent='';$('announcement').textContent=game.winner?('VITTORIA DI '+label(game.winner)):'';for(const id of ['hero','zeus']){fighters[id].model.position.x=fighters[id].baseX;fighters[id].model.rotation.y=fighters[id].baseYaw;play(id,game.winner?(id===game.winner?'Victory':'Defeat'):'Idle');}ui();}
+   if(a.time>=a.duration){sfx.end();if(a.kind==='judgment')cinematic?.stop();active=null;clearBolts();$('damage').textContent='';$('announcement').textContent=game.winner?('VITTORIA DI '+label(game.winner)):'';for(const id of ['hero','zeus']){fighters[id].model.position.x=fighters[id].baseX;fighters[id].model.rotation.y=fighters[id].baseYaw;play(id,game.winner?(id===game.winner?'Victory':'Defeat'):'Idle',.12);}ui();}
 
   }
 
@@ -250,11 +246,11 @@ export async function mount(){
 
  }
 
- function visibility(){cancelAnimationFrame(raf);last=0;if(!document.hidden&&!disposed)raf=requestAnimationFrame(tick);}
+ function visibility(){sfx.visibility();cancelAnimationFrame(raf);last=0;if(!document.hidden&&!disposed)raf=requestAnimationFrame(tick);}
 
- function dispose(){if(disposed)return;art?.dispose();disposed=true;abort.abort();cancelAnimationFrame(raf);observer.disconnect();document.removeEventListener('visibilitychange',visibility);window.removeEventListener('pagehide',pageHide);window.removeEventListener('pageshow',pageShow);for(const f of Object.values(fighters)){f.mixer.stopAllAction();f.mixer.uncacheRoot(f.model);}free(scene);renderer.dispose();renderer.forceContextLoss();}
+ function dispose(){if(disposed)return;sfx.dispose();cinematic?.dispose();art?.dispose();disposed=true;abort.abort();cancelAnimationFrame(raf);observer.disconnect();document.removeEventListener('visibilitychange',visibility);window.removeEventListener('pagehide',pageHide);window.removeEventListener('pageshow',pageShow);for(const f of Object.values(fighters)){f.mixer.stopAllAction();f.mixer.uncacheRoot(f.model);}free(scene);renderer.dispose();renderer.forceContextLoss();}
 
- function pageHide(e){if(e.persisted){cancelAnimationFrame(raf);last=0;}else dispose();}
+ function pageHide(e){sfx.reset();if(e.persisted){cancelAnimationFrame(raf);last=0;}else dispose();}
 
  function pageShow(e){if(e.persisted)visibility();}
 
@@ -308,6 +304,8 @@ export async function mount(){
 
   }
 
+  await Promise.all([cinematic?.preload('DivineJudgment'),sfx.preload()]);
+  if(disposed)return;
   updateCompanions(0);$('loading').hidden=true;document.body.dataset.ready='true';resize();
   if(params.get('review')==='1'){
     // Deterministic still: same camera, pose and assets for both art directions.

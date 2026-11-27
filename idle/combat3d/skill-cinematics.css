@@ -1,0 +1,18 @@
+.skill-cinema{position:absolute;inset:0;pointer-events:none;z-index:5;visibility:hidden;overflow:hidden;border-radius:inherit}
+.skill-dim,.skill-flash{position:absolute;inset:0;opacity:0;background:#020918}
+.skill-flash{background:#afdfff;z-index:4;mix-blend-mode:screen}
+.skill-cutin{position:absolute;left:0;right:0;top:36%;height:28%;background:#06132a;overflow:hidden;box-shadow:0 0 22px #54afff55;border-block:1px solid #b8dcff80;will-change:transform,opacity}
+.skill-cutin-image{position:absolute;left:0;top:0;height:100%;width:auto;max-width:none;transform-origin:30% 50%;will-change:transform}
+.skill-cutin-shade{position:absolute;inset:0;background:linear-gradient(90deg,transparent 35%,#06132a15 48%,#06132ad9 74%,#06132a 100%)}
+.skill-cutin-title{position:absolute;inset:0 3% 0 53%;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:8px;text-shadow:0 0 13px #67bdff,0 2px 3px #020a1c}
+.skill-cutin-title small{font-size:clamp(7px,1vw,12px);color:#d5e9ff;letter-spacing:2px}
+.skill-cutin-title strong{font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:clamp(20px,3.8vw,48px);line-height:1.05;letter-spacing:.03em;color:#fff1c5;background:linear-gradient(#fff 30%,#ffe7a3 70%,#dba853);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.vfx-credit{position:absolute;bottom:8px;left:12px;color:#d6e9ff;font-size:8px;text-shadow:0 1px 3px #000;text-decoration:none;z-index:4}
+.arena:has(.vfx-credit) .arena-foot{display:none}
+.arena[data-cinematic="DivineJudgment"] #announcement{opacity:0}
+.arena[data-cinematic="DivineJudgment"] #damage{z-index:6;font-size:clamp(34px,6vw,56px);color:#fff5c5;text-shadow:0 0 10px #136dbe,0 2px 4px #071024;transform:translate(-50%,-50%)}
+@media(max-width:600px){.skill-cutin-title{left:52%;gap:6px}.skill-cutin-title strong{font-size:clamp(20px,5.2vw,30px)}.skill-cutin-title small{font-size:7px;letter-spacing:1px}.vfx-credit{font-size:7px;bottom:6px;left:8px}}
+
+.skill-cutin-image{mask-image:linear-gradient(90deg,#000 76%,transparent 100%);-webkit-mask-image:linear-gradient(90deg,#000 76%,transparent 100%)}
+.skill-cutin-title strong{background:none;-webkit-text-fill-color:initial;color:#fff9e8;text-shadow:0 0 10px #2786ce,0 2px 3px #020a1c}
+.skill-cutin-title strong span:last-child{color:#ffe19a}

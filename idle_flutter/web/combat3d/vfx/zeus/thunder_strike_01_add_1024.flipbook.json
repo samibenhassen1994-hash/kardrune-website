@@ -1,0 +1,113 @@
+{
+  "grid": [
+    8,
+    7
+  ],
+  "cell": [
+    112,
+    200
+  ],
+  "frames": 56,
+  "bottom_inset": 0.083,
+  "source": "thunder_strike_01_add_1024.png",
+  "id": "thunder_strike_01",
+  "element": "thunder",
+  "form": "strike",
+  "fps": 30,
+  "loop": false,
+  "blend": "additive",
+  "pivot": [
+    0.5,
+    0.917
+  ],
+  "alpha": "none (colour premultiplied on black)",
+  "version": "1.0.0",
+  "credit": "VFX: KanaWorks_AI (@KanaWorks_AI)",
+  "license": "KanaWorks_AI VFX Asset License (see LICENSE.md)",
+  "homepage": "https://github.com/kanaworksai-hue/kanaworks-sakuga-vfx",
+  "category": "strike",
+  "style": "classic",
+  "base_id": "thunder_strike_01",
+  "anchor": "ground",
+  "orientation": "upright",
+  "world_size_m": 4.0,
+  "duration_s": 1.87,
+  "contact_frame": 1,
+  "loop_range": null,
+  "pairs": {
+    "cast": "thunder_charge_01",
+    "projectile": null,
+    "impact": null
+  },
+  "tags": [
+    "classic",
+    "electric",
+    "lightning",
+    "strike",
+    "thunder"
+  ],
+  "use_cases": [
+    "lightning strike",
+    "thunderbolt",
+    "strike from the sky",
+    "targeted AoE",
+    "ultimate"
+  ],
+  "fx": {
+    "flash": {
+      "color": "#e5d4ff",
+      "size": 4.2,
+      "frames": 3
+    },
+    "ring": {
+      "color": "#cfaeff",
+      "size": 5.72,
+      "duration": 0.43,
+      "plane": "ground"
+    },
+    "sparks": {
+      "count": 34,
+      "speed": 12.73,
+      "color": "#c49cff",
+      "gravity": 0.3,
+      "drag": 4.0,
+      "size": 0.071,
+      "life": 0.3,
+      "direction": "radial"
+    },
+    "debris": null,
+    "smoke": null,
+    "decal": {
+      "texture": "decal_thunder.png",
+      "size": 4.4,
+      "life": 3.0,
+      "tint": "#ffffff"
+    },
+    "light": {
+      "color": "#b583ff",
+      "intensity": 12.0,
+      "range": 8.8,
+      "curve": [
+        0.0,
+        1.0,
+        0.08,
+        0.7,
+        0.35,
+        0.15,
+        0.6,
+        0.0
+      ]
+    },
+    "trail": null,
+    "shake": {
+      "amplitude": 0.362,
+      "duration": 0.4
+    },
+    "hit_stop_s": 0.08,
+    "sfx": {
+      "cast": "thunder_cast.wav",
+      "loop": null,
+      "impact": "thunder_impact.wav"
+    }
+  }
+}

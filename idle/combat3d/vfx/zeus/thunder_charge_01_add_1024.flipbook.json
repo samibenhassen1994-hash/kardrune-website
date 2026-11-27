@@ -1,0 +1,105 @@
+{
+  "grid": [
+    8,
+    8
+  ],
+  "cell": [
+    128,
+    128
+  ],
+  "frames": 64,
+  "bottom_inset": 0.1012,
+  "source": "thunder_charge_01_add_1024.png",
+  "id": "thunder_charge_01",
+  "element": "thunder",
+  "form": "charge",
+  "fps": 30,
+  "loop": false,
+  "blend": "additive",
+  "pivot": [
+    0.5,
+    0.5
+  ],
+  "alpha": "none (colour premultiplied on black)",
+  "version": "1.0.0",
+  "credit": "VFX: KanaWorks_AI (@KanaWorks_AI)",
+  "license": "KanaWorks_AI VFX Asset License (see LICENSE.md)",
+  "homepage": "https://github.com/kanaworksai-hue/kanaworks-sakuga-vfx",
+  "category": "cast",
+  "style": "classic",
+  "base_id": "thunder_charge_01",
+  "anchor": "center",
+  "orientation": "billboard",
+  "world_size_m": 1.4,
+  "duration_s": 2.13,
+  "contact_frame": 18,
+  "loop_range": null,
+  "pairs": {
+    "cast": null,
+    "projectile": null,
+    "impact": null
+  },
+  "tags": [
+    "cast",
+    "charge",
+    "classic",
+    "electric",
+    "lightning",
+    "thunder"
+  ],
+  "use_cases": [
+    "cast",
+    "charge-up",
+    "muzzle flash",
+    "spell start"
+  ],
+  "fx": {
+    "flash": {
+      "color": "#e5d4ff",
+      "size": 0.63,
+      "frames": 2
+    },
+    "ring": {
+      "color": "#cfaeff",
+      "size": 0.92,
+      "duration": 0.36,
+      "plane": "view"
+    },
+    "sparks": {
+      "count": 13,
+      "speed": 7.53,
+      "color": "#c49cff",
+      "gravity": 0.3,
+      "drag": 4.0,
+      "size": 0.042,
+      "life": 0.3,
+      "direction": "radial"
+    },
+    "debris": null,
+    "smoke": null,
+    "decal": null,
+    "light": {
+      "color": "#b583ff",
+      "intensity": 4.8,
+      "range": 3.08,
+      "curve": [
+        0.0,
+        1.0,
+        0.08,
+        0.7,
+        0.35,
+        0.15,
+        0.6,
+        0.0
+      ]
+    },
+    "trail": null,
+    "shake": null,
+    "hit_stop_s": 0.0,
+    "sfx": {
+      "cast": "charge.wav",
+      "loop": null,
+      "impact": null
+    }
+  }
+}
