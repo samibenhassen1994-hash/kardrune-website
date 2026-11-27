@@ -2,6 +2,8 @@ import * as T from './vendor/three.module.js';
 
 import {GLTFLoader} from './vendor/GLTFLoader.js';
 
+import {createStylizedRenderer} from './stylized-renderer.mjs';
+
 import {Duel} from './duel-state.mjs';
 
 const $=id=>document.getElementById(id);
@@ -37,9 +39,13 @@ export async function mount(){
 
  const renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'high-performance'});renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
 
+ const art=params.get('style')==='original'?null:createStylizedRenderer(renderer,scene);
+ if(!art){
  scene.add(new T.HemisphereLight(0xcedfff,0x44405c,2));
 
  for(const [pos,color,power] of [[[0,7,5],0xffe6c6,3],[[-5,4,1],0x95baff,2],[[3,5,-4],0x4fa5ff,4]]){const l=new T.DirectionalLight(color,power);l.position.set(...pos);scene.add(l);}
+
+ }
 
  const flash=new T.PointLight(0x74ceff,0,14);flash.position.set(1,3,1);scene.add(flash);
 
@@ -194,7 +200,7 @@ export async function mount(){
  }
  function reset(){intro=null;healBurst=null;healing.visible=false;flare.visible=false;preview=0;game.reset();active=null;clearBolts();for(const id of ['hero','zeus']){if(fighters[id]){fighters[id].model.rotation.z=0;fighters[id].model.position.x=fighters[id].baseX;fighters[id].model.rotation.y=fighters[id].baseYaw;play(id,'Idle');}}$('announcement').textContent='';$('damage').textContent='';$('log').replaceChildren();log(label('hero')+' apre lo scontro.');document.body.dataset.action='';beginIntro();ui();}
 
- function tick(now){if(disposed||document.hidden)return;const dt=last?Math.min((now-last)/1000,.05):0;last=now;
+ function tick(now){if(disposed||document.hidden)return;if(params.get('review')==='1'){renderer.render(scene,camera);raf=requestAnimationFrame(tick);return;}const dt=last?Math.min((now-last)/1000,.05):0;last=now;
 
   for(const f of Object.values(fighters))f.mixer.update(dt);
   if(intro)updateIntro(dt);
@@ -232,13 +238,13 @@ export async function mount(){
 
   }
 
-  updateHealing(dt);renderer.render(scene,camera);raf=requestAnimationFrame(tick);
+  updateHealing(dt);art?.update(fighters);renderer.render(scene,camera);raf=requestAnimationFrame(tick);
 
  }
 
  function visibility(){cancelAnimationFrame(raf);last=0;if(!document.hidden&&!disposed)raf=requestAnimationFrame(tick);}
 
- function dispose(){if(disposed)return;disposed=true;abort.abort();cancelAnimationFrame(raf);observer.disconnect();document.removeEventListener('visibilitychange',visibility);window.removeEventListener('pagehide',pageHide);window.removeEventListener('pageshow',pageShow);for(const f of Object.values(fighters)){f.mixer.stopAllAction();f.mixer.uncacheRoot(f.model);}free(scene);renderer.dispose();renderer.forceContextLoss();}
+ function dispose(){if(disposed)return;art?.dispose();disposed=true;abort.abort();cancelAnimationFrame(raf);observer.disconnect();document.removeEventListener('visibilitychange',visibility);window.removeEventListener('pagehide',pageHide);window.removeEventListener('pageshow',pageShow);for(const f of Object.values(fighters)){f.mixer.stopAllAction();f.mixer.uncacheRoot(f.model);}free(scene);renderer.dispose();renderer.forceContextLoss();}
 
  function pageHide(e){if(e.persisted){cancelAnimationFrame(raf);last=0;}else dispose();}
 
@@ -260,7 +266,7 @@ export async function mount(){
  try{
 
   walkData=await fetch('entrance-walk.json',{signal:abort.signal}).then(r=>{if(!r.ok)throw Error('Camminata non disponibile');return r.json();});
-  const arena=await new GLTFLoader().loadAsync('RoyalArena.glb');scene.add(arena.scene);
+  const arena=await new GLTFLoader().loadAsync('RoyalArena.glb');scene.add(arena.scene);art?.arena(arena.scene);
   $('focus').textContent='OSSERVA '+label('zeus');
   for(const [id,x,rotation] of [['hero',-1.55,Math.PI/2],['zeus',1.4,-Math.PI/2]]){
    const [,url,height]=roster[ids[id]];
@@ -268,7 +274,7 @@ export async function mount(){
 
    const gltf=await new GLTFLoader().parseAsync(await response.arrayBuffer(),location.href);if(disposed){free(gltf.scene);return;}
 
-   const model=gltf.scene;
+   const model=gltf.scene;art?.characters(model);
    // Scale the body independently of the removable sword.
    const body=model.getObjectByName('Mesh_0') || model;
    const box=new T.Box3().setFromObject(body);model.scale.setScalar(height/(box.max.y-box.min.y));model.position.set(x,-box.min.y*model.scale.x,0);model.rotation.y=rotation;scene.add(model);
@@ -285,7 +291,15 @@ export async function mount(){
 
   }
 
-  $('loading').hidden=true;document.body.dataset.ready='true';resize();beginIntro();ui();raf=requestAnimationFrame(tick);
+  $('loading').hidden=true;document.body.dataset.ready='true';resize();
+  if(params.get('review')==='1'){
+    // Deterministic still: same camera, pose and assets for both art directions.
+    for(const f of Object.values(fighters))f.mixer.setTime(0);
+    art?.update(fighters);ui();renderer.render(scene,camera);
+    document.body.dataset.review='ready';raf=requestAnimationFrame(tick);
+    const meshes=[];scene.traverse(o=>{if(o.isMesh)meshes.push(o);});
+    window.arenaReview={groundHits:new T.Raycaster(new T.Vector3(-1.55,5,0),new T.Vector3(0,-1,0)).intersectObject(arena.scene,true).map(h=>h.point.y).slice(0,5),triangles:meshes.reduce((sum,o)=>sum+(o.geometry.index?.count??o.geometry.attributes.position.count)/3,0),calls:renderer.info.render.calls,renderTriangles:renderer.info.render.triangles,programs:renderer.info.programs.length,characterMaterials:Object.fromEntries(Object.entries(fighters).map(([id,f])=>{const types=new Set();f.model.traverse(o=>{if(o.isMesh)for(const m of [].concat(o.material))types.add(m.type);});return[id,[...types]];}))};
+  }else{beginIntro();ui();raf=requestAnimationFrame(tick);}
 
  }catch(e){if(disposed)return;$('loading').hidden=false;$('loading').textContent='Impossibile caricare i personaggi. Ricarica la pagina.';console.error(e);dispose();}
 
